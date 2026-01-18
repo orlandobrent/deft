@@ -12,7 +12,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 **Issues**: **SHOULD** include clear reproduction steps, expected vs actual behavior, environment details
 **Reviews**: **SHOULD** provide constructive feedback; **MUST** use appropriate status (approve/request changes/comment)
 **Actions**: **SHOULD** provide fast feedback, fail fast, cache dependencies, use matrix testing
-**Releases**: **SHOULD** use [Semantic Versioning](https://semver.org/spec/v2.0.0.html); **MUST** include CHANGELOG.md following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
+**Releases**: **SHOULD** use [Semantic Versioning](../core/versioning.md); **MUST** include CHANGELOG.md following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
 **Changelog**: **MUST** follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format in CHANGELOG.md
 
 ## gh CLI Commands
@@ -575,7 +575,7 @@ git push
 
 - **MUST** use Conventional Commits for all PR titles
 - **MUST** maintain CHANGELOG.md following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
-- **SHOULD** use [Semantic Versioning](https://semver.org/spec/v2.0.0.html) for releases
+- **SHOULD** use [Semantic Versioning](../core/versioning.md) for releases
 - **MUST** include CHANGELOG.md content in release notes
 - **MUST** maintain ≥75% test coverage
 - **MUST** pass all CI checks before merge
