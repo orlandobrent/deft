@@ -6,7 +6,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 **Scope:** Guidelines for multiple AI agents working on the same codebase concurrently.
 
-**⚠️ See also**: [coding.md](../coding/coding.md) | [taskfile.md](../tools/taskfile.md) | [git.md](../tools/git.md)
+**⚠️ See also**: [coding.md](../coding/coding.md) | [taskfile.md](../tools/taskfile.md) | [git.md](../scm/git.md)
 
 ## Communication Protocols
 
@@ -201,7 +201,7 @@ new_state = state.model_copy(deep=True, update={'status': 'completed'})
 **Commits:**
 - ! Atomic commits (one logical change)
 - ! Reference task ID: `feat(auth): add JWT [T-001]`
-- ! Follow Conventional Commits (see [git.md](../tools/git.md))
+- ! Follow Conventional Commits (see [git.md](../scm/git.md))
 - ⊗ Force-push to shared branches
 
 **Merging:**
@@ -280,6 +280,6 @@ task check
 ## References
 
 - [coding.md](../coding/coding.md) - General coding standards
-- [git.md](../tools/git.md) - Commit conventions, branch strategy
+- [git.md](../scm/git.md) - Commit conventions, branch strategy
 - [taskfile.md](../tools/taskfile.md) - Build and test automation
 - [testing.md](../coding/testing.md) - Testing requirements

@@ -43,8 +43,8 @@ Load based on interface type:
 
 Load as needed:
 
-- **[tools/git.md](./tools/git.md)** - Before committing (commit conventions)
-- **[tools/github.md](./tools/github.md)** - When setting up CI/CD, PRs, issues
+- **[scm/git.md](./scm/git.md)** - Before committing (commit conventions)
+- **[scm/github.md](./scm/github.md)** - When setting up CI/CD, PRs, issues
 - **[tools/taskfile.md](./tools/taskfile.md)** - When creating/modifying tasks
 - **[coding/testing.md](./coding/testing.md)** - When writing tests or checking coverage
 - **[tools/telemetry.md](./tools/telemetry.md)** - When implementing logging, tracing, metrics
@@ -129,7 +129,7 @@ Load order:
 1. main.md (always)
 2. core/user.md (always)
 3. (language file if fixing code)
-4. tools/git.md (before committing fix)
+4. scm/git.md (before committing fix)
 
 ### Scenario: "Multi-agent coordination"
 Load order:
@@ -137,7 +137,7 @@ Load order:
 2. core/user.md (always)
 3. swarm/swarm.md (swarm patterns)
 4. coding/coding.md (coding standards)
-5. tools/git.md (commit conventions with task IDs)
+5. scm/git.md (commit conventions with task IDs)
 
 ## 💡 Tips for Agents
 

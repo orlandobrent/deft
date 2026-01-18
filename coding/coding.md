@@ -30,7 +30,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 ## Version Control
 
-See [../tools/git.md](../tools/git.md) for:
+See [../scm/git.md](../scm/git.md) for:
 - Commit conventions (Conventional Commits)
 - Safety rules (no force-push without permission)
 - Branch workflows

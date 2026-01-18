@@ -25,7 +25,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 **Coding-Specific:**
 - Languages: [languages/cpp.md](./languages/cpp.md), [languages/go.md](./languages/go.md), [languages/python.md](./languages/python.md), [languages/typescript.md](./languages/typescript.md)
 - Interfaces: [interfaces/cli.md](./interfaces/cli.md), [interfaces/tui.md](./interfaces/tui.md), [interfaces/web.md](./interfaces/web.md), [interfaces/rest.md](./interfaces/rest.md)
-- Tools: [tools/taskfile.md](./tools/taskfile.md), [tools/git.md](./tools/git.md), [tools/github.md](./tools/github.md), [tools/telemetry.md](./tools/telemetry.md)
+- Tools: [tools/taskfile.md](./tools/taskfile.md), [scm/git.md](./scm/git.md), [scm/github.md](./scm/github.md), [tools/telemetry.md](./tools/telemetry.md)
 - Testing: [coding/testing.md](./coding/testing.md)
 
 **Advanced:**

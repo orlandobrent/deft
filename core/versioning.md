@@ -2,7 +2,7 @@
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ See also**: [main.md](../main.md) | [git.md](../tools/git.md) | [github.md](../tools/github.md)
+**⚠️ See also**: [main.md](../main.md) | [git.md](../scm/git.md) | [github.md](../scm/github.md)
 
 **Specification**: [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html)
 
@@ -322,5 +322,5 @@ A: If they require migration or break existing queries/integrations, yes (MAJOR)
 **See also**:
 - [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0.html) - Full specification
 - [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) - CHANGELOG format
-- [tools/git.md](../tools/git.md) - Git tagging and workflow
-- [tools/github.md](../tools/github.md) - GitHub releases
+- [scm/git.md](../scm/git.md) - Git tagging and workflow
+- [scm/github.md](../scm/github.md) - GitHub releases

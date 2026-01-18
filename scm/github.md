@@ -2,18 +2,18 @@
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ See also**: [main.md](../main.md) | [project.md](../core/project.md) | [git.md](../tools/git.md)
+**⚠️ See also**: [main.md](../main.md) | [project.md](../core/project.md) | [git.md](../scm/git.md)
 
 **Stack**: gh CLI 2.0+, GitHub Actions, Conventional Commits, issue/PR workflows
 
 ## Standards
 
-**PRs**: **MUST** use descriptive titles (Conventional Commits format); **SHOULD** link issues; **SHOULD** request reviews
-**Issues**: **SHOULD** include clear reproduction steps, expected vs actual behavior, environment details
-**Reviews**: **SHOULD** provide constructive feedback; **MUST** use appropriate status (approve/request changes/comment)
-**Actions**: **SHOULD** provide fast feedback, fail fast, cache dependencies, use matrix testing
-**Releases**: **SHOULD** use [Semantic Versioning](../core/versioning.md); **MUST** include CHANGELOG.md following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
-**Changelog**: **MUST** follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format in CHANGELOG.md
+**PRs**:  use descriptive titles (Conventional Commits format);  link issues; **SHOULD** request reviews
+**Issues**:  include clear reproduction steps, expected vs actual behavior, environment details
+**Reviews**:  provide constructive feedback;  use appropriate status (approve/request changes/comment)
+**Actions**:  provide fast feedback, fail fast, cache dependencies, use matrix testing
+**Releases**:  use [Semantic Versioning](../core/versioning.md);  include CHANGELOG.md following [Keep a Changelog](./changelog.md) format
+**Changelog**:  follow [Keep a Changelog](./changelog.md) format in CHANGELOG.md
 
 ## gh CLI Commands
 
@@ -573,15 +573,15 @@ git push
 
 ## Compliance
 
-- **MUST** use Conventional Commits for all PR titles
-- **MUST** maintain CHANGELOG.md following [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
-- **SHOULD** use [Semantic Versioning](../core/versioning.md) for releases
-- **MUST** include CHANGELOG.md content in release notes
-- **MUST** maintain ≥75% test coverage
-- **MUST** pass all CI checks before merge
-- **SHOULD** request reviews from appropriate team members
-- **SHOULD** link PRs to related issues
-- **SHOULD** use gh CLI for automation where possible
-- **MUST NOT** force-push to protected branches
-- **SHOULD** keep PR scope focused and size reasonable
-- **SHOULD** update documentation with code changes
+-  use Conventional Commits for all PR titles
+-  maintain CHANGELOG.md following [Keep a Changelog](./changelog.md) format
+-  use [Semantic Versioning](../core/versioning.md) for releases
+-  include CHANGELOG.md content in release notes
+-  maintain ≥75% test coverage
+-  pass all CI checks before merge
+-  request reviews from appropriate team members
+-  link PRs to related issues
+-  use gh CLI for automation where possible
+-  force-push to protected branches
+-  keep PR scope focused and size reasonable
+-  update documentation with code changes

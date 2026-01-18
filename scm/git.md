@@ -2,19 +2,19 @@
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ See also**: [main.md](../main.md) | [project.md](../core/project.md) | [github.md](../tools/github.md)
+**⚠️ See also**: [main.md](../main.md) | [project.md](../core/project.md) | [github.md](../scm/github.md)
 
 **Stack**: git 2.30+, Conventional Commits, `git --no-pager`, task-based workflows
 
 ## Standards
 
-**Commits**: **MUST** use Conventional Commits format: `type(scope): description`
-**Changelog**: **MUST** follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format
-**Versioning**: **SHOULD** follow [Semantic Versioning](../core/versioning.md) (SemVer)
-**Safety**: **MUST NOT** use `git reset --hard` or force-push without explicit permission
-**Workflow**: **MUST** make small, reversible changes; **MUST NOT** introduce silent breaking behavior
-**History**: **SHOULD** maintain linear history; **SHOULD** rebase over merge for feature branches (with permission)
-**Branches**: **SHOULD** use descriptive names: `feat/feature-name`, `fix/bug-name`, `refactor/scope`
+**Commits**:  use Conventional Commits format: `type(scope): description`
+**Changelog**:  follow [Keep a Changelog](./changelog.md) format
+**Versioning**:  follow [Semantic Versioning](../core/versioning.md) (SemVer)
+**Safety**:  use `git reset --hard` or force-push without explicit permission
+**Workflow**:  make small, reversible changes;  introduce silent breaking behavior
+**History**:  maintain linear history; **SHOULD** rebase over merge for feature branches (with permission)
+**Branches**:  use descriptive names: `feat/feature-name`, `fix/bug-name`, `refactor/scope`
 
 ## Commit Types
 
@@ -31,10 +31,10 @@ chore(deps): upgrade golang.org/x/crypto to v0.17
 
 **Format**:
 
-- **type(scope)**: **MUST** include type; scope **SHOULD** be included
-- **description**: **MUST** be lowercase, no period, imperative mood ("add" not "added")
-- **body**: **MAY** be included; **SHOULD** wrap at 72 chars if present
-- **footer**: **MAY** include `BREAKING CHANGE:` or `Closes #123`
+- **type(scope)**:  include type; scope  be included
+- **description**:  be lowercase, no period, imperative mood ("add" not "added")
+- **body**:  be included;  wrap at 72 chars if present
+- **footer**:  include `BREAKING CHANGE:` or `Closes #123`
 
 ## Commands
 
@@ -312,14 +312,14 @@ git switch -c recovery-branch        # Create branch from it
 
 ### Changelog Format
 
-**MUST** follow [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format:
+ follow [Keep a Changelog](./changelog.md) format:
 
 ```markdown
 # Changelog
 
 All notable changes to this project will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+The format is based on [Keep a Changelog](./changelog.md),
 and this project adheres to [Semantic Versioning](../core/versioning.md).
 
 ## [Unreleased]
@@ -350,7 +350,7 @@ and this project adheres to [Semantic Versioning](../core/versioning.md).
 
 ### Semantic Versioning
 
-**SHOULD** follow [Semantic Versioning](../core/versioning.md):
+ follow [Semantic Versioning](../core/versioning.md):
 
 - **MAJOR** (X.0.0): Breaking changes, incompatible API changes
 - **MINOR** (0.X.0): New features, backward compatible
@@ -368,11 +368,11 @@ and this project adheres to [Semantic Versioning](../core/versioning.md).
 
 ## Compliance
 
-- **MUST** use Conventional Commits for all commits: `type(scope): description`
-- **MUST** maintain CHANGELOG.md following Keep a Changelog format
-- **SHOULD** use Semantic Versioning for releases
-- **MUST NOT** force-push or `reset --hard` without explicit permission
-- **MUST** run `task check` before committing
-- **MUST** use `git --no-pager` for programmatic/scripted operations
-- **MUST** keep secrets in `secrets/` dir; **MUST NOT** commit them
-- **SHOULD** prefer safe alternatives (`revert`, temp branches) over history rewriting
+-  use Conventional Commits for all commits: `type(scope): description`
+-  maintain CHANGELOG.md following Keep a Changelog format
+-  use Semantic Versioning for releases
+-  force-push or `reset --hard` without explicit permission
+-  run `task check` before committing
+-  use `git --no-pager` for programmatic/scripted operations
+-  keep secrets in `secrets/` dir;  commit them
+-  prefer safe alternatives (`revert`, temp branches) over history rewriting

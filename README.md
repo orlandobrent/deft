@@ -116,8 +116,8 @@ warping-0.2.0/
 ### 🛠️ Tools
 
 **tools/taskfile.md** - Task automation best practices
-**tools/git.md** - Commit conventions, safety
-**tools/github.md** - GitHub workflows
+**scm/git.md** - Commit conventions, safety
+**scm/github.md** - GitHub workflows
 **tools/telemetry.md** - Logging, tracing, metrics
 
 ### 🐝 Swarm
