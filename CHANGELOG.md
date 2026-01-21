@@ -5,6 +5,14 @@ All notable changes to the Warping framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-01-21
+
+### Added
+- **LICENSE.md**: Added license file with temporary usage terms through 2026
+  - Permission to use (but not distribute) for repository collaborators
+  - Future plans for permissive license preventing resale
+- **Copyright Notice**: Added copyright to README.md with contact email
+
 ## [0.2.1] - 2026-01-18
 
 ### Added
@@ -126,6 +134,7 @@ If you have custom scripts or references to warping files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
+[0.2.2]: https://github.com/visionik/warping/releases/tag/v0.2.2
 [0.2.1]: https://github.com/visionik/warping/releases/tag/v0.2.1
 [0.2.0]: https://github.com/visionik/warping/releases/tag/v0.2.0
 [0.1.0]: https://github.com/visionik/warping/releases/tag/v0.1.0
