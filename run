@@ -85,7 +85,7 @@ def usage():
         
         hint = f"\n💡 Tip: Install prompt_toolkit for better input (arrow keys, history, completion):\n   {install_cmd}\n"
     
-    print(f"""Warping CLI v{VERSION}{hint}
+    print(f"""Deft CLI v{VERSION}{hint}
 
 Usage: run <command> [options]
        python run <command> [options]       # If not executable
@@ -937,9 +937,9 @@ def main():
         'help': lambda _: usage(),
         '--help': lambda _: usage(),
         '-h': lambda _: usage(),
-        'version': lambda _: print(f"Warping CLI v{VERSION}"),
-        '--version': lambda _: print(f"Warping CLI v{VERSION}"),
-        '-v': lambda _: print(f"Warping CLI v{VERSION}"),
+        'version': lambda _: print(f"Deft CLI v{VERSION}"),
+        '--version': lambda _: print(f"Deft CLI v{VERSION}"),
+        '-v': lambda _: print(f"Deft CLI v{VERSION}"),
     }
     
     if command in commands:
