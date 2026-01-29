@@ -5,6 +5,14 @@ All notable changes to the Deft framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.6] - 2026-01-29
+
+### Changed
+- **README Quick Start**: Updated run command examples
+  - Changed from `run` to `deft/run` prefix for clarity
+  - Removed `run install` command
+  - Updated workflow to: bootstrap → project → spec
+
 ## [0.3.5] - 2026-01-29
 
 ### Changed
@@ -279,6 +287,7 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
+[0.3.6]: https://github.com/visionik/deft/releases/tag/v0.3.6
 [0.3.5]: https://github.com/visionik/deft/releases/tag/v0.3.5
 [0.3.4]: https://github.com/visionik/deft/releases/tag/v0.3.4
 [0.3.3]: https://github.com/visionik/deft/releases/tag/v0.3.3
