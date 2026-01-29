@@ -108,48 +108,41 @@ deft/
 ```
 
 ### 🔧 Core Files
-
-**main.md** - Entry point, general AI guidelines
-**coding/coding.md** - Software development standards
-**coding/testing.md** - Testing standards
-**core/project.md** - Project-specific template
+**main.md** - Entry point, general AI guidelines  
+**coding/coding.md** - Software development standards  
+**coding/testing.md** - Testing standards  
+**core/project.md** - Project-specific template  
 **core/user.md** - Your personal preferences (highest precedence)
 
 ### 🐍 Languages
-
-**languages/python.md** - Python standards (≥85% coverage, mypy strict, ruff/black)
-**languages/go.md** - Go standards (≥85% coverage, Testify)
-**languages/typescript.md** - TypeScript standards (strict mode, Vitest)
+**languages/python.md** - Python standards (≥85% coverage, mypy strict, ruff/black)  
+**languages/go.md** - Go standards (≥85% coverage, Testify)  
+**languages/typescript.md** - TypeScript standards (strict mode, Vitest)  
 **languages/cpp.md** - C++ standards (C++20/23, Catch2/GoogleTest)
 
 ### 💻 Interfaces
-
-**interfaces/cli.md** - Command-line interface patterns
-**interfaces/rest.md** - REST API design
-**interfaces/tui.md** - Terminal UI (Textual, ink)
+**interfaces/cli.md** - Command-line interface patterns  
+**interfaces/rest.md** - REST API design  
+**interfaces/tui.md** - Terminal UI (Textual, ink)  
 **interfaces/web.md** - Web UI (React, Tailwind)
 
 ### 🛠️ Tools
-
-**tools/taskfile.md** - Task automation best practices
-**scm/git.md** - Commit conventions, safety
-**scm/github.md** - GitHub workflows
+**tools/taskfile.md** - Task automation best practices  
+**scm/git.md** - Commit conventions, safety  
+**scm/github.md** - GitHub workflows  
 **tools/telemetry.md** - Logging, tracing, metrics
 
 ### 🐝 Swarm
-
 **swarm/swarm.md** - Multi-agent coordination patterns
 
 ### 📝 Templates
-
-**templates/make-spec.md** - Specification generation
+**templates/make-spec.md** - Specification generation  
 **templates/specification.md** - Project spec template
 
 ### 🧠 Meta
-
-**meta/code-field.md** - Coding mindset and philosophy
-**meta/lessons.md** - Codified learnings (AI-updatable)
-**meta/ideas.md** - Future directions
+**meta/code-field.md** - Coding mindset and philosophy  
+**meta/lessons.md** - Codified learnings (AI-updatable)  
+**meta/ideas.md** - Future directions  
 **meta/suggestions.md** - Improvement suggestions
 
 ## 🚀 Getting Started
