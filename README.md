@@ -2,10 +2,6 @@
 
 **A layered framework for AI-assisted development with consistent standards and workflows.**
 
-Copyright © 2025-2026 Jonathan "visionik" Taylor  
-https://deft.md  
-Licensed under the [MIT License](./LICENSE.md)
-
 ## TL;DR
 
 Deft is a SKILL.md that makes AI coding significantly more effective by providing consistent, hierarchical standards. Instead of repeating the same instructions in every AI session, you define your preferences once—from general coding style to project-specific rules—and AI agents follow them. The result: higher quality code, reproducible workflows, and AI that gets better over time by learning from your patterns.
@@ -391,3 +387,8 @@ Deft embodies:
 ---
 
 **Next Steps**: Read [main.md](./main.md) for comprehensive AI guidelines, then customize [user.md](./user.md) with your preferences.
+
+---
+
+Copyright © 2025-2026 Jonathan "visionik" Taylor — https://deft.md  
+Licensed under the [MIT License](./LICENSE.md)
