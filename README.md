@@ -310,7 +310,7 @@ Before writing any code, deft uses an AI-assisted specification process:
 - **Onboarding**: New contributors/agents understand the full picture
 - **AI-friendly**: Structured specs help AI agents stay aligned
 
-**Example**: See `make-spec.md` template in Warp Drive for the interview process
+**Example**: See `templates/make-spec.md` for the interview process template
 
 ### Convention Over Configuration
 
@@ -348,15 +348,6 @@ Before writing any code, deft uses an AI-assisted specification process:
 2. AI runs `task quality` and `task test:coverage`
 3. AI checks Conventional Commits compliance
 4. AI suggests improvements → adds to `suggestions.md`
-
-## 🔗 Integration with Warp AI
-
-The deft process is designed for Warp AI's rule system:
-
-1. **Upload to Warp Drive**: Keep main.md and relevant files in Warp Drive
-2. **Create Warp Rules**: Reference deft files in your Warp rules
-3. **Project-Specific Rules**: Add `AGENTS.md` or `WARP.md` in project root that references deft
-4. **Automatic Context**: Warp AI loads rules automatically when working in your projects
 
 ## 📝 Contributing to Deft
 
