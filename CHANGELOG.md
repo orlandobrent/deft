@@ -5,6 +5,20 @@ All notable changes to the Deft framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-01-29
+
+### Changed
+- **MIT License**: Updated from temporary usage terms to full MIT License
+  - Users can now freely use, modify, distribute, and sell Deft
+  - Only requirement: retain copyright notice and license text
+  - Updated LICENSE.md with standard MIT text
+- **Branding**: Updated copyright notices to include website
+  - Copyright now reads: Jonathan "visionik" Taylor
+  - Added https://deft.md reference in LICENSE.md and README.md
+- **README Improvements**: Added TL;DR section
+  - Quick summary of what Deft is and why it's valuable
+  - Highlights key benefits before diving into details
+
 ## [0.3.0] - 2026-01-29
 
 ### Changed
@@ -235,6 +249,8 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
+[0.3.1]: https://github.com/visionik/deft/releases/tag/v0.3.1
+[0.3.0]: https://github.com/visionik/deft/releases/tag/v0.3.0
 [0.2.5]: https://github.com/visionik/deft/releases/tag/v0.2.5
 [0.2.4]: https://github.com/visionik/deft/releases/tag/v0.2.4
 [0.2.3]: https://github.com/visionik/deft/releases/tag/v0.2.3
