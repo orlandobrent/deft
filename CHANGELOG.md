@@ -5,6 +5,19 @@ All notable changes to the Deft framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.7] - 2026-01-29
+
+### Changed
+- **README Getting Started**: Complete rewrite with clearer workflow
+  - New structure: Install → Bootstrap → Generate Spec → Build with AI
+  - Added git clone installation instructions
+  - Streamlined command examples
+  - Removed platform-specific sections
+
+### Removed
+- **Platform-specific content**: Removed "Integration with Warp AI" section
+- **notes-keys.html**: Removed development file from repository
+
 ## [0.3.6] - 2026-01-29
 
 ### Changed
@@ -287,6 +300,7 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
+[0.3.7]: https://github.com/visionik/deft/releases/tag/v0.3.7
 [0.3.6]: https://github.com/visionik/deft/releases/tag/v0.3.6
 [0.3.5]: https://github.com/visionik/deft/releases/tag/v0.3.5
 [0.3.4]: https://github.com/visionik/deft/releases/tag/v0.3.4
