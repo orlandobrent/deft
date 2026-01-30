@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-run - Cross-platform CLI tool for Deft framework v0.2.5
+run - Cross-platform CLI tool for Deft framework v0.3.7
 A layered framework for AI-assisted development
 
 Works on: macOS, Linux, Windows, FreeBSD
 Requires: Python 3.6+
-Optional: prompt_toolkit (for better input experience)
+Optional: rich (for enhanced output and better UX)
 """
 
 import sys
@@ -16,54 +16,68 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Optional
 
-VERSION = "0.3.0"
+VERSION = "0.3.7"
 
-# Try to import prompt_toolkit for best input experience
+# Try to import rich for enhanced experience
 try:
-    from prompt_toolkit import prompt as pt_prompt
-    from prompt_toolkit.completion import WordCompleter
-    HAS_PROMPT_TOOLKIT = True
+    from rich.console import Console
+    from rich.prompt import Prompt, Confirm
+    from rich.panel import Panel
+    from rich.text import Text
+    HAS_RICH = True
+    console = Console()
 except ImportError:
-    HAS_PROMPT_TOOLKIT = False
+    HAS_RICH = False
+    console = None
     # Fall back to readline on Unix for arrow key support
     try:
         import readline  # Enable history and arrow keys on Unix
     except ImportError:
         pass  # Windows: basic input() still works
 
-# ANSI color codes (work on Unix and Windows 10+)
-class Colors:
-    RED = '\033[0;31m'
-    GREEN = '\033[0;32m'
-    YELLOW = '\033[1;33m'
-    BLUE = '\033[0;34m'
-    NC = '\033[0m'  # No Color
-    
-    @staticmethod
-    def strip_if_no_color():
-        """Disable colors if not supported"""
-        if os.name == 'nt' and sys.version_info < (3, 7):
-            # Older Windows without ANSI support
-            Colors.RED = Colors.GREEN = Colors.YELLOW = Colors.BLUE = Colors.NC = ''
+# Output helpers
+def print_header(text: str):
+    """Print section header"""
+    if HAS_RICH:
+        console.print(Panel(f"[bold cyan]{text}[/bold cyan]", border_style="cyan"))
+    else:
+        print(f"\n{'=' * 60}")
+        print(f"  {text}")
+        print('=' * 60)
 
-# Initialize colors
-Colors.strip_if_no_color()
-
-def info(msg: str):
+def print_info(msg: str):
     """Print info message"""
-    print(f"{Colors.BLUE}ℹ{Colors.NC} {msg}")
+    if HAS_RICH:
+        console.print(f"[blue]ℹ[/blue] {msg}")
+    else:
+        print(f"ℹ {msg}")
 
-def success(msg: str):
+def print_success(msg: str):
     """Print success message"""
-    print(f"{Colors.GREEN}✓{Colors.NC} {msg}")
+    if HAS_RICH:
+        console.print(f"[green]✓[/green] {msg}")
+    else:
+        print(f"✓ {msg}")
 
-def warn(msg: str):
+def print_warn(msg: str):
     """Print warning message"""
-    print(f"{Colors.YELLOW}⚠{Colors.NC} {msg}")
+    if HAS_RICH:
+        console.print(f"[yellow]⚠[/yellow] {msg}")
+    else:
+        print(f"⚠ {msg}")
 
-def error(msg: str):
+def print_error(msg: str):
     """Print error message"""
-    print(f"{Colors.RED}✗{Colors.NC} {msg}")
+    if HAS_RICH:
+        console.print(f"[red]✗[/red] {msg}")
+    else:
+        print(f"✗ {msg}")
+
+# Legacy aliases for backward compatibility
+info = print_info
+success = print_success
+warn = print_warn
+error = print_error
 
 def get_script_dir() -> Path:
     """Get the directory where this script is located"""
@@ -72,7 +86,7 @@ def get_script_dir() -> Path:
 def usage():
     """Print usage information"""
     hint = ""
-    if not HAS_PROMPT_TOOLKIT:
+    if not HAS_RICH:
         # Get the Python executable path for accurate install command
         python_exe = sys.executable
         stdlib_path = Path(sys.base_prefix) / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}"
@@ -81,11 +95,41 @@ def usage():
         install_cmd = f"{python_exe} -m pip install"
         if is_externally_managed:
             install_cmd += " --break-system-packages"
-        install_cmd += " prompt_toolkit"
+        install_cmd += " rich"
         
-        hint = f"\n💡 Tip: Install prompt_toolkit for better input (arrow keys, history, completion):\n   {install_cmd}\n"
+        hint = f"\n💡 Tip: Install rich for enhanced output and better UX:\n   {install_cmd}\n"
     
-    print(f"""Deft CLI v{VERSION}{hint}
+    if HAS_RICH:
+        print_header(f"Deft CLI v{VERSION}")
+        console.print("""
+[bold]Usage:[/bold] run <command> [options]
+       python run <command> [options]       # If not executable
+       python3 run <command> [options]      # If not executable
+
+[bold cyan]Commands:[/bold cyan]
+  [green]bootstrap[/green]       Set up your user preferences (user.md)
+  [green]project[/green]         Create/update project configuration (project.md)
+  [green]spec[/green]            Generate project specification (interactive interview)
+  [green]install[/green]         Install deft framework in a project directory
+  [green]reset[/green]           Reset configuration files to default state
+  [green]validate[/green]        Validate deft configuration files
+  [green]update[/green]          Update deft framework to latest version
+  [green]doctor[/green]          Check system dependencies and configuration
+  [green]help[/green]            Show this help message
+
+[bold cyan]Examples:[/bold cyan]
+  run bootstrap              # First-time setup
+  run project                # Configure current project
+  run spec                   # Generate SPECIFICATION.md
+  run install ~/my-project   # Install deft in a project
+  run reset                  # Reset config files (interactive)
+  run reset --all            # Reset all config files (no prompts)
+  run validate               # Check configuration is valid
+
+For more information: [link]https://github.com/visionik/deft[/link]
+""")
+    else:
+        print(f"""Deft CLI v{VERSION}{hint}
 
 Usage: run <command> [options]
        python run <command> [options]       # If not executable
@@ -114,49 +158,86 @@ Examples:
 For more information: https://github.com/visionik/deft
 """)
 
-def read_input(prompt_text: str, default: str = "", choices: List[str] = None) -> str:
-    """Read user input with optional default and completion
+def ask_input(prompt_text: str, default: str = "") -> str:
+    """Read user input with optional default
     
     Args:
         prompt_text: The prompt to display
         default: Default value if user presses Enter
-        choices: Optional list of choices for auto-completion (prompt_toolkit only)
     
     Returns:
         User input or default value
     """
     try:
-        if HAS_PROMPT_TOOLKIT:
-            # Use prompt_toolkit for best experience
-            completer = WordCompleter(choices, ignore_case=True) if choices else None
-            value = pt_prompt(prompt_text, default=default, completer=completer)
+        if HAS_RICH:
+            value = Prompt.ask(prompt_text, default=default if default else None)
             return value if value else default
         else:
             # Fall back to basic input() with readline support (if available on Unix)
-            value = input(prompt_text)
+            if default:
+                value = input(f"{prompt_text} [{default}]: ")
+            else:
+                value = input(f"{prompt_text}: ")
             return value if value else default
     except (EOFError, KeyboardInterrupt):
         return default
 
-def read_yn(prompt_text: str) -> bool:
-    """Read yes/no input
+def ask_choice(prompt_text: str, choices: List[str], default: str = None) -> str:
+    """Read user choice from list
     
     Args:
         prompt_text: The prompt to display
+        choices: List of valid choices
+        default: Default choice
+    
+    Returns:
+        User's choice
+    """
+    try:
+        if HAS_RICH:
+            return Prompt.ask(prompt_text, choices=choices, default=default)
+        else:
+            # Fallback: show numbered list
+            print(f"\n{prompt_text}")
+            for i, choice in enumerate(choices, 1):
+                print(f"  {i}. {choice}")
+            while True:
+                ans = input("Enter number: ")
+                try:
+                    idx = int(ans) - 1
+                    if 0 <= idx < len(choices):
+                        return choices[idx]
+                except ValueError:
+                    pass
+                print("Invalid choice, try again.")
+    except (EOFError, KeyboardInterrupt):
+        return default if default else choices[0]
+
+def ask_confirm(prompt_text: str, default: bool = False) -> bool:
+    """Read yes/no confirmation
+    
+    Args:
+        prompt_text: The prompt to display
+        default: Default value
     
     Returns:
         True if user confirms, False otherwise
     """
     try:
-        if HAS_PROMPT_TOOLKIT:
-            response = pt_prompt(f"{prompt_text} (y/N) ", 
-                                completer=WordCompleter(['y', 'yes', 'n', 'no'], 
-                                                       ignore_case=True))
+        if HAS_RICH:
+            return Confirm.ask(prompt_text, default=default)
         else:
-            response = input(f"{prompt_text} (y/N) ")
-        return response.strip().lower() in ('y', 'yes')
+            suffix = " (Y/n) " if default else " (y/N) "
+            response = input(f"{prompt_text}{suffix}")
+            if not response:
+                return default
+            return response.strip().lower() in ('y', 'yes')
     except (EOFError, KeyboardInterrupt):
-        return False
+        return default
+
+# Legacy aliases for backward compatibility
+read_input = ask_input
+read_yn = ask_confirm
 
 def cmd_bootstrap(args: List[str]):
     """Bootstrap command - set up user.md"""
