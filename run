@@ -43,6 +43,17 @@ try:
 except ImportError:
     HAS_PROMPT_TOOLKIT = False
 
+# Try to import textual for TUI mode
+try:
+    from textual.app import App, ComposeResult
+    from textual.screen import Screen
+    from textual.widgets import Header, Footer, Button, Label, Input, Select, OptionList, Static
+    from textual.widgets._option_list import Option
+    from textual.containers import Container, Horizontal, Vertical, ScrollableContainer
+    HAS_TEXTUAL = True
+except ImportError:
+    HAS_TEXTUAL = False
+
 # Output helpers
 def print_header(text: str):
     """Print main command header"""
@@ -116,10 +127,16 @@ def usage():
         
         hint = f"\n💡 Tip: Install rich for enhanced output and better UX:\n   {install_cmd}\n"
     
+    tui_hint = ""
+    if HAS_TEXTUAL:
+        tui_hint = "       run                     # Launch TUI wizard (no args)\n       run tui                  # Launch TUI wizard\n       run wizard               # Launch TUI wizard\n       "
+    
     if HAS_RICH:
         print_header(f"Deft CLI v{VERSION}")
-        console.print("""
-[bold]Usage:[/bold] run <command> [options]
+        tui_section = "[bold]TUI Mode:[/bold]\n  run / run tui / run wizard    Launch interactive wizard\n\n" if HAS_TEXTUAL else ""
+        console.print(f"""
+{tui_section}[bold]Usage:[/bold] run <command> [options]
+       run -h, --help, -help    # Show this help
        python run <command> [options]       # If not executable
        python3 run <command> [options]      # If not executable
 
@@ -135,6 +152,7 @@ def usage():
   [green]help[/green]            Show this help message
 
 [bold cyan]Examples:[/bold cyan]
+  run                        # Launch TUI wizard (if textual installed)
   run bootstrap              # First-time setup
   run project                # Configure current project
   run spec                   # Generate SPECIFICATION.md
@@ -146,9 +164,11 @@ def usage():
 For more information: [link]https://github.com/visionik/deft[/link]
 """)
     else:
+        tui_section = f"TUI Mode:\n{tui_hint}\n" if HAS_TEXTUAL else ""
         print(f"""Deft CLI v{VERSION}{hint}
 
-Usage: run <command> [options]
+{tui_section}Usage: run <command> [options]
+       run -h, --help, -help    # Show this help
        python run <command> [options]       # If not executable
        python3 run <command> [options]      # If not executable
 
@@ -164,6 +184,7 @@ Commands:
   help            Show this help message
 
 Examples:
+  run                        # Launch TUI wizard (if textual installed)
   run bootstrap              # First-time setup
   run project                # Configure current project
   run spec                   # Generate SPECIFICATION.md
@@ -1004,6 +1025,399 @@ No custom rules defined yet.
     info("Run 'run bootstrap' or 'run project' to reconfigure.")
     return 0
 
+# ============================================================================
+# TUI MODE - Textual-based wizard interface
+# ============================================================================
+
+if HAS_TEXTUAL:
+    class MenuScreen(Screen):
+        """Main menu screen with command list."""
+        
+        BINDINGS = [("q", "quit", "Quit"), ("escape", "quit", "Quit")]
+        
+        def compose(self) -> ComposeResult:
+            yield Header()
+            yield Container(
+                Label(f"Deft CLI v{VERSION} - Wizard", id="title"),
+                Label("Select a command:", id="subtitle"),
+                OptionList(
+                    Option("Bootstrap - Set up user preferences", id="bootstrap"),
+                    Option("Project - Create project configuration", id="project"),
+                    Option("Spec - Generate specification", id="spec"),
+                    Option("Install - Install deft in directory", id="install"),
+                    Option("---", id="sep1", disabled=True),
+                    Option("Reset - Reset configuration files", id="reset"),
+                    Option("Validate - Check configuration", id="validate"),
+                    Option("Doctor - Check system dependencies", id="doctor"),
+                    Option("---", id="sep2", disabled=True),
+                    Option("Help - Show help", id="help"),
+                    Option("Exit - Quit wizard", id="exit"),
+                    id="menu"
+                )
+            )
+            yield Footer()
+        
+        def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
+            option_id = event.option.id
+            if option_id == "exit":
+                self.app.exit()
+            elif option_id == "help":
+                self.app.push_screen("help")
+            elif option_id == "bootstrap":
+                self.app.push_screen("bootstrap")
+            elif option_id == "project":
+                self.app.push_screen("project")
+            elif option_id == "spec":
+                self.app.push_screen("spec")
+            elif option_id == "install":
+                self.app.push_screen("install")
+            elif option_id == "reset":
+                self.app.push_screen("reset")
+            elif option_id == "validate":
+                self.app.push_screen("validate")
+            elif option_id == "doctor":
+                self.app.push_screen("doctor")
+        
+        def action_quit(self) -> None:
+            self.app.exit()
+    
+    class BootstrapScreen(Screen):
+        """Bootstrap configuration form."""
+        
+        BINDINGS = [("escape", "cancel", "Cancel")]
+        
+        def compose(self) -> ComposeResult:
+            yield Header()
+            with ScrollableContainer():
+                yield Label("Bootstrap - User Preferences Setup")
+                yield Label("Your name (how AI should address you):")
+                yield Input(id="name", placeholder="Your name")
+                yield Label("Default coverage threshold (%):")
+                yield Input(id="coverage", placeholder="85", value="85")
+                yield Label("Primary languages (comma-separated):")
+                yield Label("  1=Python, 2=Go, 3=TypeScript, 4=C++, 5=Other")
+                yield Input(id="languages", placeholder="1,3")
+                yield Label("Custom rules (optional):")
+                yield Input(id="rules", placeholder="Press Enter to skip")
+                with Horizontal():
+                    yield Button("Submit", variant="primary", id="submit")
+                    yield Button("Cancel", id="cancel")
+                yield Label("", id="status")
+            yield Footer()
+        
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            if event.button.id == "cancel":
+                self.app.pop_screen()
+            elif event.button.id == "submit":
+                self.handle_submit()
+        
+        def action_cancel(self) -> None:
+            self.app.pop_screen()
+        
+        def handle_submit(self) -> None:
+            name = self.query_one("#name", Input).value.strip()
+            coverage = self.query_one("#coverage", Input).value.strip() or "85"
+            lang_selection = self.query_one("#languages", Input).value.strip()
+            custom_rules = self.query_one("#rules", Input).value.strip()
+            
+            if not name:
+                self.query_one("#status", Label).update("[red]Error: Name is required[/red]")
+                return
+            
+            # Map selections
+            lang_map = {"1": "Python", "2": "Go", "3": "TypeScript", "4": "C++", "5": "Other"}
+            lang_nums = [s.strip() for s in lang_selection.split(',') if s.strip()]
+            languages = [f"- {lang_map[num]}" for num in lang_nums if num in lang_map]
+            languages_str = '\n'.join(languages) if languages else "- (None specified)"
+            
+            # Generate user.md
+            script_dir = get_script_dir()
+            user_file = script_dir / "core" / "user.md"
+            user_content = f"""# User Preferences
+
+Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
+
+**Rule Precedence**: This file has HIGHEST precedence - overrides all other deft rules.
+
+## Name
+
+Address the user as: **{name}**
+
+## Default Standards
+
+**Coverage**: ! ≥{coverage}% test coverage for all projects (unless project.md specifies otherwise)
+
+**Primary Languages**:
+{languages_str}
+
+## Custom Rules
+
+{custom_rules if custom_rules else "No custom rules defined yet."}
+
+## Workflow Preferences
+
+- ~ Use task-based automation (Taskfile)
+- ! Always run `task check` before committing
+- ~ Follow Conventional Commits
+
+## AI Behavior
+
+- ~ Be direct and concise
+- ~ Proactively suggest improvements
+- ! Explain tradeoffs for major decisions
+
+---
+
+**Note**: You can edit this file anytime to update your preferences.
+**See**: [../main.md](../main.md) for framework overview.
+"""
+            
+            user_file.parent.mkdir(parents=True, exist_ok=True)
+            user_file.write_text(user_content, encoding='utf-8')
+            
+            self.app.push_screen(SuccessScreen(f"Created user.md at {user_file}", offer_next="project"))
+    
+    class ProjectScreen(Screen):
+        """Project configuration form."""
+        
+        BINDINGS = [("escape", "cancel", "Cancel")]
+        
+        def compose(self) -> ComposeResult:
+            yield Header()
+            with ScrollableContainer():
+                yield Label("Project Configuration")
+                yield Label("Project name:")
+                yield Input(id="name", placeholder="My Project")
+                yield Label("Project type (comma-separated):")
+                yield Label("  1=CLI, 2=TUI, 3=REST API, 4=Web App, 5=Library, 6=Other")
+                yield Input(id="type", placeholder="1,3")
+                yield Label("Primary language:")
+                yield Label("  1=Python, 2=Go, 3=TypeScript, 4=C++")
+                yield Input(id="language", placeholder="1", value="1")
+                yield Label("Coverage threshold (%):")
+                yield Input(id="coverage", placeholder="85", value="85")
+                yield Label("Tech stack details (optional):")
+                yield Input(id="tech_stack", placeholder="Flask + SQLAlchemy")
+                with Horizontal():
+                    yield Button("Submit", variant="primary", id="submit")
+                    yield Button("Cancel", id="cancel")
+                yield Label("", id="status")
+            yield Footer()
+        
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            if event.button.id == "cancel":
+                self.app.pop_screen()
+            elif event.button.id == "submit":
+                self.handle_submit()
+        
+        def action_cancel(self) -> None:
+            self.app.pop_screen()
+        
+        def handle_submit(self) -> None:
+            project_name = self.query_one("#name", Input).value.strip()
+            type_selection = self.query_one("#type", Input).value.strip()
+            lang_num = self.query_one("#language", Input).value.strip() or "1"
+            coverage = self.query_one("#coverage", Input).value.strip() or "85"
+            tech_stack = self.query_one("#tech_stack", Input).value.strip()
+            
+            if not project_name:
+                self.query_one("#status", Label).update("[red]Error: Project name is required[/red]")
+                return
+            
+            # Map selections
+            type_map = {"1": "CLI", "2": "TUI", "3": "REST API", "4": "Web App", "5": "Library", "6": "Other"}
+            type_nums = [s.strip() for s in type_selection.split(',') if s.strip()]
+            project_types = [type_map[num] for num in type_nums if num in type_map]
+            project_types_str = ", ".join(project_types) if project_types else "Application"
+            
+            plang_map = {"1": "Python", "2": "Go", "3": "TypeScript", "4": "C++"}
+            primary_lang = plang_map.get(lang_num, "Python")
+            
+            tech_stack_str = f" - {tech_stack}" if tech_stack else ""
+            today = datetime.now().strftime("%Y-%m-%d")
+            
+            # Generate project.md
+            project_file = Path("./deft/core/project.md")
+            project_content = f"""# {project_name} Project Guidelines
+
+Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
+
+**⚠️ See also**: [../main.md](../main.md) | [../languages/{primary_lang.lower()}.md](../languages/{primary_lang.lower()}.md)
+
+## Project Configuration
+
+**Tech Stack**: {project_types_str} using {primary_lang}{tech_stack_str}
+
+## Workflow
+
+```bash
+task check         # Pre-commit (fmt, lint, test, test:coverage)
+task test:coverage # Coverage (≥{coverage}%)
+task build         # Build project
+task clean         # Clean artifacts
+```
+
+## Secrets
+
+```bash
+ls secrets/
+# Add your secrets to secrets/ directory
+# Use .example files as templates
+```
+
+## Standards
+
+**Quality:**
+- ! Run `task check` before every commit
+- ! Achieve ≥{coverage}% coverage overall + per-module
+- ! Store secrets in `secrets/` dir
+- ~ Provide `.example` templates for secrets
+
+**Telemetry:**
+- ~ Structured logging (see [../tools/telemetry.md](../tools/telemetry.md))
+- ~ Sentry.io for error tracking
+- ? Distributed tracing for complex workflows
+
+## Project-Specific Rules
+
+(Add your custom rules here)
+
+---
+
+**Generated by**: run v{VERSION}
+**Date**: {today}
+"""
+            
+            project_file.parent.mkdir(parents=True, exist_ok=True)
+            project_file.write_text(project_content, encoding='utf-8')
+            
+            self.app.push_screen(SuccessScreen(f"Created project.md at {project_file}", offer_next="spec"))
+    
+    class SuccessScreen(Screen):
+        """Success message with optional next step."""
+        
+        def __init__(self, message: str, offer_next: Optional[str] = None):
+            super().__init__()
+            self.message = message
+            self.offer_next = offer_next
+        
+        def compose(self) -> ComposeResult:
+            yield Header()
+            with Container():
+                yield Label(f"[green]✓[/green] {self.message}")
+                if self.offer_next:
+                    yield Label(f"\nWould you like to run '{self.offer_next}' next?")
+                    with Horizontal():
+                        yield Button("Yes", variant="primary", id="yes")
+                        yield Button("No, return to menu", id="no")
+                else:
+                    yield Button("Return to Menu", variant="primary", id="no")
+            yield Footer()
+        
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            if event.button.id == "yes" and self.offer_next:
+                self.app.pop_screen()  # Pop success screen
+                self.app.push_screen(self.offer_next)
+            else:
+                self.app.pop_screen()  # Return to previous screen
+    
+    class HelpScreen(Screen):
+        """Help screen showing usage information."""
+        
+        BINDINGS = [("escape", "back", "Back")]
+        
+        def compose(self) -> ComposeResult:
+            yield Header()
+            help_text = f"""Deft CLI v{VERSION}
+
+Usage: run <command> [options]
+       run tui          # Launch this wizard
+       run wizard       # Launch this wizard
+
+Commands:
+  bootstrap       Set up your user preferences (user.md)
+  project         Create/update project configuration (project.md)
+  spec            Generate project specification (interactive interview)
+  install         Install deft framework in a project directory
+  reset           Reset configuration files to default state
+  validate        Validate deft configuration files
+  update          Update deft framework to latest version
+  doctor          Check system dependencies and configuration
+  help            Show this help message
+
+Examples:
+  run bootstrap              # First-time setup
+  run project                # Configure current project
+  run spec                   # Generate SPECIFICATION.md
+  run install ~/my-project   # Install deft in a project
+
+For more information: https://github.com/visionik/deft
+"""
+            with ScrollableContainer():
+                yield Static(help_text)
+                yield Button("Back", variant="primary", id="back")
+            yield Footer()
+        
+        def on_button_pressed(self, event: Button.Pressed) -> None:
+            self.app.pop_screen()
+        
+        def action_back(self) -> None:
+            self.app.pop_screen()
+    
+    class DeftWizardApp(App):
+        """Main TUI application."""
+        
+        CSS = """
+        MenuScreen Container {
+            align: center middle;
+            width: 80;
+            height: auto;
+        }
+        
+        #title {
+            text-align: center;
+            text-style: bold;
+            color: $accent;
+            margin: 1;
+        }
+        
+        #subtitle {
+            text-align: center;
+            margin-bottom: 1;
+        }
+        
+        #menu {
+            height: 20;
+            border: solid $accent;
+        }
+        
+        Label {
+            margin: 1 0;
+        }
+        
+        Input {
+            margin: 0 0 1 0;
+        }
+        
+        Button {
+            margin: 1;
+        }
+        
+        #status {
+            color: $warning;
+        }
+        """
+        
+        SCREENS = {
+            "menu": MenuScreen,
+            "bootstrap": BootstrapScreen,
+            "project": ProjectScreen,
+            "help": HelpScreen,
+        }
+        
+        def on_mount(self) -> None:
+            self.push_screen("menu")
+
 def check_prompt_toolkit():
     """Check if prompt_toolkit is available and offer to help install it"""
     if not HAS_PROMPT_TOOLKIT:
@@ -1043,9 +1457,37 @@ def check_prompt_toolkit():
 
 def main():
     """Main command dispatcher"""
-    if len(sys.argv) < 2:
+    # Handle help flags
+    if len(sys.argv) >= 2 and sys.argv[1] in ['-h', '--help', '-help']:
         usage()
         return 0
+    
+    # Launch TUI if no args or explicit tui/wizard command
+    if len(sys.argv) < 2 or (len(sys.argv) >= 2 and sys.argv[1] in ['tui', 'wizard']):
+        if HAS_TEXTUAL:
+            app = DeftWizardApp()
+            app.run()
+            return 0
+        elif len(sys.argv) >= 2 and sys.argv[1] in ['tui', 'wizard']:
+            # User explicitly requested TUI but it's not available
+            error("TUI mode requires textual library")
+            print()
+            python_exe = sys.executable
+            stdlib_path = Path(sys.base_prefix) / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}"
+            is_externally_managed = (stdlib_path / "EXTERNALLY-MANAGED").exists()
+            
+            info("To install textual:")
+            if is_externally_managed:
+                print(f"  {python_exe} -m pip install --break-system-packages textual")
+            else:
+                print(f"  {python_exe} -m pip install textual")
+            print()
+            info("Or use CLI commands directly: run bootstrap, run project, etc.")
+            return 1
+        else:
+            # No args and no textual - show usage
+            usage()
+            return 0
     
     # Check for prompt_toolkit and offer help (only for interactive commands)
     command = sys.argv[1]
@@ -1066,7 +1508,6 @@ def main():
         'update': cmd_update,
         'help': lambda _: usage(),
         '--help': lambda _: usage(),
-        '-h': lambda _: usage(),
         'version': lambda _: print(f"Deft CLI v{VERSION}"),
         '--version': lambda _: print(f"Deft CLI v{VERSION}"),
         '-v': lambda _: print(f"Deft CLI v{VERSION}"),
