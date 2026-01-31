@@ -186,7 +186,19 @@ def ask_input(prompt_text: str, default: str = "") -> str:
         User input or default value
     """
     try:
-        if HAS_RICH:
+        # Priority: prompt_toolkit (best editing) > rich > basic input
+        if HAS_PROMPT_TOOLKIT:
+            from prompt_toolkit import prompt as pt_prompt
+            # Add colored prefix if rich is also available
+            if HAS_RICH:
+                prefix = "\033[36m?\033[0m "  # Cyan question mark with ANSI codes
+                display_prompt = f"{prefix}{prompt_text}"
+            else:
+                display_prompt = prompt_text
+            
+            value = pt_prompt(display_prompt + ": ", default=default)
+            return value if value else default
+        elif HAS_RICH:
             # Add colored question mark prefix
             formatted_prompt = f"[cyan]?[/cyan] {prompt_text}"
             value = Prompt.ask(formatted_prompt, default=default if default else None)
