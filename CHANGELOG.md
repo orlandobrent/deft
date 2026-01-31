@@ -5,6 +5,40 @@ All notable changes to the Deft framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.8] - 2026-01-31
+
+### Added
+- **TUI Wizard Mode**: Full Textual-based interactive wizard interface
+  - Launches with `./run`, `./run tui`, or `./run wizard`
+  - Interactive menu with 10 screens: Bootstrap, Project, Spec, Install, Reset, Validate, Doctor, README, Help, Exit
+  - BootstrapScreen: User preferences form with name, coverage, languages, custom rules
+  - ProjectScreen: Project configuration form with type, language, tech stack
+  - SpecScreen: Specification generator with dynamic feature list (add/remove features)
+  - InstallScreen: Framework installation with directory input
+  - ResetScreen: Configuration reset with file status display
+  - ValidateScreen: Configuration validation with scrollable results
+  - DoctorScreen: System dependency check with scrollable results
+  - ReadmeScreen: MarkdownViewer with table of contents and navigation
+  - HelpScreen: Usage information display
+  - Centered menu layout with aligned option descriptions
+  - Consistent cyan accent theme matching CLI aesthetic
+  - Navigation: Escape/Q to quit, context-specific keybindings
+  - SuccessScreen: Reusable success messages with optional next-step navigation
+- **Enhanced CLI UX**: Improved rich output formatting
+  - Markdown ## headers for section titles (cleaner than horizontal rules)
+  - Prompt_toolkit integration with colored prompts and arrow key editing
+  - HTML-formatted prompts with cyan ? prefix
+  - Graceful fallback when dependencies not installed
+
+### Changed
+- **Help System**: `-h`, `--help`, `-help` flags show usage (TUI no longer launches for `./run` with no args if textual not installed)
+- **Menu Design**: Aligned option labels with minimal dots (longest command name sets alignment)
+- **Empty Separators**: Replaced `---` separators with empty lines for cleaner menu
+
+### Fixed
+- **ANSI Codes**: Fixed raw ANSI escape codes displaying literally in prompt_toolkit prompts
+- **Import Compatibility**: Fixed Separator import from textual (use Option with empty string instead)
+
 ## [0.3.7] - 2026-01-29
 
 ### Changed
@@ -300,6 +334,7 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
+[0.3.8]: https://github.com/visionik/deft/releases/tag/v0.3.8
 [0.3.7]: https://github.com/visionik/deft/releases/tag/v0.3.7
 [0.3.6]: https://github.com/visionik/deft/releases/tag/v0.3.6
 [0.3.5]: https://github.com/visionik/deft/releases/tag/v0.3.5

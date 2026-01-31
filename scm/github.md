@@ -571,6 +571,49 @@ git commit -m "fix(review): address review comments"
 git push
 ```
 
+## UCCPR Workflow
+
+**UCCPR** = Update Changelog, Commit, Push, Release
+
+Standard workflow for releasing new versions:
+
+```bash
+# 1. Update Changelog
+# Add new version section to CHANGELOG.md with date and changes
+vim CHANGELOG.md
+
+# 2. Update version in code
+# Update VERSION constant/variable in main script/package file
+vim run  # or package.json, setup.py, etc.
+
+# 3. Commit changes
+git add CHANGELOG.md run  # and any other version files
+git commit -m "chore: release v0.3.8"
+
+# 4. Push changes
+git push origin master
+
+# 5. Create and push tag
+git tag v0.3.8
+git push origin v0.3.8
+
+# 6. Create GitHub release
+gh release create v0.3.8 --title "Deft v0.3.8" --notes-file CHANGELOG.md
+
+# Or extract just this version from CHANGELOG:
+gh release create v0.3.8 --title "Deft v0.3.8" --notes "$(sed -n '/## \[0.3.8\]/,/## \[0.3.7\]/p' CHANGELOG.md | head -n -1)"
+```
+
+**One-liner UCCPR** (after updating CHANGELOG.md and version):
+```bash
+git add CHANGELOG.md run && \
+git commit -m "chore: release v0.3.8" && \
+git push && \
+git tag v0.3.8 && \
+git push origin v0.3.8 && \
+gh release create v0.3.8 --title "Deft v0.3.8" --notes-file CHANGELOG.md
+```
+
 ## Compliance
 
 -  use Conventional Commits for all PR titles
