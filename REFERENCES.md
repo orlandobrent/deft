@@ -8,9 +8,10 @@
 - Load: Always (defines agent behavior and general guidelines)
 - ~100 lines, quick read
 
-**[core/user.md](./core/user.md)** - User preferences
+**`~/.config/deft/USER.md`** - User preferences
 - Load: Always (highest precedence, overrides everything)
 - Check for custom rules and preferences
+- Override path via `DEFT_USER_PATH` env var; legacy fallback: `core/user.md`
 
 ## 📋 Task-Based Loading
 
@@ -38,6 +39,13 @@ Load based on interface type:
 - **[interfaces/rest.md](./interfaces/rest.md)** - Designing/implementing REST APIs
 - **[interfaces/tui.md](./interfaces/tui.md)** - Building terminal UIs (Textual, ink)
 - **[interfaces/web.md](./interfaces/web.md)** - Building web UIs (React, etc.)
+
+### When Working with Deployment Platforms
+
+Load when working on platform-specific deployment guidance:
+
+- **[deployments/README.md](./deployments/README.md)** - Overview and structure
+- **[deployments/<platform>/README.md]** - Platform module (e.g., cloud.gov)
 
 ### When Working with Tools
 
@@ -79,8 +87,8 @@ coding.md → git.md (before committing)
 
 ### Project Overrides
 ```
-(any file) → project.md (check for overrides)
-user.md (check for personal preferences)
+(any file) → PROJECT.md (check for overrides)
+~/.config/deft/USER.md (check for personal preferences)
 ```
 
 ## ⚠️ Don't Load Unless Needed
@@ -110,31 +118,31 @@ user.md (check for personal preferences)
 ### Scenario: "Write a Python REST API"
 Load order:
 1. main.md (always)
-2. core/user.md (always)
+2. ~/.config/deft/USER.md (always)
 3. coding/coding.md (writing code)
 4. languages/python.md (Python-specific)
 5. interfaces/rest.md (REST API design)
-6. core/project.md (check for overrides)
+6. PROJECT.md (check for overrides)
 
 ### Scenario: "Add tests to existing Go code"
 Load order:
 1. main.md (always)
-2. core/user.md (always)
+2. ~/.config/deft/USER.md (always)
 3. coding/testing.md (testing standards)
 4. languages/go.md (Go-specific testing)
-5. core/project.md (coverage requirements)
+5. PROJECT.md (coverage requirements)
 
 ### Scenario: "Fix a bug"
 Load order:
 1. main.md (always)
-2. core/user.md (always)
+2. ~/.config/deft/USER.md (always)
 3. (language file if fixing code)
 4. scm/git.md (before committing fix)
 
 ### Scenario: "Multi-agent coordination"
 Load order:
 1. main.md (always)
-2. core/user.md (always)
+2. ~/.config/deft/USER.md (always)
 3. swarm/swarm.md (swarm patterns)
 4. coding/coding.md (coding standards)
 5. scm/git.md (commit conventions with task IDs)
@@ -147,8 +155,8 @@ Load order:
 - Use this guide to determine what to load
 
 **Check Precedence:**
-- Always check user.md first (highest precedence)
-- Check project.md for project-specific overrides
+- Always check `~/.config/deft/USER.md` first (highest precedence)
+- Check `./PROJECT.md` for project-specific overrides
 - Follow most specific → most general
 
 **Update Meta Files Freely:**

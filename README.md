@@ -30,7 +30,7 @@ This notation appears in technical standard files (python.md, go.md, etc.) for s
 Warping uses a layered architecture where more specific rules override general ones:
 
 ```
-user.md          ← Highest precedence (personal preferences)
+USER.md          ← Highest precedence (~/.config/deft/USER.md)
   ↓
 project.md       ← Project-specific rules and workflows
   ↓
@@ -53,7 +53,7 @@ warping-0.2.0/
 │
 ├── core/                  # Core framework files
 │   ├── project.md         # Project template
-│   ├── user.md            # User preferences (highest precedence)
+│   ├── (user.md)          # Legacy location; now at ~/.config/deft/USER.md
 │   └── ralph.md           # Ralph loop concept (draft)
 │
 ├── coding/                # Coding standards
@@ -71,6 +71,9 @@ warping-0.2.0/
 │   ├── rest.md            # REST APIs
 │   ├── tui.md             # Terminal UIs
 │   └── web.md             # Web UIs
+│
+├── deployments/           # Platform-specific deployment guidance
+│   └── cloud-gov/          # cloud.gov module (optional)
 │
 ├── tools/                 # Tooling and workflow
 │   ├── git.md             # Git conventions
@@ -99,7 +102,7 @@ warping-0.2.0/
 **coding/coding.md** - Software development standards
 **coding/testing.md** - Testing standards
 **core/project.md** - Project-specific template
-**core/user.md** - Your personal preferences (highest precedence)
+**~/.config/deft/USER.md** - Your personal preferences (highest precedence)
 
 ### 🐍 Languages
 
@@ -142,7 +145,7 @@ warping-0.2.0/
 
 ### 1. Set Up Your User Preferences
 
-Edit `user.md` to configure personal preferences:
+Run `deft/run bootstrap` to create USER.md at `~/.config/deft/USER.md`, or edit it directly:
 
 ```markdown
 # User Preferences
@@ -160,7 +163,7 @@ Address the user as: **YourName**
 
 Rules cascade with precedence:
 
-1. **user.md** (highest) - your personal overrides
+1. **USER.md** (highest) - your personal overrides (`~/.config/deft/USER.md`)
 2. **project.md** - project-specific rules
 3. **Language files** (python.md, go.md) - language standards
 4. **Tool files** (taskfile.md) - tool guidelines
@@ -192,7 +195,7 @@ The warping process improves continuously:
 - AI updates `lessons.md` when learning better patterns
 - AI notes ideas in `ideas.md` for future consideration
 - AI suggests improvements in `suggestions.md`
-- You update `user.md` with new preferences
+- You update `~/.config/deft/USER.md` with new preferences
 - You update language/tool files as standards evolve
 
 ## 💡 Key Principles
@@ -317,10 +320,10 @@ Before writing any code, warping uses an AI-assisted specification process:
 
 ### Working on an Existing Go Project
 
-1. AI reads: `user.md` → `project.md` → `go.md` → `main.md`
+1. AI reads: `USER.md` → `PROJECT.md` → `go.md` → `main.md`
 2. AI follows: go.dev/doc/comment, Testify patterns
 3. AI runs: `task check` before suggesting changes
-4. AI respects: your user.md overrides
+4. AI respects: your USER.md overrides
 
 ### Code Review Session
 
@@ -358,4 +361,4 @@ Warping embodies:
 
 ---
 
-**Next Steps**: Read [main.md](./main.md) for comprehensive AI guidelines, then customize [user.md](./user.md) with your preferences.
+**Next Steps**: Read [main.md](./main.md) for comprehensive AI guidelines, then run `deft/run bootstrap` to create your USER.md.

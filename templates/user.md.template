@@ -2,37 +2,30 @@
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**Rule Precedence**: This file has HIGHEST precedence - overrides all other warping rules.
+**Rule Precedence**: This file has HIGHEST precedence - overrides all other deft rules.
+Only add items here that **override or extend** the defaults in `deft/main.md` and related files.
 
-## Name
+## 👤 Identity
 
 Address the user as: **[Your Name]**
 
-## Default Standards
+## 📏 Overrides
 
-**Coverage**: ! ≥[85]% test coverage for all projects (unless project.md specifies otherwise)
+<!-- Only specify if different from deft defaults (e.g., coverage ≥85%, hyphens in filenames) -->
 
 **Primary Languages**:
-- [Language 1]
+- [Language 1 - e.g., Python, Go, TypeScript]
 - [Language 2]
 
-## Custom Rules
+**Code Style** (preferences beyond language defaults):
+- [e.g., Prefer functional over OOP]
+- [e.g., Explicit over implicit]
 
-[Add your custom rules and preferences here]
+## 🎯 Custom Rules
 
-## Workflow Preferences
-
-- ~ Use task-based automation (Taskfile)
-- ! Always run `task check` before committing
-- ~ Follow Conventional Commits
-
-## AI Behavior
-
-- ~ Be direct and concise
-- ~ Proactively suggest improvements
-- ! Explain tradeoffs for major decisions
+<!-- Rules unique to you that aren't covered by deft core -->
 
 ---
 
 **Note**: You can edit this file anytime to update your preferences.
-**See**: [../main.md](../main.md) for framework overview.
+**See**: [deft/main.md](./deft/main.md) for framework defaults.

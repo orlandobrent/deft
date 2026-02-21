@@ -4,7 +4,7 @@ Foundational guidelines for AI agent behavior in the Warping framework.
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ Rule Precedence**: Rules in [core/user.md](./core/user.md) override all other rules.
+**⚠️ Rule Precedence**: Rules in `~/.config/deft/USER.md` override all other rules. (Override path via `DEFT_USER_PATH` env var; legacy fallback: `core/user.md`)
 
 **📋 Lazy Loading**: See [REFERENCES.md](./REFERENCES.md) for guidance on when to load which files.
 
@@ -19,8 +19,8 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 **Core Documents:**
 - [main.md](../main.md) - General AI behavior (this document)
 - [coding/coding.md](./coding/coding.md) - Software development guidelines
-- [core/user.md](./core/user.md) - Personal preferences (highest precedence)
-- [core/project.md](./core/project.md) - Project-specific overrides
+- `~/.config/deft/USER.md` - Personal preferences (highest precedence)
+- `./PROJECT.md` - Project-specific overrides (legacy: `core/project.md`)
 
 **Coding-Specific:**
 - Languages: [languages/cpp.md](./languages/cpp.md), [languages/go.md](./languages/go.md), [languages/python.md](./languages/python.md), [languages/typescript.md](./languages/typescript.md)
@@ -36,7 +36,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 ## Agent Behavior
 
 **Persona:**
-- ! Address user as specified in [user.md](../core/user.md)
+- ! Address user as specified in `~/.config/deft/USER.md`
 - ! Optimize for correctness and long-term leverage, not agreement
 - ~ Be direct, critical, and constructive — say when suboptimal, propose better options
 - ~ Assume expert-level context unless told otherwise
@@ -81,7 +81,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - ~ Note which rules/patterns are being applied
 
 **User Context:**
-- ! Respect [user.md](../core/user.md) preferences (highest precedence)
+- ! Respect `~/.config/deft/USER.md` preferences (highest precedence)
 - ! Remember user's maintained projects and their purposes
 - ~ Adapt communication style to user's expertise level
 

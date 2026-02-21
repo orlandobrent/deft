@@ -1,60 +1,47 @@
-# [Project Name]
+# [Project Name] Project Guidelines
 
-Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
+Only specify items here that **override or extend** the deft defaults.
+See `deft/main.md`, `deft/coding/coding.md`, and language-specific files for base standards.
 
-**⚠️ See also**: [deft/main.md](./deft/main.md)
+**Tech Type**: [CLI / Web / API / Library / TUI]
+**Specification**: [specification.md](./specification.md)
 
-## Principles (Non-Negotiable)
+## 📏 Overrides
 
-<!-- 
-  These govern ALL decisions for this project. Amend formally, not casually.
-  Small team: 3-5 principles. Large org: expand into detailed articles.
-  
-  Examples:
-  - ! Test-First — No implementation without failing tests
-  - ! Library-First — Features start as standalone libraries
-  - ⊗ Premature Abstraction — No wrappers without proven need
--->
+<!-- Only list deviations from deft defaults. Examples: -->
+<!-- - Coverage: ≥95% (overrides default 85%) -->
+<!-- - Additional task targets unique to this project -->
 
+## 🔐 Secrets
+
+<!-- List project-specific secrets needed -->
+```bash
+cp secrets/[example].example secrets/[example]  # [Description]
+```
+
+## 🎯 Principles
+
+<!-- Non-negotiable rules unique to THIS project (3-5 items). -->
 - ! [Principle 1 — describe]
 - ! [Principle 2 — describe]
 - ⊗ [Anti-principle — what to avoid]
 
----
+## 📦 Tech Stack
 
-## Project Configuration
+**Language**: [Primary language with version]
+**Framework**: [Main framework if applicable]
+**Database**: [Database if applicable]
+**Deployment**: [Platform/method]
 
-**Tech Stack**: [Language, framework, database, etc.]
+## 📄 Documentation
 
-**Project Type**: [CLI / Web App / API / Library / etc.]
+- **Architecture**: [architecture.md](./docs/architecture.md)
+- **API**: [api.md](./docs/api.md)
+- **Deployment**: [deployment.md](./docs/deployment.md)
 
-**Purpose**: [One sentence describing what this project does]
-
-**Strategy**: [strategies/default.md](./deft/strategies/default.md)
-<!-- Or: strategies/speckit.md, strategies/rapid.md -->
-
-## 📋 Workflow
-
-```bash
-task check         # Pre-commit (fmt, lint, test, coverage)
-task test          # Run tests
-task build         # Build project
-task dev           # Development mode
-```
-
-## 🔐 Secrets
-
-```bash
-ls secrets/
-cp secrets/example.env secrets/.env  # Copy and fill in values
-```
-
-<!-- List any required secrets/tokens -->
-
-## Constraints
+## 🚧 Constraints
 
 <!-- Optional: timeline, compliance, compatibility requirements -->
-
-- Timeline: [deadline if any]
-- Compatibility: [supported versions, platforms]
-- Compliance: [regulatory requirements if any]
+- **Timeline**: [deadline if any]
+- **Compatibility**: [supported versions, platforms]
+- **Compliance**: [regulatory requirements if any]
