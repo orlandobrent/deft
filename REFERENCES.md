@@ -63,6 +63,15 @@ Load as needed:
 - Load: Only when multiple agents working on same codebase
 - Contains: communication protocols, conflict resolution, handoff patterns
 
+### When Managing Context or Long Tasks
+
+- **[context/context.md](./context/context.md)** - Core context engineering strategies (Write, Select, Compress, Isolate)
+- **[context/working-memory.md](./context/working-memory.md)** - Scratchpad and externalization patterns with vBRIEF
+- **[context/long-horizon.md](./context/long-horizon.md)** - Multi-session checkpoint/resume patterns
+- **[context/tool-design.md](./context/tool-design.md)** - Designing AI-consumable tools
+- **[context/examples.md](./context/examples.md)** - Few-shot and behavioral example guidance
+- Load: When tasks are complex, multi-phase, or when context budget is a concern
+
 ### When Creating Specifications
 
 **[templates/make-spec.md](./templates/make-spec.md)** - Specification generation
@@ -146,6 +155,15 @@ Load order:
 3. swarm/swarm.md (swarm patterns)
 4. coding/coding.md (coding standards)
 5. scm/git.md (commit conventions with task IDs)
+
+### Scenario: Long multi-phase task
+Load order:
+1. main.md (always)
+2. ~/.config/deft/USER.md (always)
+3. context/context.md (context engineering strategies)
+4. context/long-horizon.md (checkpoint/resume patterns)
+5. context/working-memory.md (scratchpad patterns)
+6. progress.vbrief.json (if resuming — read checkpoint, don't replay history)
 
 ## 💡 Tips for Agents
 

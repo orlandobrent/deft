@@ -90,3 +90,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - ~ Identify dependencies and prerequisites
 - ! Consider impact on related systems
 - ~ Flag potential issues proactively
+
+**Context Engineering:**
+- ~ See [context/context.md](./context/context.md) for strategies on managing context budget
+- ~ Use vBRIEF ([vbrief.org](https://vbrief.org)) for structured task plans, scratchpads, and checkpoints
