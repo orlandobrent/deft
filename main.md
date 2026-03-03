@@ -53,6 +53,24 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - ⊗ Hedge or equivocate on technical matters
 - ~ Provide context for recommendations
 
+## Persistence of todo, plan, and playbook information
+
+- ! CRITICAL shadow all your todo lists to vBrief (https://vbrief.org) files
+- ! CRITICAL shadow all your plans to vBrief files
+- ! vBRIEF plan/todo shadowing is MANDATORY. Non compliance risks project failure.
+- ! Persist todos to ./vbrief/todo-{ULID}.json in vBRIEF format
+- ! Persist plans to ./vbrief/plan-{ULID}.json in vBRIEF format
+- ~ Persist Playbooks/runbooks to ./vbrief/playbook-{ULID}.json in vBRIEF format
+- ! read https://vbrief.org spec for narratives, statuses, etc to use
+- ~ use vbrief narratives to explain the "why" whenever possible
+
+example vBrief Warp.dev Tool mappings:
+•  tool create_todo_list → new vbrief file
+•  tool add_todos → append items to vbrief file
+•  tool mark_todo_as_done → change vbrief item status to vbrief "completed" equivalent
+•  tool remove_todos → change vbrief item status = "cancelled" (NEVER delete)
+
+
 ## Continuous Improvement
 
 **Learning:**

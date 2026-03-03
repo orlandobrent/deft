@@ -9,16 +9,15 @@ Deft guidance for deploying applications to Vercel.
 
 ## Overview
 
-Vercel is optimized for frontend frameworks and full-stack JavaScript/TypeScript applications, with exceptional Next.js support and global edge network deployment.
+Vercel optimizes for frontend frameworks and full-stack JavaScript/TypeScript with exceptional Next.js support.
 
 ## Deployment Methods
 
-| Method | Command/Approach | Best For |
-|--------|------------------|----------|
-| Git Integration | Connect GitHub/GitLab/Bitbucket | Automatic deploy on push, preview deployments |
-| Vercel CLI | `vercel deploy` | Local testing, CI/CD pipelines |
-| Vercel API | REST API calls | Custom automation, programmatic deploys |
-| GitHub Actions | `vercel-action` | Advanced CI/CD workflows |
+| File | Method | Best For |
+|------|--------|----------|
+| `via-git.md` | Git Integration | Automatic deployments with preview URLs (default) |
+| `via-cli.md` | Vercel CLI | Local testing, custom CI/CD pipelines |
+| `via-api.md` | Vercel API | Programmatic deployments, custom automation |
 
 ## Supported Frameworks
 

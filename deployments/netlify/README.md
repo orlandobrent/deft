@@ -9,16 +9,15 @@ Deft guidance for deploying applications to Netlify.
 
 ## Overview
 
-Netlify excels at JAMstack deployments with strong support for static sites, serverless functions, and modern web frameworks. Git-first workflow with powerful build and deploy automation.
+Netlify specializes in JAMstack deployments with built-in CI/CD and serverless functions.
 
 ## Deployment Methods
 
-| Method | Command/Approach | Best For |
-|--------|------------------|----------|
-| Git Integration | Connect GitHub/GitLab/Bitbucket | Automatic deploys, preview deploys, CI/CD |
-| Netlify CLI | `netlify deploy` | Local testing, manual deploys |
-| Drag & Drop | Dashboard upload | Quick one-off deploys, prototypes |
-| Netlify API | REST API | Custom automation, programmatic deploys |
+| File | Method | Best For |
+|------|--------|----------|
+| `via-git.md` | Git Integration | Automatic deploy-on-push workflows (default) |
+| `via-cli.md` | Netlify CLI | Local testing, custom CI/CD pipelines |
+| `via-functions.md` | Netlify Functions | Serverless APIs alongside static sites |
 
 ## Supported Frameworks
 
