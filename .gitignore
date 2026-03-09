@@ -25,8 +25,15 @@ Thumbs.db
 # User-specific files (users should copy from templates)
 core/user.md
 
-# Python cache
+# Python toolchain
+.venv/
 __pycache__/
+*.pyc
+*.pyo
+.coverage
+htmlcov/
+.pytest_cache/
+*.egg-info/
 
 # Secrets (project-specific)
 secrets/
