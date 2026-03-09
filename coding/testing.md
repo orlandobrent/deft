@@ -15,6 +15,18 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - ⊗ say a (todo-list|plan|phase|project) is done if relevant tests have not been written, run, and PASSED.
 - ⊗ assume its ok for a test to fail in any situation
 
+## Test-First Development
+
+- ! Implementation is INCOMPLETE until tests written AND `task test:coverage` passes
+- ! New functions/classes MUST have corresponding tests in same commit
+- ! Modified functions MUST update existing tests to maintain coverage
+- ! Run `task test:coverage` after ANY code change to verify ≥85% maintained
+- ! If coverage drops below threshold, implementation is INCOMPLETE
+- ~ Write tests for edge cases, not just happy paths
+- ⊗ Skip test updates when modifying existing functions
+- ⊗ Implement code without tests
+- ⊗ Claim "done" before running test:coverage
+
 ## Coverage
 
 **What to count:**
@@ -121,6 +133,9 @@ project/
 - ⊗ Commit failing tests
 - ⊗ Write tests that depend on external state
 - ⊗ Hard-code dates, times, random values
+- ⊗ Implementing code without tests
+- ⊗ Claiming "done" before running test:coverage
+- ⊗ Ignoring coverage drops
 
 ## CI/CD Integration
 

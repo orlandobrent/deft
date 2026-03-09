@@ -71,101 +71,27 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - ! Business metrics (orders, users, revenue)
 - ! Alerting on SLOs/SLIs
 
-## Technology Choices
+## Recommended Tools
 
-### Recommended Stacks
+**Structured Logging:**
+- Python: logfire (pro), structlog (fast/pro), loguru (fast)
+- Go: zerolog, zap
+- TypeScript: pino, winston
+- C++: spdlog
 
-**Python:**
-```python
-# pro mode - Full OpenTelemetry
-import logfire
-logfire.configure(token="...", service_name="my-service")
+**Error Tracking:**
+- Sentry.io (all languages, all modes)
+- Rollbar, Bugsnag (alternatives)
 
-@logfire.instrument()
-def process_order(order: Order) -> Result:
-    with logfire.span("validate_order", order_id=order.id):
-        # ... validation
-    return result
+**Tracing:**
+- OpenTelemetry (all languages, pro mode)
+- logfire (Python, pro mode)
+- Sentry (all languages, fast/pro mode)
 
-# fast mode - Sentry + structlog
-import sentry_sdk
-import structlog
-
-sentry_sdk.init(
-    dsn="https://...@sentry.io/...",
-    traces_sample_rate=0.1,
-    profiles_sample_rate=0.1,
-)
-
-log = structlog.get_logger()
-log.info("order_processed", order_id=order.id, amount=order.total)
-```
-
-**Go:**
-```go
-// pro mode - OpenTelemetry
-import (
-    "go.opentelemetry.io/otel"
-    "go.opentelemetry.io/otel/trace"
-)
-
-tracer := otel.Tracer("my-service")
-ctx, span := tracer.Start(ctx, "process_order")
-defer span.End()
-
-// fast mode - zerolog + Sentry
-import (
-    "github.com/rs/zerolog/log"
-    "github.com/getsentry/sentry-go"
-)
-
-sentry.Init(sentry.ClientOptions{
-    Dsn: "https://...@sentry.io/...",
-    TracesSampleRate: 0.1,
-})
-
-log.Info().Str("order_id", id).Msg("order processed")
-```
-
-**TypeScript:**
-```typescript
-// pro mode - OpenTelemetry
-import { trace } from '@opentelemetry/api';
-import * as Sentry from '@sentry/node';
-
-const tracer = trace.getTracer('my-service');
-const span = tracer.startSpan('process_order');
-// ... work
-span.end();
-
-// fast mode - Sentry
-Sentry.init({
-  dsn: 'https://...@sentry.io/...',
-  tracesSampleRate: 0.1,
-});
-
-Sentry.captureMessage('Order processed', {
-  level: 'info',
-  tags: { order_id: order.id },
-});
-```
-
-**C++:**
-```cpp
-// pro mode - OpenTelemetry C++
-#include <opentelemetry/trace/provider.h>
-
-auto tracer = opentelemetry::trace::Provider::GetTracerProvider()
-    ->GetTracer("my-service");
-auto span = tracer->StartSpan("process_order");
-// ... work
-span->End();
-
-// fast mode - spdlog
-#include <spdlog/spdlog.h>
-
-spdlog::info("Order processed: order_id={}", order_id);
-```
+**Metrics:**
+- Prometheus (self-hosted)
+- Datadog, New Relic (SaaS)
+- OpenTelemetry metrics
 
 ## Logging Best Practices
 
@@ -268,17 +194,7 @@ sentry_sdk.init(
 **Context Propagation:**
 - ! Propagate trace_id and span_id across service boundaries
 - ! Use W3C Trace Context headers
-- ! Include in logs for correlation
-
-**Correlation:**
-```python
-# Link logs to traces
-log = structlog.get_logger()
-log.bind(
-    trace_id=trace.get_current_span().get_span_context().trace_id,
-    span_id=trace.get_current_span().get_span_context().span_id,
-)
-```
+- ! Include trace_id/span_id in logs for correlation
 
 **Alerting:**
 - ! Alert on error rate spikes

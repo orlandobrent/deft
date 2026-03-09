@@ -67,9 +67,28 @@ Tags: R+TW=React+Tailwind; htmx+BS=htmx+Bootstrap; CSS=plain CSS; JS=vanilla JS.
 - ⊗ Use gradients unless explicitly requested.
 - ⊗ Use overly decorative effects (glows) as primary affordances. (R+TW: no glow effects / shadow-glow as primary UI)
 - ~ Use default shadow/spacing scales unless explicitly requested. (R+TW: Tailwind default shadow scale; CSS: system design shadow tokens)
+- ~ Use SVG whenever possible for graphics.
 - ! Empty states: one clear next action.
 - ~ Limit accent color usage to one per view.
 - ~ Use existing theme tokens before introducing new ones. (R+TW: use Tailwind/theme colors before new tokens)
+
+## Authentication
+
+- ! Support SSO. (OIDC/SAML based on tenant/provider needs)
+- ! Support WebAuthn for either 2FA or passwordless authentication.
+- ! Preserve and validate post-auth return paths so users return to intended destinations.
+- ~ Keep authentication flows progressive and low-friction (minimal fields first, optional profile completion later).
+- ~ Provide clear recovery options (passkey fallback, backup codes, account recovery) without dead ends.
+- ! Enforce phishing-resistant MFA for privileged roles and high-risk actions.
+- ! Rate-limit and lock out abusive auth attempts with anomaly detection and alerting.
+- ! Use short-lived access tokens, rotate refresh tokens, and support immediate server-side session revocation.
+
+## Theming
+
+- ~ Web apps support theming.
+- ! Web apps support dark and light modes.
+- ! Respect system color-scheme preference on first visit; persist explicit user override.
+- ~ Build themes from design tokens (color, spacing, typography) rather than per-component hardcoding.
 
 ---
 

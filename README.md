@@ -1,12 +1,47 @@
-# Warping Process
+# Deft
 
-**A layered framework for AI-assisted development with consistent standards and workflows.**
+**One-shot, anti-slop**
 
-Copyright © 2025-2026 Jonathan Taylor (visionik@pobox.com). See [LICENSE.md](./LICENSE.md) for usage terms.
+*A layered framework for AI-assisted development with consistent standards and workflows.*
 
-## 🎯 What is Warping?
+## TL;DR
 
-Warping is a structured approach to working with AI coding assistants (particularly Warp AI) that provides:
+Deft is a SKILL.md that makes AI coding significantly more effective by providing consistent, hierarchical standards. Instead of repeating the same instructions in every AI session, you define your preferences once—from general coding style to project-specific rules—and AI agents follow them. The result: higher quality code, reproducible workflows, and AI that gets better over time by learning from your patterns.
+
+**Key benefits:** No more "AI forgot my preferences", no more inconsistent code style across AI sessions, no more re-explaining your stack every time.
+
+**Don't have preferences yet?** No problem—Deft ships with professional-grade defaults for Python, Go, TypeScript, C++, and common workflows. Use it out of the box and customize later.
+
+**Platform compatibility:** If you're on a platform that doesn't yet support SKILL.md (such as Warp.dev), just add a line to your `AGENTS.md` that says "See deft/main.md".
+
+**Context-efficient:** Deft keeps AI context windows lean through RFC 2119-based notation (!, ~, ≉, ⊗) and lazy-loading—AI only reads the files relevant to the current task, not everything at once.
+
+## 🎸 From Vibe to Virtuoso
+
+**AGENTS.md** is great for vibe-coding—loose guidance, good enough for quick work:
+
+> "Make it clean, I like tests, use TypeScript."
+
+**Deft** is for when you want virtuoso results: precise standards, reproducible workflows, and AI that improves over time.
+
+| Vibe (AGENTS.md) | Virtuoso (Deft) |
+|------------------|-----------------|
+| All rules in one file | Modular—load only what's relevant |
+| Gets bloated across languages/tools | Scales cleanly (python.md stays focused) |
+| Same context loaded every session | Lazy-loading saves tokens |
+| Preferences mixed with standards | Clear separation (user.md vs language files) |
+| No evolution mechanism | Meta files capture learnings automatically |
+| Starts fresh each project | Portable across projects |
+
+**When to use which:**
+- Your AGENTS.md is under 200 lines and you work in one language? Vibe is fine.
+- It's growing unwieldy, you're repeating yourself, or you want consistent quality across projects? Deft pays off.
+
+Same instrument, different mastery.
+
+## 🎯 What is Deft?
+
+Deft is a structured approach to working with AI coding assistants that provides:
 
 - **Consistent coding standards** across languages and projects
 - **Reproducible workflows** via task-based automation
@@ -16,7 +51,7 @@ Warping is a structured approach to working with AI coding assistants (particula
 
 ## 📝 Notation Legend
 
-Warping uses compact notation for requirements:
+Deft uses compact notation for requirements:
 
 - **!** = MUST (required, mandatory)
 - **~** = SHOULD (recommended, strong preference)
@@ -27,27 +62,38 @@ This notation appears in technical standard files (python.md, go.md, etc.) for s
 
 ## 📚 The Layers
 
-Warping uses a layered architecture where more specific rules override general ones:
+Deft uses a layered architecture where more specific rules override general ones:
 
-```
-USER.md          ← Highest precedence (~/.config/deft/USER.md)
-  ↓
-project.md       ← Project-specific rules and workflows
-  ↓
-python.md        ← Language-specific standards
-go.md
-  ↓
-taskfile.md      ← Tool-specific guidelines
-  ↓
-main.md          ← General AI guidelines and agent behavior
-  ↓
-specification.md ← Lowest precedence (project requirements)
+```mermaid
+flowchart TD
+    subgraph precedence ["Rule Precedence (top = highest)"]
+        direction TB
+        U["👤 USER.md<br/><i>Personal preferences (~/.config/deft/)</i>"]
+        P["📁 PROJECT.md<br/><i>Project-specific rules</i>"]
+        L["🐍 python.md / go.md / etc.<br/><i>Language standards</i>"]
+        T["🔧 taskfile.md<br/><i>Tool guidelines</i>"]
+        M["🤖 main.md<br/><i>General AI behavior</i>"]
+        S["📋 specification.md<br/><i>Project requirements</i>"]
+    end
+
+    U --> P
+    P --> L
+    L --> T
+    T --> M
+    M --> S
+
+    style U fill:#4ade80,stroke:#166534,color:#000
+    style P fill:#60a5fa,stroke:#1e40af,color:#000
+    style L fill:#facc15,stroke:#a16207,color:#000
+    style T fill:#fb923c,stroke:#c2410c,color:#000
+    style M fill:#c084fc,stroke:#7c3aed,color:#000
+    style S fill:#94a3b8,stroke:#475569,color:#000
 ```
 
 ### 📁 Directory Structure
 
 ```
-warping-0.2.0/
+deft/
 ├── README.md              # This file
 ├── main.md                # Entry point - general AI guidelines
 │
@@ -109,35 +155,31 @@ warping-0.2.0/
 
 ### 🔧 Core Files
 
-**main.md** - Entry point, general AI guidelines
-**coding/coding.md** - Software development standards
-**coding/testing.md** - Testing standards
-**core/project.md** - Project-specific template
+**main.md** - Entry point, general AI guidelines  
+**coding/coding.md** - Software development standards  
+**coding/testing.md** - Testing standards  
+**core/project.md** - Project-specific template  
 **~/.config/deft/USER.md** - Your personal preferences (highest precedence)
 
 ### 🐍 Languages
-
-**languages/python.md** - Python standards (≥85% coverage, mypy strict, ruff/black)
-**languages/go.md** - Go standards (≥85% coverage, Testify)
-**languages/typescript.md** - TypeScript standards (strict mode, Vitest)
+**languages/python.md** - Python standards (≥85% coverage, mypy strict, ruff/black)  
+**languages/go.md** - Go standards (≥85% coverage, Testify)  
+**languages/typescript.md** - TypeScript standards (strict mode, Vitest)  
 **languages/cpp.md** - C++ standards (C++20/23, Catch2/GoogleTest)
 
 ### 💻 Interfaces
-
-**interfaces/cli.md** - Command-line interface patterns
-**interfaces/rest.md** - REST API design
-**interfaces/tui.md** - Terminal UI (Textual, ink)
+**interfaces/cli.md** - Command-line interface patterns  
+**interfaces/rest.md** - REST API design  
+**interfaces/tui.md** - Terminal UI (Textual, ink)  
 **interfaces/web.md** - Web UI (React, Tailwind)
 
 ### 🛠️ Tools
-
-**tools/taskfile.md** - Task automation best practices
-**scm/git.md** - Commit conventions, safety
-**scm/github.md** - GitHub workflows
+**tools/taskfile.md** - Task automation best practices  
+**scm/git.md** - Commit conventions, safety  
+**scm/github.md** - GitHub workflows  
 **tools/telemetry.md** - Logging, tracing, metrics
 
 ### 🐝 Swarm
-
 **swarm/swarm.md** - Multi-agent coordination patterns
 
 ### ✅ Verification
@@ -155,36 +197,75 @@ warping-0.2.0/
 **contracts/boundary-maps.md** - Explicit produces/consumes declarations between slices
 
 ### 📝 Templates
-
-**templates/make-spec.md** - Specification generation
+**templates/make-spec.md** - Specification generation  
 **templates/specification.md** - Project spec template
 
 ### 🧠 Meta
-
-**meta/code-field.md** - Coding mindset and philosophy
-**meta/lessons.md** - Codified learnings (AI-updatable)
-**meta/ideas.md** - Future directions
+**meta/code-field.md** - Coding mindset and philosophy  
+**meta/lessons.md** - Codified learnings (AI-updatable)  
+**meta/ideas.md** - Future directions  
 **meta/suggestions.md** - Improvement suggestions
 
 ## 🚀 Getting Started
 
-### 1. Set Up Your User Preferences
+**Quick start (one-liner):**
 
-Run `deft/run bootstrap` to create USER.md at `~/.config/deft/USER.md`, or edit it directly:
-
-```markdown
-# User Preferences
-
-## Name
-
-Address the user as: **YourName**
-
-## Custom Rules
-
-- Your custom preferences here
+```bash
+git clone https://github.com/visionik/deft && deft/run bootstrap
 ```
 
-### 2. Understand the Hierarchy
+### 1. Install Deft
+
+Create a directory for a new project or `cd` into an existing one:
+
+```bash
+mkdir my-project && cd my-project  # New project
+# OR
+cd ~/Projects/existing-project      # Existing project
+
+git clone https://github.com/visionik/deft  # Installs deft in ./deft/ subdir
+```
+
+### 2. Bootstrap Your Configuration
+
+Use `deft/run bootstrap` to create your user and project preferences:
+
+```bash
+deft/run bootstrap       # Interactive setup for user.md and project.md
+```
+
+Or use individual commands:
+
+```bash
+deft/run bootstrap       # Creates user.md with your preferences
+deft/run project         # Creates project.md with tech stack, standards
+```
+
+### 3. Generate Specification
+
+`deft/run bootstrap` will guide you through creating a `SPECIFICATION.md`, or create one anytime:
+
+```bash
+deft/run spec            # AI-assisted specification interview
+```
+
+Other commands:
+
+```bash
+deft/run reset           # Reset config files
+deft/run validate        # Check deft configuration
+deft/run doctor          # Check system dependencies
+```
+
+### 4. Build With AI
+
+Ask your AI to build the product/project from `SPECIFICATION.md` and away you go:
+
+```
+Read SPECIFICATION.md and implement the project following deft/main.md standards.
+```
+
+### Rule Hierarchy
 
 Rules cascade with precedence:
 
@@ -195,27 +276,37 @@ Rules cascade with precedence:
 5. **main.md** - general AI behavior
 6. **specification.md** (lowest) - requirements
 
-### 3. Reference in Warp
+### Continuous Improvement
 
-Upload these files to **Warp Drive** so they're available to AI sessions:
+The deft process evolves over time:
 
-1. Open Warp
-2. Access Warp Drive (notebooks feature)
-3. Upload relevant warping/\*.md files
-4. Reference them in your Warp rules/agent instructions
+```mermaid
+flowchart TD
+    subgraph evolution ["Continuous Evolution"]
+        DEV["🛠️ Development<br/><i>Daily coding</i>"]
+        LEARN["📚 lessons.md<br/><i>Patterns discovered</i>"]
+        IDEAS["💡 ideas.md<br/><i>Future directions</i>"]
+        SUGGEST["📝 suggestions.md<br/><i>Improvements</i>"]
+        USER["👤 user.md<br/><i>Preferences</i>"]
+        STANDARDS["📖 Language/Tool files<br/><i>Evolving standards</i>"]
+    end
 
-### 4. Use in Projects
+    DEV -->|"AI discovers"| LEARN
+    DEV -->|"AI notes"| IDEAS
+    DEV -->|"AI suggests"| SUGGEST
+    LEARN -->|"Promote"| STANDARDS
+    IDEAS -->|"Review"| STANDARDS
+    SUGGEST -->|"Accept"| USER
+    STANDARDS -->|"Inform"| DEV
+    USER -->|"Guide"| DEV
 
-For each project:
-
-1. Copy or link the warping directory
-2. Create/update `project.md` with project-specific rules
-3. Create/update `specification.md` or link to specs
-4. Let the AI reference these during development
-
-### 5. Evolve Over Time
-
-The warping process improves continuously:
+    style DEV fill:#f0abfc,stroke:#a855f7,color:#000
+    style LEARN fill:#fde68a,stroke:#d97706,color:#000
+    style IDEAS fill:#a5f3fc,stroke:#06b6d4,color:#000
+    style SUGGEST fill:#fecaca,stroke:#ef4444,color:#000
+    style USER fill:#86efac,stroke:#22c55e,color:#000
+    style STANDARDS fill:#c7d2fe,stroke:#6366f1,color:#000
+```
 
 - AI updates `lessons.md` when learning better patterns
 - AI notes ideas in `ideas.md` for future consideration
@@ -229,7 +320,7 @@ The warping process improves continuously:
 
 **Why Taskfile?**
 
-Warping uses [Taskfile](https://taskfile.dev) as the universal task runner for several reasons:
+Deft uses [Taskfile](https://taskfile.dev) as the universal task runner for several reasons:
 
 1. **Makefiles are outdated**: Make syntax is arcane, portability is poor, and tabs vs spaces causes constant friction
 2. **Polyglot simplicity**: When working across Python (make/invoke/poetry scripts), Go (make/mage), Node (npm scripts/gulp), etc., each ecosystem has different conventions. Taskfile provides one consistent interface
@@ -247,7 +338,24 @@ task dev           # Start dev environment
 
 ### Test-Driven Development (TDD)
 
-Warping embraces TDD as the default development approach:
+Deft embraces TDD as the default development approach:
+
+```mermaid
+flowchart LR
+    subgraph cycle ["TDD Cycle"]
+        R["🔴 RED<br/>Write failing test"]
+        G["🟢 GREEN<br/>Make it pass"]
+        B["🔵 REFACTOR<br/>Improve code"]
+    end
+
+    R -->|"Minimal code"| G
+    G -->|"Clean up"| B
+    B -->|"Next feature"| R
+
+    style R fill:#fca5a5,stroke:#dc2626,color:#000
+    style G fill:#86efac,stroke:#16a34a,color:#000
+    style B fill:#93c5fd,stroke:#2563eb,color:#000
+```
 
 1. **Write the test first**: Define expected behavior before implementation
 2. **Watch it fail**: Confirm the test fails for the right reason
@@ -280,7 +388,26 @@ task check         # Pre-commit: all quality checks including tests
 
 ### Spec-Driven Development (SDD)
 
-Before writing any code, warping uses an AI-assisted specification process:
+Before writing any code, deft uses an AI-assisted specification process:
+
+```mermaid
+flowchart LR
+    subgraph sdd ["Spec-Driven Development"]
+        I["💡 Idea<br/><i>Initial concept</i>"]
+        Q["❓ Interview<br/><i>AI asks questions</i>"]
+        S["📋 SPECIFICATION.md<br/><i>Complete plan</i>"]
+        D["👥 Development<br/><i>Parallel agents</i>"]
+    end
+
+    I -->|"make-spec.md"| Q
+    Q -->|"Clarify ambiguity"| S
+    S -->|"Independent tasks"| D
+
+    style I fill:#fef08a,stroke:#ca8a04,color:#000
+    style Q fill:#c4b5fd,stroke:#7c3aed,color:#000
+    style S fill:#6ee7b7,stroke:#059669,color:#000
+    style D fill:#7dd3fc,stroke:#0284c7,color:#000
+```
 
 **The Process:**
 
@@ -318,7 +445,7 @@ Before writing any code, warping uses an AI-assisted specification process:
 - **Onboarding**: New contributors/agents understand the full picture
 - **AI-friendly**: Structured specs help AI agents stay aligned
 
-**Example**: See `make-spec.md` template in Warp Drive for the interview process
+**Example**: See `templates/make-spec.md` for the interview process template
 
 ### Convention Over Configuration
 
@@ -336,7 +463,50 @@ Before writing any code, warping uses an AI-assisted specification process:
 
 ## 📖 Example Workflows
 
+```mermaid
+flowchart TB
+    subgraph NewProject ["🆕 New Python Project"]
+        direction TB
+        NP1["AI reads main.md"] --> NP2["AI reads python.md"]
+        NP2 --> NP3["AI reads taskfile.md"]
+        NP3 --> NP4["Setup: pytest, ruff, black, mypy"]
+        NP4 --> NP5["Configure: ≥85% coverage"]
+        NP5 --> NP6["You customize: project.md"]
+    end
+    
+    subgraph ExistingGo ["📂 Existing Go Project"]
+        direction TB
+        EG1["AI reads user.md"] --> EG2["AI reads project.md"]
+        EG2 --> EG3["AI reads go.md"]
+        EG3 --> EG4["AI runs task check"]
+        EG4 --> EG5["AI makes changes"]
+    end
+    
+    subgraph Review ["🔍 Code Review"]
+        direction TB
+        CR1["AI reads quality standards"] --> CR2["task quality"]
+        CR2 --> CR3["task test:coverage"]
+        CR3 --> CR4["Check commits"]
+        CR4 --> CR5["Update suggestions.md"]
+    end
+```
+
 ### Starting a New Python Project
+
+```mermaid
+sequenceDiagram
+    participant AI
+    participant Files as Deft Files
+    participant Project
+
+    AI->>Files: Read main.md
+    AI->>Files: Read python.md
+    AI->>Files: Read taskfile.md
+    AI->>Project: Setup pytest, ruff, black, mypy
+    AI->>Project: Configure ≥85% coverage
+    AI->>Project: Create Taskfile.yml
+    Note over AI,Project: You customize project.md
+```
 
 1. AI reads: `main.md` → `python.md` → `taskfile.md`
 2. AI sets up: pytest, ruff, black, mypy, Taskfile
@@ -345,6 +515,21 @@ Before writing any code, warping uses an AI-assisted specification process:
 
 ### Working on an Existing Go Project
 
+```mermaid
+sequenceDiagram
+    participant AI
+    participant Files as Deft Files
+    participant Code
+
+    AI->>Files: Read USER.md (your overrides)
+    AI->>Files: Read PROJECT.md
+    AI->>Files: Read go.md
+    AI->>Files: Read main.md
+    AI->>Code: Run task check
+    AI->>Code: Apply changes
+    Note over AI,Code: Respects your USER.md preferences
+```
+
 1. AI reads: `USER.md` → `PROJECT.md` → `go.md` → `main.md`
 2. AI follows: go.dev/doc/comment, Testify patterns
 3. AI runs: `task check` before suggesting changes
@@ -352,32 +537,68 @@ Before writing any code, warping uses an AI-assisted specification process:
 
 ### Code Review Session
 
+```mermaid
+sequenceDiagram
+    participant AI
+    participant Standards as Language File
+    participant Tasks as Taskfile
+    participant Meta as suggestions.md
+
+    AI->>Standards: Reference quality standards
+    AI->>Tasks: Run task quality
+    AI->>Tasks: Run task test:coverage
+    AI->>AI: Check Conventional Commits
+    AI->>Meta: Log improvements
+```
+
 1. AI references quality standards from language file
 2. AI runs `task quality` and `task test:coverage`
 3. AI checks Conventional Commits compliance
 4. AI suggests improvements → adds to `suggestions.md`
 
-## 🔗 Integration with Warp AI
+## 📝 Contributing to Deft
 
-The warping process is designed for Warp AI's rule system:
+As you use deft, AI maintains three meta files that help the framework evolve:
 
-1. **Upload to Warp Drive**: Keep main.md and relevant files in Warp Drive
-2. **Create Warp Rules**: Reference warping files in your Warp rules
-3. **Project-Specific Rules**: Add `AGENTS.md` or `WARP.md` in project root that references warping
-4. **Automatic Context**: Warp AI loads rules automatically when working in your projects
+### lessons.md — Patterns discovered during development
 
-## 📝 Contributing to Warping
+```markdown
+## 2026-01-15: Testify suite setup
+When using Testify in Go, always define `suite.Suite` struct with 
+dependencies as fields, not package-level vars. Discovered during 
+auth-service refactor—package vars caused test pollution.
 
-As you use warping:
+## 2026-01-20: CLI flag defaults
+For CLI tools, default to human-readable output, use `--json` flag 
+for machine output. Users expect pretty by default.
+```
 
-1. **lessons.md**: AI adds patterns discovered during development
-2. **ideas.md**: AI notes potential improvements
-3. **suggestions.md**: AI records project-specific suggestions
-4. Review these periodically and promote good ideas to main guidelines
+### ideas.md — Potential improvements for later
+
+```markdown
+- [ ] Add `deft/run upgrade` command to pull latest deft without 
+      losing local user.md/project.md customizations
+- [ ] Consider `deft/interfaces/grpc.md` for protobuf/gRPC patterns
+- [ ] Explore integration with cursor rules format
+```
+
+### suggestions.md — Project-specific improvements
+
+```markdown
+## auth-service
+- The retry logic in `client.go` should use exponential backoff 
+  (currently linear)—see coding.md resilience patterns
+
+## api-gateway  
+- Consider splitting routes.go (850 lines) into domain-specific 
+  route files per coding.md file size guidelines
+```
+
+Review these periodically and promote good ideas to main guidelines
 
 ## 🎓 Philosophy
 
-Warping embodies:
+Deft embodies:
 
 - **Correctness over convenience**: Optimize for long-term quality
 - **Standards over flexibility**: Consistent patterns across projects
@@ -387,3 +608,8 @@ Warping embodies:
 ---
 
 **Next Steps**: Read [main.md](./main.md) for comprehensive AI guidelines, then run `deft/run bootstrap` to create your USER.md.
+
+---
+
+Copyright © 2025-2026 Jonathan "visionik" Taylor — https://deft.md  
+Licensed under the [MIT License](./LICENSE.md)

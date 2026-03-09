@@ -96,6 +96,18 @@ lint:
 - ~ Use `TASK_TEMP_DIR` for generated caches/checksums
 - ~ Ignore in VCS or commit for reproducible codegen
 
+## Common Task Commands
+
+```bash
+task fmt                # Format code
+task lint               # Lint code
+task test               # Run tests
+task test:coverage      # Run tests with coverage (! ≥85%)
+task quality            # All quality checks
+task check              # Pre-commit (! run: fmt+lint+type+test)
+task build              # Build project
+```
+
 ## Example Taskfile Structure
 
 ```yaml

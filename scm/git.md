@@ -36,160 +36,23 @@ chore(deps): upgrade golang.org/x/crypto to v0.17
 - **body**: ? be included; ~ wrap at 72 chars if present
 - **footer**: ? include `BREAKING CHANGE:` or `Closes #123`
 
-## Commands
+## Workflow Best Practices
 
-```bash
-git --no-pager status|log|diff|show  # MUST use --no-pager for scripted operations
-git log --oneline --graph --all      # Visual history
-git log --pretty=format:"%h %s" -10  # Recent commits
-git diff --cached                     # Staged changes
-git diff HEAD~1..HEAD                # Last commit
-git show <commit>:<file>             # File at commit
-git blame -L 10,20 file.go           # Line attribution
-git log -S "function_name" --        # Search history
-git log --follow file.go             # File history across renames
-```
+**Before committing**:
+1. ! Review changes with `git diff` and `git diff --cached`
+2. ! Run `task check` (MUST run pre-commit checks)
+3. ! Use interactive staging (`git add -p`) for complex changes
+4. ! Write descriptive commit messages following Conventional Commits
 
-## Workflow
+**Branching**:
+- ~ Use descriptive branch names: `feat/feature-name`, `fix/bug-name`
+- ~ Create feature branches from latest `main`
+- ~ Delete branches after merge
 
-### Before Committing
-
-```bash
-git status                           # Check working tree
-git diff                             # Review unstaged
-git diff --cached                    # Review staged
-task check                           # MUST run pre-commit checks
-git add -p                           # Stage interactively
-git commit -m "feat(scope): description"
-```
-
-### Branching
-
-```bash
-git switch -c feat/feature-name      # Create feature branch
-git switch main                      # Switch branches
-git branch -d feat/old-feature       # Delete merged branch
-git branch -D feat/old-feature       # Force delete (unmerged)
-```
-
-### Syncing
-
-```bash
-git fetch origin                     # Fetch remote changes
-git pull --rebase origin main        # Rebase local commits
-git push origin feat/feature-name    # Push feature branch
-```
-
-### Reviewing Changes
-
-```bash
-git --no-pager log --oneline -10     # Recent history
-git --no-pager show HEAD             # Last commit
-git --no-pager diff main..feat/branch # Branch diff
-git log --author="name" --since="2 weeks ago"
-```
-
-### Undoing Changes
-
-**Safe operations** (preferred):
-
-```bash
-git restore file.go                  # Discard unstaged changes
-git restore --staged file.go         # Unstage file
-git revert <commit>                  # Create revert commit
-git commit --amend --no-edit         # Amend last commit (if not pushed)
-```
-
-**Dangerous operations** (require permission):
-
-```bash
-git reset --soft HEAD~1              # Undo commit, keep changes staged
-git reset HEAD~1                     # Undo commit, keep changes unstaged
-git reset --hard HEAD~1              # ⚠️ DESTRUCTIVE - requires permission
-git push --force-with-lease          # ⚠️ Safer force push - requires permission
-```
-
-## Patterns
-
-### Interactive Staging
-
-```bash
-git add -p                           # Stage hunks interactively
-# y = stage, n = skip, s = split, e = edit, q = quit
-```
-
-### Stashing
-
-```bash
-git stash push -m "WIP: feature"     # Stash with message
-git stash list                       # List stashes
-git stash pop                        # Apply and remove
-git stash apply stash@{0}            # Apply without removing
-git stash drop stash@{0}             # Remove stash
-```
-
-### Cherry-Picking
-
-```bash
-git cherry-pick <commit>             # Apply commit to current branch
-git cherry-pick <start>..<end>       # Range of commits
-git cherry-pick --no-commit <commit> # Apply without committing
-```
-
-### Rebasing (requires permission if published)
-
-```bash
-git rebase main                      # Rebase current onto main
-git rebase -i HEAD~3                 # Interactive rebase last 3
-git rebase --continue                # Continue after resolving
-git rebase --abort                   # Abort rebase
-```
-
-**Interactive rebase commands**:
-
-- `pick` = use commit
-- `reword` = edit message
-- `edit` = edit commit
-- `squash` = combine with previous
-- `fixup` = combine, discard message
-- `drop` = remove commit
-
-### Searching History
-
-```bash
-git log -S "search_term"             # Find when term added/removed
-git log -G "regex"                   # Regex search
-git log --grep="pattern"             # Search commit messages
-git bisect start                     # Binary search for bug
-git bisect bad                       # Mark current as bad
-git bisect good <commit>             # Mark commit as good
-```
-
-## Configuration
-
-### Essential Config
-
-```bash
-git config --global user.name "Your Name"
-git config --global user.email "you@example.com"
-git config --global init.defaultBranch main
-git config --global core.editor vim
-git config --global pull.rebase true
-git config --global fetch.prune true
-git config --global diff.algorithm histogram
-```
-
-### Aliases
-
-```bash
-git config --global alias.st status
-git config --global alias.co checkout
-git config --global alias.br branch
-git config --global alias.ci commit
-git config --global alias.unstage 'restore --staged'
-git config --global alias.last 'log -1 HEAD'
-git config --global alias.graph 'log --oneline --graph --all'
-```
+**Syncing**:
+- ~ Use `git pull --rebase` to maintain linear history
+- ! Always use `git --no-pager` for scripted/programmatic operations
+- ~ Keep feature branches up to date with `main`
 
 ## .gitignore Patterns
 
@@ -255,124 +118,22 @@ Thumbs.db
 - New commits over history rewriting
 - Temp branches for experiments
 
-## Task Integration
-
-```yaml
-# Taskfile.yml
-tasks:
-  git:status:
-    desc: Check git status and recent commits
-    cmds:
-      - git --no-pager status
-      - git --no-pager log --oneline -5
-
-  git:check:
-    desc: Verify clean state and conventional commits
-    cmds:
-      - git --no-pager diff --exit-code
-      - git --no-pager log -1 --pretty=%s | grep -E "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?:"
-
-  pre-commit:
-    desc: Pre-commit checks
-    deps: [quality, test, git:check]
-```
-
-## Troubleshooting
-
-### Uncommit Last Commit (not pushed)
-
-```bash
-git reset --soft HEAD~1              # Keep changes staged
-git reset HEAD~1                     # Keep changes unstaged
-```
-
-### Fix Wrong Branch
-
-```bash
-git stash                            # Save current work
-git switch correct-branch            # Switch to right branch
-git stash pop                        # Restore work
-```
-
-### Undo Accidental Commit
-
-```bash
-git revert HEAD                      # Safe: creates revert commit
-```
-
-### Recover Lost Commits
-
-```bash
-git reflog                           # Show all ref changes
-git checkout <commit>                # Restore lost commit
-git switch -c recovery-branch        # Create branch from it
-```
 
 ## Changelog & Versioning
 
-### Changelog Format
-
- follow [Keep a Changelog](./changelog.md) format:
-
-```markdown
-# Changelog
-
-All notable changes to this project will be documented in this file.
-
-The format is based on [Keep a Changelog](./changelog.md),
-and this project adheres to [Semantic Versioning](../core/versioning.md).
-
-## [Unreleased]
-
-### Added
-- New features
-
-### Changed
-- Changes in existing functionality
-
-### Deprecated
-- Soon-to-be removed features
-
-### Removed
-- Removed features
-
-### Fixed
-- Bug fixes
-
-### Security
-- Security vulnerabilities
-
-## [1.0.0] - 2024-01-18
-
-### Added
-- Initial release
-```
-
-### Semantic Versioning
-
- follow [Semantic Versioning](../core/versioning.md):
-
-- **MAJOR** (X.0.0): Breaking changes, incompatible API changes
-- **MINOR** (0.X.0): New features, backward compatible
-- **PATCH** (0.0.X): Bug fixes, backward compatible
-
-**Examples**:
-- `v1.0.0` → `v2.0.0`: Breaking changes (removed API, changed behavior)
-- `v1.0.0` → `v1.1.0`: New feature added (backward compatible)
-- `v1.0.0` → `v1.0.1`: Bug fix (no API changes)
-
-**Pre-release versions**:
-- `v1.0.0-alpha.1`: Alpha release
-- `v1.0.0-beta.2`: Beta release
-- `v1.0.0-rc.1`: Release candidate
+! Maintain CHANGELOG.md following [Keep a Changelog](./changelog.md) format
+! Use [Semantic Versioning](../core/versioning.md) for releases:
+- **MAJOR** (X.0.0): Breaking changes
+- **MINOR** (0.X.0): New features (backward compatible)
+- **PATCH** (0.0.X): Bug fixes (backward compatible)
 
 ## Compliance
 
--  use Conventional Commits for all commits: `type(scope): description`
--  maintain CHANGELOG.md following Keep a Changelog format
--  use Semantic Versioning for releases
--  force-push or `reset --hard` without explicit permission
--  run `task check` before committing
--  use `git --no-pager` for programmatic/scripted operations
--  keep secrets in `secrets/` dir;  commit them
--  prefer safe alternatives (`revert`, temp branches) over history rewriting
+- ! Use Conventional Commits for all commits: `type(scope): description`
+- ! Maintain CHANGELOG.md following Keep a Changelog format
+- ! Use Semantic Versioning for releases
+- ⊗ Force-push or `reset --hard` without explicit permission
+- ! Run `task check` before committing
+- ! Use `git --no-pager` for programmatic/scripted operations
+- ! Keep secrets in `secrets/` dir; ⊗ commit them
+- ~ Prefer safe alternatives (`revert`, temp branches) over history rewriting

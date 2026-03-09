@@ -24,7 +24,8 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 ## Code Search
 
-- ! Use Warp's built-in grep (uses `rg`), `rg`, or `ast-grep`
+- ! use `rg`, or `ast-grep` (when available) instead of grep
+- ! Use Warp's built-in grep (which is rg) when running on warp
 - ~ Install if missing
 - ? Fall back to `grep` command only if tools cannot be installed
 
@@ -73,9 +74,8 @@ See [../scm/git.md](../scm/git.md) for:
 - ~ Prioritize code quality and readability over backwards compatibility
 
 **Testing:**
+- ! Implementation is INCOMPLETE until tests written AND `task test:coverage` passes
 - See [../coding/testing.md](../coding/testing.md) for universal requirements
-- ! ≥85% test coverage
-- ! Run `task test:coverage` to verify
 
 **Telemetry:**
 - See [../tools/telemetry.md](../tools/telemetry.md) for recommendations
@@ -89,18 +89,7 @@ See [../scm/git.md](../scm/git.md) for:
 - ! Use Task ([go-task](https://taskfile.dev)) for all repeatable operations
 - ! If `task` not found, attempt to install go-task
 - ! If installation fails, stop and ask user for help
-- See [../tools/taskfile.md](../tools/taskfile.md) for standards
-
-**Common Tasks:**
-```bash
-task fmt                # Format code
-task lint               # Lint code
-task test               # Run tests
-task test:coverage      # Run tests with coverage (! ≥85%)
-task quality            # All quality checks
-task check              # Pre-commit (! run: fmt+lint+type+test)
-task build              # Build project
-```
+- See [../tools/taskfile.md](../tools/taskfile.md) for standards and common commands
 
 ## Change Management
 
@@ -154,3 +143,6 @@ task build              # Build project
 - ⊗ Skipping quality checks
 - ⊗ Breaking changes without explicit approval
 - ⊗ Using `grep` command when `rg` or Warp grep available
+- ⊗ Implementing code without tests
+- ⊗ Claiming "done" before running test:coverage
+- ⊗ Ignoring coverage drops
