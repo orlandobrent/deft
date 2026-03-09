@@ -312,4 +312,13 @@ Within Phase 3, subphases 3.2–3.5 can run in parallel after 3.1.
 
 ---
 
+## Workflow Rules
+
+- **No auto-push.** Commit completed work locally, then STOP. Do not push to `origin`
+  until the author has vetted locally and explicitly instructs a push.
+- **Author on all commits.** Every commit must carry `Scott Adams <msadams@msadams.com>`
+  as author with the current timestamp.
+
+---
+
 *Generated from interview — Deft Directive msadams-branch — 2026-03-08*

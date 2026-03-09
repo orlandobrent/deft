@@ -10,6 +10,13 @@ in this plan are complete and verified.
 
 ---
 
+## Standing Rules
+
+> **⚠️ No auto-push.** After committing, STOP. Do not push to `origin` until
+> the author has vetted the changes locally. Push only when explicitly instructed.
+
+---
+
 ## Pre-Flight Checks
 
 Before writing any files, verify the environment is ready:

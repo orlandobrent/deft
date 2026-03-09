@@ -43,6 +43,15 @@ See `SPECIFICATION.md` for full implementation plan.
 - Must be completed before starting the installation model refactor
 - Prerequisite for validating all subsequent changes
 
+### Enforce bootstrap as mandatory onboarding gate
+- Root cause: on initial setup, agent bypassed `run bootstrap` and jumped directly
+  to `run spec`; `~/.config/deft/USER.md` was never generated via the intended path
+  (identified 2026-03-09)
+- `cmd_spec` and `cmd_project` should check for USER.md at entry; if absent, warn
+  and redirect to `run bootstrap` before continuing
+- SKILL.md entry point must include the same bootstrap check as its first step
+- Protection must live in the repo — not reliant on user knowledge of the flow
+
 ### Refactor: git submodule → npx/CLI installation model
 - **High priority** — first major feature change after TDD conversion
 - Current model: install via `git clone` as a git submodule in project dir
@@ -89,6 +98,7 @@ See `SPECIFICATION.md` for full implementation plan.
   - `cc442fc` Add comprehensive New Project Workflow
   - `2f2a89e` Add clawd.bot compatibility
 - Cherry-pick or manually apply these changes
+- See "Enforce bootstrap as mandatory onboarding gate" — entry point must invoke this check
 
 ### Write CHANGELOG for post-v0.5.0 work
 - No changelog entries exist for context engineering module, canonical vBRIEF pattern,
