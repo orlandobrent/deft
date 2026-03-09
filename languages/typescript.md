@@ -12,7 +12,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - ! TSDoc comments for all exported APIs
 
 ### Testing
-See [testing.md](../coding/testing.md) for universal requirements.
+See [testing.md](../coding/testing.md).
 
 - ! Use Vitest (or Jest) + coverage
 - Files: `*.spec.ts` or `*.test.ts`
@@ -32,27 +32,14 @@ See [testing.md](../coding/testing.md) for universal requirements.
 - ~ Prefer `unknown` for type-safe unknowns
 
 ### Telemetry
-- See [telemetry.md](../tools/telemetry.md) for recommendations
+- See [telemetry.md](../tools/telemetry.md)
 - ~ Structured logging (pino, winston) for production
 - ~ Sentry.io for error tracking
 - ? OpenTelemetry for distributed tracing
 
 ## Commands
 
-```bash
-task fmt                # Format (or `task ts:fmt` in multi-lang projects)
-task lint               # Lint (or `task ts:lint` in multi-lang projects)
-task test               # Run all tests (unit, integration, fuzzing)
-task test:coverage      # Run tests with coverage report (! ≥85%)
-task quality            # All quality checks
-task check              # Pre-commit (! run: fmt+lint+type+test)
-```
-
-**Note**: Single-language projects ! use generic names (`fmt`, `lint`). Multi-language projects ! use namespaced names (`ts:fmt`, `py:fmt`). See [taskfile.md](./taskfile.md#naming-conventions).
-
-
-### Test Organization
-- ~ Place integration tests in `tests/integration/`
+See [commands.md](./commands.md).
 
 ## Patterns
 
@@ -115,57 +102,11 @@ task check              # Pre-commit (! run: fmt+lint+type+test)
 
 ## vitest.config.ts
 
-```typescript
-import { defineConfig } from "vitest/config";
-
-export default defineConfig({
-  test: {
-    globals: true,
-    environment: "node", // or 'jsdom' for React
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "html", "lcov"],
-      include: ["src/**/*.ts"],
-      exclude: ["src/**/*.spec.ts", "src/**/*.test.ts", "src/index.ts"],
-      thresholds: {
-        lines: 85,
-        functions: 85,
-        branches: 85,
-        statements: 85,
-      },
-    },
-  },
-});
-```
+Key settings: `globals: true`, `environment: "node"` (or `jsdom`), `coverage.provider: "v8"`, `thresholds: { lines: 85, functions: 85, branches: 85, statements: 85 }`, include `src/**/*.ts`, exclude tests.
 
 ## .eslintrc.json
 
-```json
-{
-  "parser": "@typescript-eslint/parser",
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:@typescript-eslint/recommended-requiring-type-checking"
-  ],
-  "parserOptions": {
-    "project": "./tsconfig.json"
-  },
-  "rules": {
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      { "argsIgnorePattern": "^_" }
-    ],
-    "@typescript-eslint/explicit-function-return-type": [
-      "warn",
-      {
-        "allowExpressions": true
-      }
-    ]
-  }
-}
-```
+Key settings: `@typescript-eslint/parser`, extends `recommended` + `recommended-requiring-type-checking`, rules: `no-explicit-any: error`, `no-unused-vars: [error, { argsIgnorePattern: "^_" }]`, `explicit-function-return-type: [warn, { allowExpressions: true }]`.
 
 ## Compliance Checklist
 

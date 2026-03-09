@@ -111,6 +111,115 @@ def get_script_dir() -> Path:
     """Get the directory where this script is located"""
     return Path(__file__).parent.absolute()
 
+def resolve_path(path_str: str) -> Path:
+    """Resolve a user-supplied path string to an absolute Path.
+    
+    Expands ~ and resolves relative paths against cwd.
+    """
+    return Path(path_str).expanduser().resolve()
+
+def get_default_paths() -> dict:
+    """Return default output paths for all generated files.
+    
+    Environment variables override built-in defaults:
+        DEFT_USER_PATH          default: ~/.config/deft/USER.md
+        DEFT_PROJECT_PATH       default: ./PROJECT.md
+        DEFT_PRD_PATH           default: ./PRD.md
+        DEFT_SPECIFICATION_PATH default: ./SPECIFICATION.md
+    
+    Returns:
+        dict with keys 'user', 'project', 'prd', 'specification'
+    """
+    return {
+        'user': os.environ.get('DEFT_USER_PATH', '~/.config/deft/USER.md'),
+        'project': os.environ.get('DEFT_PROJECT_PATH', './PROJECT.md'),
+        'prd': os.environ.get('DEFT_PRD_PATH', './PRD.md'),
+        'specification': os.environ.get('DEFT_SPECIFICATION_PATH', './SPECIFICATION.md'),
+    }
+
+# Legacy path helpers for backward compatibility
+def _legacy_user_path() -> Path:
+    """Old location for user.md (inside deft framework dir)."""
+    return get_script_dir() / "core" / "user.md"
+
+def _legacy_project_path() -> Path:
+    """Old location for project.md (inside deft framework dir)."""
+    return Path("./deft/core/project.md")
+
+# Non-language support files to exclude from language selection
+_NON_LANGUAGE_FILES = {'commands', 'markdown', 'mermaid'}
+
+# Display name overrides for language file stems
+_LANGUAGE_DISPLAY_NAMES = {
+    'cpp': 'C++',
+    'c#': 'C#',
+    'c': 'C',
+    'r': 'R',
+    'sql': 'SQL',
+    'vhdl': 'VHDL',
+    'javascript': 'JavaScript',
+    'typescript': 'TypeScript',
+    'visual-basic': 'Visual Basic',
+}
+
+def get_available_languages() -> List[tuple]:
+    """Scan languages/ directory and return available programming languages.
+    
+    Returns:
+        Sorted list of (stem, display_name) tuples.
+        Excludes non-language support files (commands, markdown, mermaid).
+    """
+    lang_dir = get_script_dir() / "languages"
+    if not lang_dir.is_dir():
+        return []
+    
+    languages = []
+    for f in lang_dir.glob("*.md"):
+        stem = f.stem
+        if stem.lower() in _NON_LANGUAGE_FILES:
+            continue
+        display = _LANGUAGE_DISPLAY_NAMES.get(
+            stem, _LANGUAGE_DISPLAY_NAMES.get(
+            stem.lower(), stem.replace('-', ' ').title()))
+        languages.append((stem, display))
+    
+    return sorted(languages, key=lambda x: x[1].lower())
+
+def _lang_widget_id(stem: str) -> str:
+    """Create a valid Textual widget ID from a language file stem."""
+    return "lang_" + stem.replace('#', 'sharp').replace('+', 'plus')
+
+# Non-strategy support files to exclude from strategy selection
+_NON_STRATEGY_FILES = {'readme'}
+
+# Display name overrides for strategy file stems
+_STRATEGY_DISPLAY_NAMES = {
+    'speckit': 'SpecKit',
+}
+
+def get_available_strategies() -> List[tuple]:
+    """Scan strategies/ directory and return available strategies.
+    
+    Returns:
+        Sorted list of (stem, display_name) tuples.
+        Excludes non-strategy support files (README).
+    """
+    strat_dir = get_script_dir() / "strategies"
+    if not strat_dir.is_dir():
+        return []
+    
+    strategies = []
+    for f in strat_dir.glob("*.md"):
+        stem = f.stem
+        if stem.lower() in _NON_STRATEGY_FILES:
+            continue
+        display = _STRATEGY_DISPLAY_NAMES.get(
+            stem, _STRATEGY_DISPLAY_NAMES.get(
+            stem.lower(), stem.replace('-', ' ').title()))
+        strategies.append((stem, display))
+    
+    return sorted(strategies, key=lambda x: x[1].lower())
+
 def usage():
     """Print usage information"""
     hint = ""
@@ -314,14 +423,27 @@ def cmd_bootstrap(args: List[str]):
     """Bootstrap command - set up user.md"""
     print_header(f"Deft v{VERSION} - Bootstrap")
     print()
+    info("This command creates user.md, which defines YOUR personal preferences:")
+    info("  • Your name (how the AI should address you)")
+    info("  • Primary programming languages")
+    info("  • Default test coverage threshold")
+    info("  • Development strategy")
+    info("  • Custom rules and experimental guidelines")
+    print()
+    info("These preferences apply across all your projects and only need to be set once.")
+    info("You can update them anytime by editing user.md or re-running bootstrap.")
+    print()
     
-    script_dir = get_script_dir()
-    user_file = script_dir / "core" / "user.md"
+    defaults = get_default_paths()
+    
+    print_section("Output Location")
+    user_path_str = read_input("Where to write USER.md", defaults['user'])
+    user_file = resolve_path(user_path_str)
     
     # Check if file exists
     if user_file.exists() and "--force" not in args:
-        warn("user.md already exists. Use --force to overwrite.")
-        if not read_yn("Overwrite existing user.md?"):
+        warn(f"{user_file} already exists. Use --force to overwrite.")
+        if not read_yn("Overwrite existing file?"):
             return 0
     
     print()
@@ -333,30 +455,47 @@ def cmd_bootstrap(args: List[str]):
     
     print()
     print_section("Programming Languages")
+    available_langs = get_available_languages()
     info("Select your primary programming languages (comma-separated):")
-    print("  1. Python")
-    print("  2. Go")
-    print("  3. TypeScript")
-    print("  4. C++")
-    print("  5. Other")
+    for i, (stem, display) in enumerate(available_langs, 1):
+        print(f"  {i}. {display}")
+    other_num = len(available_langs) + 1
+    print(f"  {other_num}. Other")
     lang_selection = read_input("Selection (e.g., 1,3)")
-    
-    # Map selections to language names
-    lang_map = {
-        "1": "Python",
-        "2": "Go",
-        "3": "TypeScript",
-        "4": "C++",
-        "5": "Other"
-    }
     
     lang_nums = [s.strip() for s in lang_selection.split(',')]
     languages = []
     for num in lang_nums:
-        if num in lang_map:
-            languages.append(f"- {lang_map[num]}")
+        try:
+            idx = int(num) - 1
+            if 0 <= idx < len(available_langs):
+                languages.append(f"- {available_langs[idx][1]}")
+            elif int(num) == other_num:
+                other_lang = read_input("Enter language name")
+                if other_lang:
+                    languages.append(f"- {other_lang}")
+        except ValueError:
+            pass
     
     languages_str = '\n'.join(languages) if languages else "- (None specified)"
+    
+    print()
+    print_section("Development Strategy")
+    available_strats = get_available_strategies()
+    info("Select your default development strategy:")
+    for i, (stem, display) in enumerate(available_strats, 1):
+        print(f"  {i}. {display}")
+    strat_selection = read_input("Selection", "1")
+    
+    try:
+        strat_idx = int(strat_selection.strip()) - 1
+        if 0 <= strat_idx < len(available_strats):
+            selected_strategy = available_strats[strat_idx]
+        else:
+            selected_strategy = available_strats[0] if available_strats else ("default", "Default")
+    except ValueError:
+        selected_strategy = available_strats[0] if available_strats else ("default", "Default")
+    strategy_stem, strategy_display = selected_strategy
     
     print()
     print_section("Custom Rules")
@@ -387,45 +526,38 @@ def cmd_bootstrap(args: List[str]):
     if experimental_rules:
         experimental_section = "\n## Experimental Rules\n\n" + "\n".join(experimental_rules)
     
+    # Build coverage override line (only if non-default)
+    coverage_line = f"\n**Coverage**: ! ≥{coverage}% test coverage" if coverage != "85" else ""
+    
     # Generate user.md
     user_content = f"""# User Preferences
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 **Rule Precedence**: This file has HIGHEST precedence - overrides all other deft rules.
+Only add items here that **override or extend** the defaults in `deft/main.md` and related files.
 
 ## Name
 
 Address the user as: **{user_name}**
 
-## Default Standards
-
-**Coverage**: ! ≥{coverage}% test coverage for all projects (unless project.md specifies otherwise)
+## Overrides
 
 **Primary Languages**:
 {languages_str}
+
+**Default Strategy**: [{strategy_display}](../strategies/{strategy_stem}.md)
+{coverage_line}
 
 ## Custom Rules
 
 {custom_rules if custom_rules else "No custom rules defined yet."}
 {experimental_section}
 
-## Workflow Preferences
-
-- ~ Use task-based automation (Taskfile)
-- ! Always run `task check` before committing
-- ~ Follow Conventional Commits
-
-## AI Behavior
-
-- ~ Be direct and concise
-- ~ Proactively suggest improvements
-- ! Explain tradeoffs for major decisions
-
 ---
 
 **Note**: You can edit this file anytime to update your preferences.
-**See**: [../main.md](../main.md) for framework overview.
+**See**: [../main.md](../main.md) for framework defaults.
 """
     
     user_file.parent.mkdir(parents=True, exist_ok=True)
@@ -461,7 +593,7 @@ def cmd_project(args: List[str]):
     info("It works alongside the general Deft guidelines in ./deft/")
     print()
     
-    project_file = Path("./deft/core/project.md")
+    defaults = get_default_paths()
     
     # Check if we're in a project directory
     if not Path("./deft").is_dir():
@@ -470,6 +602,10 @@ def cmd_project(args: List[str]):
             cmd_install(["."])
         else:
             return 1
+    
+    print_section("Output Location")
+    project_path_str = read_input("Where to write PROJECT.md", defaults['project'])
+    project_file = resolve_path(project_path_str)
     
     # Gather project information
     project_name = read_input("Project name")
@@ -507,68 +643,91 @@ def cmd_project(args: List[str]):
     project_types_str = ", ".join(project_types)
     
     print()
-    info("Select primary programming language:")
-    print("  1. Python")
-    print("  2. Go")
-    print("  3. TypeScript")
-    print("  4. C++")
-    lang_num = read_input("Selection")
+    available_langs = get_available_languages()
+    info("Select primary programming language(s) (comma-separated):")
+    for i, (stem, display) in enumerate(available_langs, 1):
+        print(f"  {i}. {display}")
+    other_num = len(available_langs) + 1
+    print(f"  {other_num}. Other")
+    lang_selection = read_input("Selection (e.g., 1,3)")
     
-    plang_map = {
-        "1": "Python",
-        "2": "Go",
-        "3": "TypeScript",
-        "4": "C++"
-    }
-    primary_lang = plang_map.get(lang_num, "Python")
+    lang_nums = [s.strip() for s in lang_selection.split(',')]
+    selected_langs = []  # list of (stem, display) tuples
+    for num in lang_nums:
+        try:
+            idx = int(num) - 1
+            if 0 <= idx < len(available_langs):
+                selected_langs.append(available_langs[idx])
+            elif int(num) == other_num:
+                other_lang = read_input("Enter language name")
+                if other_lang:
+                    selected_langs.append((other_lang.lower(), other_lang))
+        except ValueError:
+            pass
+    
+    if not selected_langs:
+        selected_langs = [("python", "Python")]
+    primary_lang = selected_langs[0][1]
+    primary_stem = selected_langs[0][0]
     
     print()
     proj_coverage = read_input("Coverage threshold (default: 85%)", "85")
     tech_stack = read_input("Tech stack details (e.g., 'Flask + SQLAlchemy' or 'React + Next.js')")
     
+    print()
+    print_section("Development Strategy")
+    available_strats = get_available_strategies()
+    info("Select development strategy for this project:")
+    for i, (stem, display) in enumerate(available_strats, 1):
+        print(f"  {i}. {display}")
+    strat_selection = read_input("Selection", "1")
+    
+    try:
+        strat_idx = int(strat_selection.strip()) - 1
+        if 0 <= strat_idx < len(available_strats):
+            selected_strategy = available_strats[strat_idx]
+        else:
+            selected_strategy = available_strats[0] if available_strats else ("default", "Default")
+    except ValueError:
+        selected_strategy = available_strats[0] if available_strats else ("default", "Default")
+    strategy_stem, strategy_display = selected_strategy
+    
     # Generate project.md
     tech_stack_str = f" - {tech_stack}" if tech_stack else ""
     today = datetime.now().strftime("%Y-%m-%d")
     
+    # Build language links and display string
+    lang_links = " | ".join([f"[../languages/{s}.md](../languages/{s}.md)" for s, _ in selected_langs])
+    lang_names = ", ".join([d for _, d in selected_langs])
+    
+    # Build coverage override line (only if non-default)
+    coverage_line = f"\n- **Coverage**: ! ≥{proj_coverage}% (overrides default 85%)" if proj_coverage != "85" else ""
+    
     project_content = f"""# {project_name} Project Guidelines
 
-Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
+Only specify items here that **override or extend** the deft defaults.
+See `deft/main.md`, `deft/coding/coding.md`, and language-specific files for base standards.
 
-**⚠️ See also**: [../main.md](../main.md) | [../languages/{primary_lang.lower()}.md](../languages/{primary_lang.lower()}.md)
+**⚠️ See also**: [../main.md](../main.md) | {lang_links}
 
 ## Project Configuration
 
-**Tech Stack**: {project_types_str} using {primary_lang}{tech_stack_str}
+**Tech Stack**: {project_types_str} using {lang_names}{tech_stack_str}
 
-## Workflow
+## Strategy
 
-```bash
-task check         # Pre-commit (fmt, lint, test, test:coverage)
-task test:coverage # Coverage (≥{proj_coverage}%)
-task build         # Build project
-task clean         # Clean artifacts
-```
+Use [{strategy_display}](../strategies/{strategy_stem}.md) for this project.
+
+## Overrides
+{coverage_line}
 
 ## Secrets
 
-```bash
-ls secrets/
-# Add your secrets to secrets/ directory
-# Use .example files as templates
-```
+<!-- List project-specific secrets needed -->
 
-## Standards
+## Principles
 
-**Quality:**
-- ! Run `task check` before every commit
-- ! Achieve ≥{proj_coverage}% coverage overall + per-module
-- ! Store secrets in `secrets/` dir
-- ~ Provide `.example` templates for secrets
-
-**Telemetry:**
-- ~ Structured logging (see [../tools/telemetry.md](../tools/telemetry.md))
-- ~ Sentry.io for error tracking
-- ? Distributed tracing for complex workflows
+<!-- Non-negotiable rules unique to THIS project (3-5 items) -->
 
 ## Project-Specific Rules
 
@@ -620,14 +779,22 @@ def cmd_spec(args: List[str]):
     info("This ensures nothing important is overlooked before coding starts.")
     print()
     
-    prd_file = Path("./PRD.md")
+    defaults = get_default_paths()
+    
+    print_section("Output Locations")
+    prd_path_str = read_input("Where to write PRD.md", defaults['prd'])
+    prd_file = resolve_path(prd_path_str)
+    spec_path_str = read_input("Where should SPECIFICATION.md be generated", defaults['specification'])
+    spec_file = resolve_path(spec_path_str)
     
     if prd_file.exists() and "--force" not in args:
-        warn("PRD.md already exists. Use --force to overwrite.")
+        warn(f"{prd_file} already exists. Use --force to overwrite.")
         return 1
     
-    # Try to read project name from project.md
-    project_file = Path("./deft/core/project.md")
+    # Try to read project name from project.md (check new default, then legacy path)
+    project_default = resolve_path(defaults['project'])
+    project_legacy = _legacy_project_path()
+    project_file = project_default if project_default.exists() else project_legacy
     spec_name = ""
     if project_file.exists():
         try:
@@ -675,14 +842,20 @@ def cmd_spec(args: List[str]):
     template_content = template_content.replace("[project name]", spec_name)
     template_content = template_content.replace(f"I want to build [project name]", f"I want to build {spec_name}")
     
+    # Replace SPECIFICATION.md path in template if user chose a custom location
+    template_content = template_content.replace(
+        "Generate as SPECIFICATION.md",
+        f"Generate as {spec_file}"
+    )
+    
     # Generate PRD
     today = datetime.now().strftime("%Y-%m-%d")
-    full_path = Path.cwd() / prd_file
     
     prd_content = f"""# Product Requirements Document: {spec_name}
 
 **Generated**: {today}
 **Status**: Ready for AI Interview
+**Specification Output**: {spec_file}
 
 ## Initial Input
 
@@ -695,16 +868,17 @@ def cmd_spec(args: List[str]):
 {template_content}
 """
     
+    prd_file.parent.mkdir(parents=True, exist_ok=True)
     prd_file.write_text(prd_content, encoding='utf-8')
     
     success(f"Created PRD.md at {prd_file}")
     info("Next steps:")
     info(f"  1. Open your AI assistant (Claude, Warp.dev, etc.)")
-    info(f"  2. Ask your AI to read and run {full_path}")
+    info(f"  2. Ask your AI to read and run {prd_file}")
     info(f"  3. The AI will conduct a detailed interview based on the template")
-    info(f"  4. AI will generate the final SPECIFICATION.md")
-    info(f"  5. You can review the SPECIFICATION.md if you want")
-    info(f"  6. Ask your AI to implement {Path.cwd()}/SPECIFICATION.md")
+    info(f"  4. AI will generate the final specification at {spec_file}")
+    info(f"  5. You can review the specification if you want")
+    info(f"  6. Ask your AI to implement {spec_file}")
     info(f"  7. Your AI may ask you some questions like 'should I continue', just say yes or please continue")
     return 0
 
@@ -936,18 +1110,23 @@ def cmd_reset(args: List[str]):
     info("This command resets deft configuration files to their default state.")
     info("You can choose which files to reset:")
     print()
-    info("  • user.md          - Your personal preferences (in ./deft/core/)")
-    info("  • project.md        - Project configuration (in ./deft/core/)")
-    info("  • PRD.md            - Product requirements document (in current directory)")
-    info("  • SPECIFICATION.md  - Generated specification (in current directory)")
+    defaults = get_default_paths()
+    user_default = resolve_path(defaults['user'])
+    project_default = resolve_path(defaults['project'])
+    prd_default = resolve_path(defaults['prd'])
+    spec_default = resolve_path(defaults['specification'])
+    
+    info(f"  • USER.md           - Your personal preferences ({defaults['user']})")
+    info(f"  • PROJECT.md        - Project configuration ({defaults['project']})")
+    info(f"  • PRD.md            - Product requirements document ({defaults['prd']})")
+    info(f"  • SPECIFICATION.md  - Generated specification ({defaults['specification']})")
     print()
     
-    # Check what exists
-    script_dir = get_script_dir()
-    user_file = script_dir / "core" / "user.md"
-    project_file = Path("./deft/core/project.md")
-    prd_file = Path("./PRD.md")
-    spec_file = Path("./SPECIFICATION.md")
+    # Check what exists (new default locations and legacy locations)
+    user_file = user_default if user_default.exists() else _legacy_user_path()
+    project_file = project_default if project_default.exists() else _legacy_project_path()
+    prd_file = prd_default
+    spec_file = spec_default
     
     files_to_reset = []
     
@@ -1006,14 +1185,13 @@ def cmd_reset(args: List[str]):
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 **Rule Precedence**: This file has HIGHEST precedence - overrides all other deft rules.
+Only add items here that **override or extend** the defaults in `deft/main.md` and related files.
 
 ## Name
 
 Address the user as: **(Your Name)**
 
-## Default Standards
-
-**Coverage**: ! ≥85% test coverage for all projects (unless project.md specifies otherwise)
+## Overrides
 
 **Primary Languages**:
 - (Add your languages here)
@@ -1022,22 +1200,10 @@ Address the user as: **(Your Name)**
 
 No custom rules defined yet.
 
-## Workflow Preferences
-
-- ~ Use task-based automation (Taskfile)
-- ! Always run `task check` before committing
-- ~ Follow Conventional Commits
-
-## AI Behavior
-
-- ~ Be direct and concise
-- ~ Proactively suggest improvements
-- ! Explain tradeoffs for major decisions
-
 ---
 
 **Note**: You can edit this file anytime to update your preferences.
-**See**: [../main.md](../main.md) for framework overview.
+**See**: [../main.md](../main.md) for framework defaults.
 """
             filepath.write_text(default_content, encoding='utf-8')
             success(f"Reset {name} to default template")
@@ -1129,27 +1295,36 @@ if HAS_TEXTUAL:
         }
         """
         
+        def __init__(self):
+            super().__init__()
+            self.available_langs = get_available_languages()
+            self.available_strats = get_available_strategies()
+        
         def compose(self) -> ComposeResult:
             yield Header()
             with ScrollableContainer():
                 yield Label("Bootstrap - User Preferences Setup")
+                yield Label("\n[dim]This section sets up your personal preferences that will apply across all projects. These settings define how the AI addresses you, your preferred languages, coverage standards, and development strategies. You only need to complete this once, though you can update it anytime.[/dim]\n")
                 yield Label("Your name (how AI should address you):")
                 yield Input(id="name", placeholder="Your name")
                 yield Label("\nDefault coverage threshold (%):")
                 yield Input(id="coverage", placeholder="85", value="85")
                 yield Label("\nPrimary languages:")
-                yield Checkbox("Python", id="lang_python")
-                yield Checkbox("Go", id="lang_go")
-                yield Checkbox("TypeScript", id="lang_typescript")
-                yield Checkbox("C++", id="lang_cpp")
-                yield Checkbox("Rust", id="lang_rust")
-                yield Checkbox("Java", id="lang_java")
+                for stem, display in self.available_langs:
+                    yield Checkbox(display, id=_lang_widget_id(stem))
+                yield Label("Other language (optional):")
+                yield Input(id="other_lang", placeholder="Enter language name")
+                yield Label("\nDevelopment strategy:")
+                strategy_options = [(display, stem) for stem, display in self.available_strats]
+                yield Select(strategy_options, id="strategy", allow_blank=False, value=strategy_options[0][1] if strategy_options else "default")
                 yield Label("\nCustom rules (optional):")
                 yield Input(id="rules", placeholder="Press Enter to skip")
                 yield Label("\nExperimental Rules:")
                 yield Checkbox("Use meta/SOUL.md (Strategic context)", id="use_soul")
                 yield Checkbox("Use meta/morals.md (Ethical AI)", id="use_morals")
                 yield Checkbox("Use meta/code-field.md (Advanced arch)", id="use_code_field")
+                yield Label("\nOutput location:")
+                yield Input(id="output_path", placeholder="~/.config/deft/USER.md", value=get_default_paths()['user'])
             with Horizontal():
                 yield Button("Submit", variant="primary", id="submit")
                 yield Button("Cancel", id="cancel")
@@ -1172,19 +1347,20 @@ if HAS_TEXTUAL:
             
             # Get language selections from checkboxes
             languages = []
-            if self.query_one("#lang_python", Checkbox).value:
-                languages.append("- Python")
-            if self.query_one("#lang_go", Checkbox).value:
-                languages.append("- Go")
-            if self.query_one("#lang_typescript", Checkbox).value:
-                languages.append("- TypeScript")
-            if self.query_one("#lang_cpp", Checkbox).value:
-                languages.append("- C++")
-            if self.query_one("#lang_rust", Checkbox).value:
-                languages.append("- Rust")
-            if self.query_one("#lang_java", Checkbox).value:
-                languages.append("- Java")
+            for stem, display in self.available_langs:
+                try:
+                    if self.query_one(f"#{_lang_widget_id(stem)}", Checkbox).value:
+                        languages.append(f"- {display}")
+                except Exception:
+                    pass
+            other_lang = self.query_one("#other_lang", Input).value.strip()
+            if other_lang:
+                languages.append(f"- {other_lang}")
             languages_str = '\n'.join(languages) if languages else "- (None specified)"
+            
+            # Get strategy selection
+            strategy_stem = str(self.query_one("#strategy", Select).value or "default")
+            strategy_display = dict(self.available_strats).get(strategy_stem, strategy_stem.title())
             
             # Get experimental rules preferences from checkboxes
             use_soul = self.query_one("#use_soul", Checkbox).value
@@ -1208,47 +1384,40 @@ if HAS_TEXTUAL:
             if experimental_rules:
                 experimental_section = "\n## Experimental Rules\n\n" + "\n".join(experimental_rules)
             
-            # Generate user.md
-            script_dir = get_script_dir()
-            user_file = script_dir / "core" / "user.md"
+            # Resolve output path
+            output_path_str = self.query_one("#output_path", Input).value.strip()
+            user_file = resolve_path(output_path_str or get_default_paths()['user'])
+            # Build coverage override line (only if non-default)
+            coverage_line = f"\n**Coverage**: ! ≥{coverage}% test coverage" if coverage != "85" else ""
+            
             user_content = f"""# User Preferences
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 **Rule Precedence**: This file has HIGHEST precedence - overrides all other deft rules.
+Only add items here that **override or extend** the defaults in `deft/main.md` and related files.
 
 ## Name
 
 Address the user as: **{name}**
 
-## Default Standards
-
-**Coverage**: ! ≥{coverage}% test coverage for all projects (unless project.md specifies otherwise)
+## Overrides
 
 **Primary Languages**:
 {languages_str}
+
+**Default Strategy**: [{strategy_display}](../strategies/{strategy_stem}.md)
+{coverage_line}
 
 ## Custom Rules
 
 {custom_rules if custom_rules else "No custom rules defined yet."}
 {experimental_section}
 
-## Workflow Preferences
-
-- ~ Use task-based automation (Taskfile)
-- ! Always run `task check` before committing
-- ~ Follow Conventional Commits
-
-## AI Behavior
-
-- ~ Be direct and concise
-- ~ Proactively suggest improvements
-- ! Explain tradeoffs for major decisions
-
 ---
 
 **Note**: You can edit this file anytime to update your preferences.
-**See**: [../main.md](../main.md) for framework overview.
+**See**: [../main.md](../main.md) for framework defaults.
 """
             
             user_file.parent.mkdir(parents=True, exist_ok=True)
@@ -1270,10 +1439,16 @@ Address the user as: **{name}**
         }
         """
         
+        def __init__(self):
+            super().__init__()
+            self.available_langs = get_available_languages()
+            self.available_strats = get_available_strategies()
+        
         def compose(self) -> ComposeResult:
             yield Header()
             with ScrollableContainer():
                 yield Label("Project Configuration")
+                yield Label("\n[dim]This section configures the specific settings for your current project. These settings override your bootstrap preferences and define project-specific details like tech stack, type, and quality standards. Complete this for each new project you work on.[/dim]\n")
                 yield Label("Project name:")
                 yield Input(id="name", placeholder="My Project")
                 yield Label("\nProject type (select all that apply):")
@@ -1283,15 +1458,20 @@ Address the user as: **{name}**
                 yield Checkbox("Web App", id="type_webapp")
                 yield Checkbox("Library", id="type_library")
                 yield Checkbox("Other", id="type_other")
-                yield Label("\nPrimary language:")
-                yield Checkbox("Python", id="lang_python", value=True)
-                yield Checkbox("Go", id="lang_go")
-                yield Checkbox("TypeScript", id="lang_typescript")
-                yield Checkbox("C++", id="lang_cpp")
+                yield Label("\nPrimary language(s):")
+                for stem, display in self.available_langs:
+                    yield Checkbox(display, id=_lang_widget_id(stem))
+                yield Label("Other language (optional):")
+                yield Input(id="other_lang", placeholder="Enter language name")
+                yield Label("\nDevelopment strategy:")
+                strategy_options = [(display, stem) for stem, display in self.available_strats]
+                yield Select(strategy_options, id="strategy", allow_blank=False, value=strategy_options[0][1] if strategy_options else "default")
                 yield Label("\nCoverage threshold (%):")
                 yield Input(id="coverage", placeholder="85", value="85")
                 yield Label("Tech stack details (optional):")
                 yield Input(id="tech_stack", placeholder="Flask + SQLAlchemy")
+                yield Label("\nOutput location:")
+                yield Input(id="output_path", placeholder="./PROJECT.md", value=get_default_paths()['project'])
             with Horizontal():
                 yield Button("Submit", variant="primary", id="submit")
                 yield Button("Cancel", id="cancel")
@@ -1332,62 +1512,65 @@ Address the user as: **{name}**
                 project_types.append("Other")
             project_types_str = ", ".join(project_types) if project_types else "Application"
             
-            # Get primary language from checkboxes (first selected)
-            languages = []
-            if self.query_one("#lang_python", Checkbox).value:
-                languages.append("Python")
-            if self.query_one("#lang_go", Checkbox).value:
-                languages.append("Go")
-            if self.query_one("#lang_typescript", Checkbox).value:
-                languages.append("TypeScript")
-            if self.query_one("#lang_cpp", Checkbox).value:
-                languages.append("C++")
-            primary_lang = languages[0] if languages else "Python"
+            # Get selected languages from checkboxes
+            selected_langs = []
+            for stem, display in self.available_langs:
+                try:
+                    if self.query_one(f"#{_lang_widget_id(stem)}", Checkbox).value:
+                        selected_langs.append((stem, display))
+                except Exception:
+                    pass
+            other_lang = self.query_one("#other_lang", Input).value.strip()
+            if other_lang:
+                selected_langs.append((other_lang.lower(), other_lang))
+            
+            if not selected_langs:
+                selected_langs = [("python", "Python")]
+            primary_lang = selected_langs[0][1]
+            primary_stem = selected_langs[0][0]
+            
+            # Get strategy selection
+            strategy_stem = str(self.query_one("#strategy", Select).value or "default")
+            strategy_display = dict(self.available_strats).get(strategy_stem, strategy_stem.title())
             
             tech_stack_str = f" - {tech_stack}" if tech_stack else ""
             today = datetime.now().strftime("%Y-%m-%d")
             
-            # Generate project.md
-            project_file = Path("./deft/core/project.md")
+            # Build language links and display string
+            lang_links = " | ".join([f"[../languages/{s}.md](../languages/{s}.md)" for s, _ in selected_langs])
+            lang_names = ", ".join([d for _, d in selected_langs])
+            
+            # Resolve output path
+            output_path_str = self.query_one("#output_path", Input).value.strip()
+            project_file = resolve_path(output_path_str or get_default_paths()['project'])
+            # Build coverage override line (only if non-default)
+            coverage_line = f"\n- **Coverage**: ! ≥{coverage}% (overrides default 85%)" if coverage != "85" else ""
+            
             project_content = f"""# {project_name} Project Guidelines
 
-Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
+Only specify items here that **override or extend** the deft defaults.
+See `deft/main.md`, `deft/coding/coding.md`, and language-specific files for base standards.
 
-**⚠️ See also**: [../main.md](../main.md) | [../languages/{primary_lang.lower()}.md](../languages/{primary_lang.lower()}.md)
+**⚠️ See also**: [../main.md](../main.md) | {lang_links}
 
 ## Project Configuration
 
-**Tech Stack**: {project_types_str} using {primary_lang}{tech_stack_str}
+**Tech Stack**: {project_types_str} using {lang_names}{tech_stack_str}
 
-## Workflow
+## Strategy
 
-```bash
-task check         # Pre-commit (fmt, lint, test, test:coverage)
-task test:coverage # Coverage (≥{coverage}%)
-task build         # Build project
-task clean         # Clean artifacts
-```
+Use [{strategy_display}](../strategies/{strategy_stem}.md) for this project.
+
+## Overrides
+{coverage_line}
 
 ## Secrets
 
-```bash
-ls secrets/
-# Add your secrets to secrets/ directory
-# Use .example files as templates
-```
+<!-- List project-specific secrets needed -->
 
-## Standards
+## Principles
 
-**Quality:**
-- ! Run `task check` before every commit
-- ! Achieve ≥{coverage}% coverage overall + per-module
-- ! Store secrets in `secrets/` dir
-- ~ Provide `.example` templates for secrets
-
-**Telemetry:**
-- ~ Structured logging (see [../tools/telemetry.md](../tools/telemetry.md))
-- ~ Sentry.io for error tracking
-- ? Distributed tracing for complex workflows
+<!-- Non-negotiable rules unique to THIS project (3-5 items) -->
 
 ## Project-Specific Rules
 
@@ -1445,6 +1628,7 @@ ls secrets/
             yield Header()
             with ScrollableContainer():
                 yield Label("Specification Generator - PRD.md")
+                yield Label("\n[dim]This section creates a Product Requirements Document (PRD) for your project. The PRD captures your project's core purpose, description, and key features, which serves as input for AI-assisted development. This helps the AI understand what you're building and guides implementation.[/dim]\n")
                 yield Label("Project name:")
                 yield Input(id="name", placeholder="My Project")
                 yield Label("Brief description (1-2 sentences):")
@@ -1455,6 +1639,11 @@ ls secrets/
                 with Horizontal():
                     yield Button("Add Feature", id="add_feature")
                     yield Button("Clear Features", id="clear_features")
+                yield Label("\nOutput locations:")
+                yield Label("PRD output path:")
+                yield Input(id="prd_path", placeholder="./PRD.md", value=get_default_paths()['prd'])
+                yield Label("SPECIFICATION output path:")
+                yield Input(id="spec_path", placeholder="./SPECIFICATION.md", value=get_default_paths()['specification'])
                 with Horizontal():
                     yield Button("Submit", variant="primary", id="submit")
                     yield Button("Cancel", id="cancel")
@@ -1523,12 +1712,24 @@ ls secrets/
             else:
                 template_content = "(Template not found)"
             
+            # Resolve output paths
+            prd_path_str = self.query_one("#prd_path", Input).value.strip()
+            prd_file = resolve_path(prd_path_str or get_default_paths()['prd'])
+            spec_path_str = self.query_one("#spec_path", Input).value.strip()
+            spec_file = resolve_path(spec_path_str or get_default_paths()['specification'])
+            
+            # Replace SPECIFICATION.md path in template if user chose a custom location
+            template_content = template_content.replace(
+                "Generate as SPECIFICATION.md",
+                f"Generate as {spec_file}"
+            )
+            
             today = datetime.now().strftime("%Y-%m-%d")
-            prd_file = Path("./PRD.md")
             prd_content = f"""# Product Requirements Document: {project_name}
 
 **Generated**: {today}
 **Status**: Ready for AI Interview
+**Specification Output**: {spec_file}
 
 ## Initial Input
 
@@ -1541,6 +1742,7 @@ ls secrets/
 {template_content}
 """
             
+            prd_file.parent.mkdir(parents=True, exist_ok=True)
             prd_file.write_text(prd_content, encoding='utf-8')
             self.app.push_screen(SuccessScreen(f"Created PRD.md at {prd_file}"))
     
@@ -1553,6 +1755,7 @@ ls secrets/
             yield Header()
             with ScrollableContainer():
                 yield Label("Install Deft Framework")
+                yield Label("\n[dim]This section installs the deft framework files into your project directory. It creates the necessary directory structure, configuration files, and task automation setup. Use this when setting up deft in a new or existing project.[/dim]\n")
                 yield Label("Target directory (default: current):")
                 yield Input(id="directory", placeholder=".", value=".")
                 yield Label("\nThis will create:")
@@ -1618,34 +1821,37 @@ ls secrets/
             yield Header()
             with ScrollableContainer():
                 yield Label("Reset Configuration Files")
+                yield Label("\n[dim]This section allows you to reset or delete configuration files to start fresh. Use this when you want to reconfigure your settings or remove generated files. Warning: This action cannot be undone, so make sure you have backups if needed.[/dim]\n")
                 yield Label("\nSelect files to reset/delete:")
                 
-                # Check which files exist
-                script_dir = get_script_dir()
-                user_file = script_dir / "core" / "user.md"
-                project_file = Path("./deft/core/project.md")
-                prd_file = Path("./PRD.md")
-                spec_file = Path("./SPECIFICATION.md")
+                # Check which files exist (new defaults and legacy locations)
+                defaults = get_default_paths()
+                user_default = resolve_path(defaults['user'])
+                user_file = user_default if user_default.exists() else _legacy_user_path()
+                project_default = resolve_path(defaults['project'])
+                project_file = project_default if project_default.exists() else _legacy_project_path()
+                prd_file = resolve_path(defaults['prd'])
+                spec_file = resolve_path(defaults['specification'])
                 
                 if user_file.exists():
-                    yield Label(f"[cyan]✓[/cyan] user.md (will reset to default)", id="user_exists")
+                    yield Label(f"[cyan]✓[/cyan] USER.md at {user_file} (will reset to default)", id="user_exists")
                 else:
-                    yield Label("[dim]user.md (not found)[/dim]", id="user_missing")
+                    yield Label(f"[dim]USER.md (not found at {defaults['user']})[/dim]", id="user_missing")
                 
                 if project_file.exists():
-                    yield Label(f"[cyan]✓[/cyan] project.md (will delete)", id="project_exists")
+                    yield Label(f"[cyan]✓[/cyan] PROJECT.md at {project_file} (will delete)", id="project_exists")
                 else:
-                    yield Label("[dim]project.md (not found)[/dim]", id="project_missing")
+                    yield Label(f"[dim]PROJECT.md (not found at {defaults['project']})[/dim]", id="project_missing")
                 
                 if prd_file.exists():
-                    yield Label(f"[cyan]✓[/cyan] PRD.md (will delete)", id="prd_exists")
+                    yield Label(f"[cyan]✓[/cyan] PRD.md at {prd_file} (will delete)", id="prd_exists")
                 else:
-                    yield Label("[dim]PRD.md (not found)[/dim]", id="prd_missing")
+                    yield Label(f"[dim]PRD.md (not found at {defaults['prd']})[/dim]", id="prd_missing")
                 
                 if spec_file.exists():
-                    yield Label(f"[cyan]✓[/cyan] SPECIFICATION.md (will delete)", id="spec_exists")
+                    yield Label(f"[cyan]✓[/cyan] SPECIFICATION.md at {spec_file} (will delete)", id="spec_exists")
                 else:
-                    yield Label("[dim]SPECIFICATION.md (not found)[/dim]", id="spec_missing")
+                    yield Label(f"[dim]SPECIFICATION.md (not found at {defaults['specification']})[/dim]", id="spec_missing")
                 
                 yield Label("\n[yellow]Warning: This action cannot be undone![/yellow]")
                 
@@ -1665,11 +1871,13 @@ ls secrets/
             self.app.pop_screen()
         
         def handle_reset(self) -> None:
-            script_dir = get_script_dir()
-            user_file = script_dir / "core" / "user.md"
-            project_file = Path("./deft/core/project.md")
-            prd_file = Path("./PRD.md")
-            spec_file = Path("./SPECIFICATION.md")
+            defaults = get_default_paths()
+            user_default = resolve_path(defaults['user'])
+            user_file = user_default if user_default.exists() else _legacy_user_path()
+            project_default = resolve_path(defaults['project'])
+            project_file = project_default if project_default.exists() else _legacy_project_path()
+            prd_file = resolve_path(defaults['prd'])
+            spec_file = resolve_path(defaults['specification'])
             
             reset_count = 0
             
@@ -1734,6 +1942,7 @@ No custom rules defined yet.
             yield Header()
             with ScrollableContainer():
                 yield Label("Deft Configuration Validation")
+                yield Label("\n[dim]This validation checks that all required deft framework files are present and properly configured. It verifies core files, language definitions, and configuration structure to ensure the framework will function correctly.[/dim]\n")
                 yield Static("", id="results")
                 yield Button("Back to Menu", variant="primary", id="back")
             yield Footer()
@@ -1793,6 +2002,7 @@ No custom rules defined yet.
             yield Header()
             with ScrollableContainer():
                 yield Label("Deft Doctor - System Check")
+                yield Label("\n[dim]This diagnostic checks your system for the tools and dependencies deft needs to function properly. It verifies that required commands are available and that the framework's directory structure is intact.[/dim]\n")
                 yield Static("", id="results")
                 yield Button("Back to Menu", variant="primary", id="back")
             yield Footer()

@@ -11,7 +11,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - ! All exported symbols have doc comments (complete sentences)
 
 ### Testing
-See [testing.md](../coding/testing.md) for universal requirements.
+See [testing.md](../coding/testing.md).
 
 - ! Use Testify (assert/require)
 - Files: `*_test.go`, functions: `TestFuncName(t *testing.T)`
@@ -22,26 +22,14 @@ See [testing.md](../coding/testing.md) for universal requirements.
 - ! Exclude entry points, utilities, generated code
 
 ### Telemetry
-- See [telemetry.md](../tools/telemetry.md) for recommendations
+- See [telemetry.md](../tools/telemetry.md)
 - ~ Structured logging (zerolog) for production
 - ~ Sentry.io for error tracking
 - ? OpenTelemetry for distributed tracing
 
 ## Commands
 
-```bash
-task build              # Build (or `task go:build` in multi-lang projects)
-task test               # Run all tests (unit, integration, fuzzing)
-task test:coverage      # Run tests with coverage report (! ≥85%)
-task fmt                # Format (or `task go:fmt` in multi-lang projects)
-task lint               # Vet (or `task go:vet` in multi-lang projects)
-task quality            # All quality checks
-task check              # Pre-commit (! run: fmt+lint+test)
-```
-
-**Note**: Single-language projects ! use generic names (`fmt`, `lint`). Multi-language projects ! use namespaced names (`go:fmt`, `py:fmt`). See [taskfile.md](./taskfile.md#naming-conventions).
-
-
+See [commands.md](./commands.md).
 
 ## 🔧 Patterns
 

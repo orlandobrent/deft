@@ -68,8 +68,8 @@ Deft uses a layered architecture where more specific rules override general ones
 flowchart TD
     subgraph precedence ["Rule Precedence (top = highest)"]
         direction TB
-        U["👤 user.md<br/><i>Personal preferences</i>"]
-        P["📁 project.md<br/><i>Project-specific rules</i>"]
+        U["👤 USER.md<br/><i>Personal preferences (~/.config/deft/)</i>"]
+        P["📁 PROJECT.md<br/><i>Project-specific rules</i>"]
         L["🐍 python.md / go.md / etc.<br/><i>Language standards</i>"]
         T["🔧 taskfile.md<br/><i>Tool guidelines</i>"]
         M["🤖 main.md<br/><i>General AI behavior</i>"]
@@ -99,7 +99,7 @@ deft/
 │
 ├── core/                  # Core framework files
 │   ├── project.md         # Project template
-│   ├── user.md            # User preferences (highest precedence)
+│   ├── (user.md)          # Legacy location; now at ~/.config/deft/USER.md
 │   └── ralph.md           # Ralph loop concept (draft)
 │
 ├── coding/                # Coding standards
@@ -117,6 +117,20 @@ deft/
 │   ├── rest.md            # REST APIs
 │   ├── tui.md             # Terminal UIs
 │   └── web.md             # Web UIs
+│
+├── verification/          # Agent work verification
+│   ├── verification.md    # 4-tier verification ladder, must-haves, stubs
+│   └── uat.md             # User acceptance test generation
+│
+├── resilience/            # Session continuity & recovery
+│   ├── continue-here.md   # Interruption recovery protocol
+│   └── context-pruning.md # Fresh context per task
+│
+├── contracts/             # Interface contracts
+│   └── boundary-maps.md   # Produces/consumes between slices
+│
+├── deployments/           # Platform-specific deployment guidance
+│   └── cloud-gov/          # cloud.gov module (optional)
 │
 ├── tools/                 # Tooling and workflow
 │   ├── git.md             # Git conventions
@@ -140,11 +154,12 @@ deft/
 ```
 
 ### 🔧 Core Files
+
 **main.md** - Entry point, general AI guidelines  
 **coding/coding.md** - Software development standards  
 **coding/testing.md** - Testing standards  
 **core/project.md** - Project-specific template  
-**core/user.md** - Your personal preferences (highest precedence)
+**~/.config/deft/USER.md** - Your personal preferences (highest precedence)
 
 ### 🐍 Languages
 **languages/python.md** - Python standards (≥85% coverage, mypy strict, ruff/black)  
@@ -166,6 +181,20 @@ deft/
 
 ### 🐝 Swarm
 **swarm/swarm.md** - Multi-agent coordination patterns
+
+### ✅ Verification
+
+**verification/verification.md** - 4-tier verification ladder, must-haves, stub detection
+**verification/uat.md** - Auto-generated user acceptance test scripts
+
+### 🛡️ Resilience
+
+**resilience/continue-here.md** - Interruption recovery protocol (vBRIEF-based)
+**resilience/context-pruning.md** - Fresh context per task, eliminating context rot
+
+### 📜 Contracts
+
+**contracts/boundary-maps.md** - Explicit produces/consumes declarations between slices
 
 ### 📝 Templates
 **templates/make-spec.md** - Specification generation  
@@ -240,7 +269,7 @@ Read SPECIFICATION.md and implement the project following deft/main.md standards
 
 Rules cascade with precedence:
 
-1. **user.md** (highest) - your personal overrides
+1. **USER.md** (highest) - your personal overrides (`~/.config/deft/USER.md`)
 2. **project.md** - project-specific rules
 3. **Language files** (python.md, go.md) - language standards
 4. **Tool files** (taskfile.md) - tool guidelines
@@ -282,7 +311,7 @@ flowchart TD
 - AI updates `lessons.md` when learning better patterns
 - AI notes ideas in `ideas.md` for future consideration
 - AI suggests improvements in `suggestions.md`
-- You update `user.md` with new preferences
+- You update `~/.config/deft/USER.md` with new preferences
 - You update language/tool files as standards evolve
 
 ## 💡 Key Principles
@@ -492,19 +521,19 @@ sequenceDiagram
     participant Files as Deft Files
     participant Code
 
-    AI->>Files: Read user.md (your overrides)
-    AI->>Files: Read project.md
+    AI->>Files: Read USER.md (your overrides)
+    AI->>Files: Read PROJECT.md
     AI->>Files: Read go.md
     AI->>Files: Read main.md
     AI->>Code: Run task check
     AI->>Code: Apply changes
-    Note over AI,Code: Respects your user.md preferences
+    Note over AI,Code: Respects your USER.md preferences
 ```
 
-1. AI reads: `user.md` → `project.md` → `go.md` → `main.md`
+1. AI reads: `USER.md` → `PROJECT.md` → `go.md` → `main.md`
 2. AI follows: go.dev/doc/comment, Testify patterns
 3. AI runs: `task check` before suggesting changes
-4. AI respects: your user.md overrides
+4. AI respects: your USER.md overrides
 
 ### Code Review Session
 
@@ -578,7 +607,7 @@ Deft embodies:
 
 ---
 
-**Next Steps**: Read [main.md](./main.md) for comprehensive AI guidelines, then customize [user.md](./user.md) with your preferences.
+**Next Steps**: Read [main.md](./main.md) for comprehensive AI guidelines, then run `deft/run bootstrap` to create your USER.md.
 
 ---
 

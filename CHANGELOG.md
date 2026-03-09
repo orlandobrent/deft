@@ -5,6 +5,70 @@ All notable changes to the Deft framework will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-03-09
+
+### Changed
+- **Branch sync**: Merged master (v0.2.3 through v0.4.3) into beta (v0.5.0/v0.5.1) to unify both branches after significant divergence from the v0.2.2 fork point
+
+### Conflict Resolutions
+- **CHANGELOG.md**: interleaved both sides chronologically (v0.5.1 → v0.2.3)
+- **templates/make-spec.md**: kept beta's vBRIEF specification flow
+- **templates/user.md.template**: kept beta's slim override-only template (v0.5.0 intentionally removed duplicated Workflow/AI Behavior sections)
+- **core/project.md**: kept master's generic Iglesia template with Volatile Dependency Abstraction rules (beta had project-specific voxio-bot config)
+- **docs/claude-code-integration.md**: kept beta's relocated paths (USER.md at ~/.config/deft/, PROJECT.md at project root)
+- **run / run.bat**: kept beta's more evolved CLI (2500+ lines with strategies, vBRIEF, and expanded language/deployment support)
+- **README.md**: hybrid — master's Mermaid diagrams and copyright notice combined with beta's updated file paths and next-steps text
+
+### Removed
+- **implementation-plan-phase-1.md**: completed, no longer needed
+- **msadams-branch**: retired (all commits absorbed into merge)
+
+## [0.5.1] - 2026-03-08
+
+### Added
+- **Phase 1 Testbed**: Implementation plan for intrinsic regression testing
+- **SPECIFICATION.md**: Generated specification via deft beta workflow
+- **todo.md**: Captured deferred work items and Phase 2 refactoring roadmap
+
+## [0.5.0] - 2026-02-23
+
+### Added
+- **`run` CLI/TUI Tool**: Cross-platform Python wizard (2,500+ lines) replacing `warping.sh`
+  - `run bootstrap` - User preferences setup (writes to `~/.config/deft/USER.md`)
+  - `run project` - Project configuration (writes to `./PROJECT.md`)
+  - `run spec` - PRD generation via AI interview
+  - `run install` - Install deft in a project directory
+  - `run reset` - Reset configuration files
+  - `run validate` / `run doctor` - Configuration and system checks
+  - TUI mode via Textual (interactive wizard with checkboxes, selects)
+  - Rich output support with fallback to plain text
+- **Strategies System**: Pluggable development workflows
+  - `strategies/default.md` - DEFaulT 5-phase workflow
+  - `strategies/speckit.md` - SpecKit spec-driven workflow
+  - Strategy selection in bootstrap and project commands
+- **RWLDL Tool**: Ralph Wiggum's Loop-de-Loop (`tools/RWLDL.md`)
+  - Iterative micro/macro code refinement loop with RFC2119 notation
+- **Meta Files**: `meta/SOUL.md` (agent persona), `meta/morals.md` (ethical guidelines)
+- **Docs**: `docs/claude-code-integration.md` (AgentSkills integration guide)
+
+### Changed
+- **USER.md relocated**: Default path moved from `core/user.md` to `~/.config/deft/USER.md`
+  - Configurable via `DEFT_USER_PATH` env var
+  - Legacy fallback to `core/user.md` preserved
+- **PROJECT.md relocated**: Default path moved from `core/project.md` to `./PROJECT.md`
+  - Configurable via `DEFT_PROJECT_PATH` env var
+- **Templates slimmed to override-only**: `user.md.template` and `project.md.template`
+  - Removed sections that duplicated core deft rules (Workflow Preferences, AI Behavior, Standards)
+  - Coverage threshold only emitted when non-default (≠85%)
+- **All path references updated** across main.md, REFERENCES.md, README.md, SKILL.md,
+  core/project.md, and docs/claude-code-integration.md
+- **Principles section** added to project.md template
+
+### Removed
+- Redundant Workflow Preferences and AI Behavior sections from generated user.md
+- Redundant Workflow commands and Standards sections from generated project.md
+- vBRIEF integration section from ideas.md (moved to future consideration)
+
 ## [0.4.3] - 2026-02-04
 
 ### Added
@@ -402,6 +466,9 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
+[0.5.2]: https://github.com/visionik/deft/releases/tag/v0.5.2
+[0.5.1]: https://github.com/visionik/deft/releases/tag/v0.5.1
+[0.5.0]: https://github.com/visionik/deft/releases/tag/v0.5.0
 [0.4.3]: https://github.com/visionik/deft/releases/tag/v0.4.3
 [0.4.2]: https://github.com/visionik/deft/releases/tag/v0.4.2
 [0.4.1]: https://github.com/visionik/deft/releases/tag/v0.4.1
@@ -418,6 +485,6 @@ If you have custom scripts or references to deft files, update these paths:
 [0.2.4]: https://github.com/visionik/deft/releases/tag/v0.2.4
 [0.2.3]: https://github.com/visionik/deft/releases/tag/v0.2.3
 [0.2.2]: https://github.com/visionik/deft/releases/tag/v0.2.2
-[0.2.1]: https://github.com/visionik/deft/releases/tag/v0.2.1
-[0.2.0]: https://github.com/visionik/deft/releases/tag/v0.2.0
-[0.1.0]: https://github.com/visionik/deft/releases/tag/v0.1.0
+[0.2.1]: https://github.com/visionik/warping/releases/tag/v0.2.1
+[0.2.0]: https://github.com/visionik/warping/releases/tag/v0.2.0
+[0.1.0]: https://github.com/visionik/warping/releases/tag/v0.1.0

@@ -42,23 +42,7 @@ See [../coding/testing.md](../coding/testing.md) for universal requirements.
 
 ## Commands
 
-```bash
-task fmt                # Format (or `task py:fmt` in multi-lang projects)
-task lint               # Lint (or `task py:lint` in multi-lang projects)
-task test               # Run all tests (unit, integration, fuzzing)
-task test:coverage      # Run tests with coverage report (! ≥85%)
-task quality            # All quality checks
-task check              # Pre-commit (! run: fmt+lint+type+test)
-```
-
-**Task Naming**:
-- ! Single-language projects use generic names: `fmt`, `lint`
-- ! Multi-language projects use namespaced names: `py:fmt`, `go:fmt`
-See [../tools/taskfile.md](../tools/taskfile.md#naming-conventions)
-
-
-### Test Organization
-- ~ Place integration tests in `tests/integration/`
+See [commands.md](./commands.md).
 
 ## Patterns
 

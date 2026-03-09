@@ -12,7 +12,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - ! Doxygen comments for all public APIs (classes, functions, namespaces)
 
 ### Testing
-See [testing.md](../coding/testing.md) for universal requirements.
+See [testing.md](../coding/testing.md).
 
 - ! Use Catch2 or GoogleTest (+ GoogleMock for mocking)
 - Files: `test_*.cpp` or `*_test.cpp`
@@ -31,7 +31,7 @@ See [testing.md](../coding/testing.md) for universal requirements.
 - ~ Prefer `std::optional`/`std::variant`/`std::expected` for expected errors
 
 ### Telemetry
-- See [telemetry.md](../tools/telemetry.md) for recommendations
+- See [telemetry.md](../tools/telemetry.md)
 - ~ Structured logging (spdlog) for production
 - ~ Sentry.io for error tracking
 - ? OpenTelemetry C++ for distributed tracing
@@ -47,17 +47,7 @@ See [testing.md](../coding/testing.md) for universal requirements.
 
 ## Commands
 
-```bash
-task build              # Build (or `task cpp:build` in multi-lang projects)
-task test               # Run all tests (unit, integration, fuzzing)
-task test:coverage      # Run tests with coverage report (! ≥85%)
-task fmt                # Format (or `task cpp:fmt` in multi-lang projects)
-task lint               # Lint (or `task cpp:lint` in multi-lang projects)
-task quality            # All quality checks
-task check              # Pre-commit (! run: fmt+lint+build+test)
-```
-
-**Note**: Single-language projects ! use generic names (`fmt`, `lint`). Multi-language projects ! use namespaced names (`cpp:fmt`, `py:fmt`). See [taskfile.md](./taskfile.md#naming-conventions).
+See [commands.md](./commands.md).
 
 ## Patterns
 
@@ -112,8 +102,6 @@ task check              # Pre-commit (! run: fmt+lint+build+test)
 - **I.13**: Don't pass arrays as single pointers (use `gsl::span<T>`)
 
 **Polymorphism**: ~ Abstract base classes OR concepts (C++20)
-
-
 ## Compliance Checklist
 
 - ! Include Doxygen comments for all public APIs

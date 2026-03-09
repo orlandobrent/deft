@@ -73,7 +73,7 @@ Claude Code will automatically apply deft standards when:
 
 The deft SKILL.md teaches Claude Code about:
 
-1. **Rule Precedence** - How user.md > project.md > language.md hierarchy works
+1. **Rule Precedence** - How USER.md > PROJECT.md > language.md hierarchy works
 2. **Lazy Loading** - Only read deft files as needed, not all at once
 3. **Task-Centric Workflow** - Use `task` commands for all operations
 4. **Test-Driven Development** - Write tests before implementation
@@ -115,7 +115,7 @@ You: "Let's add a new feature to this module"
 
 Claude will:
 1. Read `./deft/main.md` for general guidelines
-2. Check for `./deft/core/user.md` and `./deft/core/project.md`
+2. Check for `~/.config/deft/USER.md` and `./PROJECT.md`
 3. Read `./deft/languages/python.md` (if Python)
 4. Write tests first (TDD)
 5. Implement feature
@@ -160,8 +160,8 @@ Deft skill works alongside other Claude Code skills. For example:
 ### Conflicting Instructions
 
 If deft conflicts with another skill:
-1. Deft respects user.md as highest precedence
-2. Edit your user.md to specify preferences
+1. Deft respects `~/.config/deft/USER.md` as highest precedence
+2. Edit your USER.md to specify preferences
 3. Consider disabling conflicting skills
 
 ### Skill Not Activating Automatically
@@ -177,7 +177,7 @@ The deft skill should auto-activate, but if not:
 2. **Keep SKILL.md updated** - Pull latest from deft repository
 3. **Symlink for easy updates** rather than copying
 4. **Let Claude auto-invoke** - Don't manually trigger unless needed
-5. **Trust the hierarchy** - user.md > project.md > language.md
+5. **Trust the hierarchy** - USER.md > PROJECT.md > language.md
 
 ## Advanced: Skill Structure
 
