@@ -100,6 +100,16 @@ See `SPECIFICATION.md` for full implementation plan.
 - Cherry-pick or manually apply these changes
 - See "Enforce bootstrap as mandatory onboarding gate" — entry point must invoke this check
 
+### Codify PR workflow standards into `scm/github.md`
+- Add opinionated PR workflow rules to the PR Workflow section of `scm/github.md`:
+  - Private branches stay private until ready; a PR is opened only when the work is ready for merge
+  - PRs require at least one human review before merge (no self-merge)
+  - Each PR carries a single purpose; if it changes more than one thing, split it into separate PRs
+  - PRs are squashed to a single merge commit on landing — preserves readable project history
+  - PRs must be well documented: title, problem statement, and solution description; cannot be overdocumented
+- These are Deft Directive opinions (not generic best practices); users who disagree should override in `user.md` or `project.md`
+- Cross-reference the squash-merge rule in the Branch Protection settings section
+
 ### Write CHANGELOG for post-v0.5.0 work
 - No changelog entries exist for context engineering module, canonical vBRIEF pattern,
   or any of the work above
