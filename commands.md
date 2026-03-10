@@ -102,10 +102,17 @@ Example:
 
 ### specs/
 
+Spec deltas capture how requirements change. See [context/spec-deltas.md](./context/spec-deltas.md) for full format and vBRIEF chain pattern.
+
 - ? Create spec files only when the change modifies requirements
 - ! Each spec file captures the **new or changed** requirements, not the full system
+- ! Separate "New Requirements" from "Modified Requirements" — show **was** and **now** for modifications
+- ! Include a **baseline** reference identifying which spec/section is being modified
 - ~ Organize by capability: `specs/auth-session/spec.md`, `specs/checkout-cart/spec.md`
 - ~ Use RFC 2119 language (MUST, SHOULD, MAY)
+- ~ Use GIVEN/WHEN/THEN scenarios for behavioral requirements
+- ~ Link to baseline spec via vBRIEF `references` in `tasks.vbrief.json`
+- ⊗ Rewrite the full spec — only capture the delta
 
 ---
 
