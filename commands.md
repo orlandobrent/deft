@@ -160,10 +160,27 @@ Archive a completed change.
 ### Process
 
 - ! Verify all tasks in `tasks.vbrief.json` have status `completed`
+- ! Update `tasks.vbrief.json` plan status to `completed`
 - ! Move `history/changes/<name>/` to `history/archive/<date>-<name>/`
 - ! Date format: `YYYY-MM-DD` (e.g., `history/archive/2026-03-10-add-dark-mode/`)
-- ~ If specs were created/modified, ensure the project's main specs are updated
-- ~ Update `tasks.vbrief.json` plan status to `completed`
+
+### Spec Delta Merge
+
+If the change included spec deltas (`specs/`), merge them into the project's main spec before archiving. See [context/spec-deltas.md](./context/spec-deltas.md) § After Archiving.
+
+- ! Read each spec delta in the change's `specs/` directory
+- ! Apply "New Requirements" to the corresponding section in `SPECIFICATION.md` (or its vBRIEF source)
+- ! Apply "Modified Requirements" — replace the **was** with the **now** in the main spec
+- ! Verify the main spec is internally consistent after merge
+- ~ Use `task spec:render` to regenerate `SPECIFICATION.md` from the vBRIEF source if applicable
+- ⊗ Leave spec deltas unmerged — the main spec drifts from reality
+
+### CHANGELOG Entry
+
+- ~ Add a CHANGELOG.md entry summarizing the change
+- ~ Use the change's `proposal.md` Problem/Change sections as the source
+- ~ Follow the existing CHANGELOG format ([Keep a Changelog](https://keepachangelog.com/en/1.0.0/))
+- ? Link to the archived change folder for full context
 
 ### What Gets Archived
 

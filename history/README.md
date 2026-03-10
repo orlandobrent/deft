@@ -35,3 +35,9 @@ See [commands.md](../commands.md) for full workflow documentation.
 - Archive entries are prefixed with `YYYY-MM-DD`
 - Archived changes are never modified
 - Each change is self-contained — all context needed to understand it lives in its folder
+
+## Archive Merge
+
+When a change is archived, its spec deltas are merged into the project's main `SPECIFICATION.md`. The archived copy remains as a historical record of *why* the spec changed. See [context/spec-deltas.md](../context/spec-deltas.md) for the merge protocol.
+
+A CHANGELOG entry summarizing the change should also be added, using the change's `proposal.md` as the source.
