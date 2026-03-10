@@ -42,7 +42,7 @@ These concepts originate from [GSD](https://github.com/gsd-build/get-shit-done) 
 
 **Zero discovery calls** — The principle that agents should never spend tokens figuring out where they are, what exists, or what was decided. All of that should be pre-assembled in context before the task starts. See [resilience/context-pruning.md](../resilience/context-pruning.md).
 
-**Brownfield mapping** — Structured reconnaissance of an existing codebase before modifying it. Produces four artifacts: STACK (languages, frameworks, infrastructure), ARCHITECTURE (layers, entry points, data flow), CONVENTIONS (naming, patterns, file layout), and CONCERNS (tech debt, fragile areas, missing tests). See [strategies/brownfield.md](../strategies/brownfield.md).
+**Brownfield mapping** — Structured reconnaissance of an existing codebase before modifying it. Produces four artifacts: STACK (languages, frameworks, infrastructure), ARCHITECTURE (layers, entry points, data flow), CONVENTIONS (naming, patterns, file layout), and CONCERNS (tech debt, fragile areas, missing tests). See [strategies/map.md](../strategies/map.md). Invoked via `/deft:run:map`.
 
 **Integration checking** — Cross-feature wiring verification that every export has a matching import, every API endpoint has a consumer, auth gates protect all required routes, and at least one E2E flow traces through the full stack. See [verification/integration.md](../verification/integration.md).
 

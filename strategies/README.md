@@ -4,29 +4,33 @@ Development strategies define the workflow from idea to implementation.
 
 ## Available Strategies
 
-| Strategy | Use Case | Phases |
-|----------|----------|--------|
-| [default.md](./default.md) | Standard projects | Interview → PRD → SPECIFICATION |
-| [speckit.md](./speckit.md) | Large/complex projects | Principles → Specify → Plan → Tasks → Implement |
-| [brownfield.md](./brownfield.md) | Existing codebases | Map → Plan → Implement |
-| [research.md](./research.md) | Pre-implementation research | Research → Don't Hand-Roll + Common Pitfalls |
-| rapid.md | Quick prototypes | SPECIFICATION only (future) |
-| enterprise.md | Compliance-heavy | PRD → ADR → SPECIFICATION (future) |
+| Strategy | Command | Use Case | Phases |
+|----------|---------|----------|--------|
+| [interview.md](./interview.md) | `/deft:run:interview` | Standard projects (default) | Interview → PRD → SPECIFICATION |
+| [yolo.md](./yolo.md) | `/deft:run:yolo` | Quick prototyping | Auto-pilot interview → PRD → SPECIFICATION |
+| [speckit.md](./speckit.md) | `/deft:run:speckit` | Large/complex projects | Principles → Specify → Plan → Tasks → Implement |
+| [map.md](./map.md) | `/deft:run:map` | Existing codebases | Map → Plan → Implement |
+| [discuss.md](./discuss.md) | `/deft:run:discuss` | Alignment before planning | Feynman technique → locked decisions |
+| [research.md](./research.md) | `/deft:run:research` | Pre-implementation research | Research → Don't Hand-Roll + Common Pitfalls |
+| rapid.md | `/deft:run:rapid` | Quick prototypes | SPECIFICATION only (future) |
+| enterprise.md | `/deft:run:enterprise` | Compliance-heavy | PRD → ADR → SPECIFICATION (future) |
 
 ## Selecting a Strategy
 
-By default, Deft uses `strategies/default.md`. To use a different strategy:
+Use a slash command:
 
 ```
-Use the rapid strategy for this project.
+/deft:run:interview my-project
 ```
 
 Or specify in `project.md`:
 
 ```markdown
 ## Strategy
-Use [strategies/rapid.md](../strategies/rapid.md) for this project.
+Use [strategies/interview.md](../strategies/interview.md) for this project.
 ```
+
+**Naming rule:** `/deft:run:<x>` always maps to `strategies/<x>.md`. Custom strategies follow the same pattern.
 
 ## Creating Custom Strategies
 
@@ -36,3 +40,5 @@ A strategy file defines:
 2. **Workflow phases** — ordered steps with transition criteria
 3. **Artifacts** — what documents are produced
 4. **Agent behavior** — how AI should conduct each phase
+
+Name your file `strategies/<name>.md` and invoke it with `/deft:run:<name>`.

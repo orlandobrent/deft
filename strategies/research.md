@@ -4,7 +4,7 @@ Look before you leap — investigate the domain before planning.
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ See also**: [strategies/default.md](./default.md) | [strategies/discuss.md](./discuss.md) | [strategies/brownfield.md](./brownfield.md)
+**⚠️ See also**: [strategies/interview.md](./interview.md) | [strategies/discuss.md](./discuss.md) | [strategies/map.md](./map.md)
 
 > Adapted from [GSD](https://github.com/gsd-build/get-shit-done) research phase.
 

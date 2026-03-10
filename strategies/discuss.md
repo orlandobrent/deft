@@ -4,7 +4,7 @@ Structured alignment before planning — front-load decisions, prevent drift.
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ See also**: [strategies/default.md](./default.md) (Phase 1: Interview) | [strategies/speckit.md](./speckit.md) (Phase 2: Specify) | [core/glossary.md](../core/glossary.md)
+**⚠️ See also**: [strategies/interview.md](./interview.md) (Phase 1: Interview) | [strategies/speckit.md](./speckit.md) (Phase 2: Specify) | [core/glossary.md](../core/glossary.md)
 
 > Extends Deft's Interview phase with decision locking and Feynman technique. Adapted from [GSD](https://github.com/gsd-build/get-shit-done) discuss phase.
 
