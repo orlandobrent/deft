@@ -26,6 +26,88 @@
       "fix_in": "Phase 2 (v0.6.0)"
     },
     {
+      "id": "shape-language-6502-no-commands",
+      "check": "test_shape.language_file_shape",
+      "file": "languages/6502-DASM.md",
+      "reason": "Missing ## Commands section. Needs to be added as part of Phase 2 standards cleanup.",
+      "xfail": true,
+      "fix_in": "Phase 2 (v0.6.0)"
+    },
+    {
+      "id": "shape-language-commands-exempt",
+      "check": "test_shape.language_file_shape",
+      "file": "languages/commands.md",
+      "reason": "This file documents shell commands, not a programming language. Not subject to language shape schema.",
+      "xfail": false,
+      "exempt": true,
+      "fix_in": "N/A"
+    },
+    {
+      "id": "shape-language-markdown-no-commands",
+      "check": "test_shape.language_file_shape",
+      "file": "languages/markdown.md",
+      "reason": "Missing ## Commands section. Needs to be added as part of Phase 2 standards cleanup.",
+      "xfail": true,
+      "fix_in": "Phase 2 (v0.6.0)"
+    },
+    {
+      "id": "shape-language-mermaid-no-commands-patterns",
+      "check": "test_shape.language_file_shape",
+      "file": "languages/mermaid.md",
+      "reason": "Missing ## Commands and ## Patterns sections. Needs to be added as part of Phase 2 standards cleanup.",
+      "xfail": true,
+      "fix_in": "Phase 2 (v0.6.0)"
+    },
+    {
+      "id": "shape-strategy-discuss-no-workflow",
+      "check": "test_shape.strategy_file_shape",
+      "file": "strategies/discuss.md",
+      "reason": "Missing ## Workflow section. Needs to be added.",
+      "xfail": true,
+      "fix_in": "Phase 2 (v0.6.0)"
+    },
+    {
+      "id": "shape-strategy-readme-exempt",
+      "check": "test_shape.strategy_file_shape",
+      "file": "strategies/README.md",
+      "reason": "Index/overview file — not a strategy document. Strategy shape schema does not apply.",
+      "xfail": false,
+      "exempt": true,
+      "fix_in": "N/A"
+    },
+    {
+      "id": "shape-strategy-research-no-workflow",
+      "check": "test_shape.strategy_file_shape",
+      "file": "strategies/research.md",
+      "reason": "Missing ## Workflow section. Needs to be added.",
+      "xfail": true,
+      "fix_in": "Phase 2 (v0.6.0)"
+    },
+    {
+      "id": "shape-interface-cli-no-required-section",
+      "check": "test_shape.interface_file_shape",
+      "file": "interfaces/cli.md",
+      "reason": "Missing ## Core Architecture or ## Framework Selection. Needs to be added.",
+      "xfail": true,
+      "fix_in": "Phase 2 (v0.6.0)"
+    },
+    {
+      "id": "shape-interface-rest-no-required-section",
+      "check": "test_shape.interface_file_shape",
+      "file": "interfaces/rest.md",
+      "reason": "Missing ## Core Architecture or ## Framework Selection. Needs to be added.",
+      "xfail": true,
+      "fix_in": "Phase 2 (v0.6.0)"
+    },
+    {
+      "id": "shape-interface-web-no-required-section",
+      "check": "test_shape.interface_file_shape",
+      "file": "interfaces/web.md",
+      "reason": "Missing ## Core Architecture or ## Framework Selection. Needs to be added.",
+      "xfail": true,
+      "fix_in": "Phase 2 (v0.6.0)"
+    },
+    {
       "id": "contracts-strategy-index-rapid-link",
       "check": "test_contracts.strategy_index_links_resolve",
       "file": "strategies/rapid.md",
