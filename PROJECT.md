@@ -10,7 +10,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 ## Strategy
 
-Use [Default](../strategies/default.md) for this project.
+Use [Interview](../strategies/interview.md) for this project.
 
 ## Workflow
 

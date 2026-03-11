@@ -43,7 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - TUI mode via Textual (interactive wizard with checkboxes, selects)
   - Rich output support with fallback to plain text
 - **Strategies System**: Pluggable development workflows
-  - `strategies/default.md` - DEFaulT 5-phase workflow
+  - `strategies/interview.md` - Interview (standard) workflow
   - `strategies/speckit.md` - SpecKit spec-driven workflow
   - Strategy selection in bootstrap and project commands
 - **RWLDL Tool**: Ralph Wiggum's Loop-de-Loop (`tools/RWLDL.md`)

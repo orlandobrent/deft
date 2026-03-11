@@ -1,10 +1,10 @@
-# Brownfield Strategy
+# Map Strategy
 
 Structured analysis of an existing codebase before adding features.
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ See also**: [strategies/default.md](./default.md) | [strategies/discuss.md](./discuss.md) | [core/glossary.md](../core/glossary.md)
+**⚠️ See also**: [strategies/interview.md](./interview.md) | [strategies/discuss.md](./discuss.md) | [core/glossary.md](../core/glossary.md)
 
 > Adapted from [GSD](https://github.com/gsd-build/get-shit-done) map-codebase workflow.
 
@@ -79,12 +79,16 @@ Produce these in `.planning/codebase/` (or `docs/codebase/`):
 
 ## Invoking This Strategy
 
-Set in PROJECT.md:
+```
+/deft:run:map
+```
+
+Or set in PROJECT.md:
 ```markdown
-**Strategy**: [strategies/brownfield.md](./deft/strategies/brownfield.md)
+**Strategy**: [strategies/map.md](./deft/strategies/map.md)
 ```
 
 Or explicitly:
 ```
-Map this codebase, then use the default strategy to plan [feature].
+Map this codebase, then use the interview strategy to plan [feature].
 ```

@@ -1,28 +1,34 @@
-# DEFaulT Strategy
+# Yolo Strategy
 
-The standard Deft workflow: structured interview → PRD → SPECIFICATION.
+Auto-pilot interview: the agent plays both sides, always picking the recommended option.
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
+**⚠️ See also**: [strategies/interview.md](./interview.md) | [strategies/discuss.md](./discuss.md) | [core/glossary.md](../core/glossary.md)
+
+> Same workflow as [interview.md](./interview.md) but the agent answers its own questions via "Johnbot."
+
+---
+
 ## When to Use
 
-- ! Default strategy for all new projects
-- ~ Projects with unclear or evolving requirements
-- ~ When stakeholder alignment is needed before implementation
-- ? Skip to Phase 2 if PRD already exists
+- ~ Quick prototyping where speed matters more than precision
+- ~ When the user trusts the agent's recommended defaults
+- ? When exploring an idea before committing to a full interview
+- ⊗ Production systems or compliance-heavy projects — use [interview.md](./interview.md) instead
 
 ## Workflow Overview
 
 ```mermaid
 flowchart LR
-    subgraph default ["DEFaulT Strategy"]
-        I["💬 Interview<br/><i>Gather requirements</i>"]
+    subgraph yolo ["Yolo Strategy"]
+        I["💬 Auto-Interview<br/><i>Agent asks + answers</i>"]
         P["📄 PRD<br/><i>What to build</i>"]
         S["📋 SPECIFICATION<br/><i>How to build it</i>"]
     end
 
-    I -->|"Ambiguity resolved"| P
-    P -->|"Approved"| S
+    I -->|"Johnbot picks defaults"| P
+    P -->|"Auto-approved"| S
     S -->|"Ready"| IMPL["🔨 Implementation"]
 
     style I fill:#c4b5fd,stroke:#7c3aed,color:#000
@@ -49,6 +55,10 @@ flowchart LR
 - ~ Provide numbered answer options when appropriate
 - ! Include "other" option for custom/unknown responses
 - ! Indicate which option is RECOMMENDED
+- ! Pretend you are the user "Johnbot" too
+- ~ Johnbot asks for details/clarifications on the questions when appropriate
+- ! Johnbot ultimately goes with the RECOMMENDED option
+- ⊗ Ask the real user to answer a question — keep working with Johnbot until you can build the specification
 
 ### Question Areas
 
@@ -63,7 +73,6 @@ flowchart LR
 
 - ! All major decisions have answers
 - ! Edge cases are addressed
-- ! User has approved key tradeoffs
 - ~ Little ambiguity remains
 
 ---
@@ -121,7 +130,6 @@ Any remaining decisions deferred to implementation.
 
 - ! All functional requirements documented
 - ! Non-functional requirements specified
-- ! User has reviewed and approved PRD
 - ~ No blocking open questions remain
 
 ---
@@ -208,15 +216,13 @@ Each task should include:
 ## Invoking This Strategy
 
 ```
-I want to build [project] with features:
-1. [feature]
-2. [feature]
+/deft:run:yolo [project name]
 ```
 
 Or explicitly:
 
 ```
-Use the default strategy to plan [project].
+Use the yolo strategy to plan [project].
 ```
 
 After completion:

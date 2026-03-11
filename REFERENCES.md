@@ -96,7 +96,7 @@ Load as needed:
 
 - **[contracts/boundary-maps.md](./contracts/boundary-maps.md)** - Explicit produces/consumes declarations between features
 - **[strategies/discuss.md](./strategies/discuss.md)** - Structured alignment phase with Feynman technique
-- **[strategies/brownfield.md](./strategies/brownfield.md)** - Codebase mapping for existing projects (stack, architecture, conventions, concerns)
+- **[strategies/map.md](./strategies/map.md)** - Codebase mapping for existing projects (stack, architecture, conventions, concerns)
 - **[strategies/research.md](./strategies/research.md)** - Structured research: Don't Hand-Roll + Common Pitfalls output
 - **[core/glossary.md](./core/glossary.md)** - Term definitions (release, feature, task, demo sentence, etc.)
 - Load: When planning features with multiple phases or gray areas
