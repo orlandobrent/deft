@@ -630,6 +630,8 @@ def cmd_bootstrap(args: List[str]):
             print(f"  {i}. {display}{marker}")
             if desc:
                 print(f"     {desc}")
+        print()
+        info("💡 Strategies can be chained — after one completes, you'll be asked if you want to run another.")
         while True:
             strat_selection = read_input("Selection", default_strat_num)
             if not strat_selection.strip():
@@ -1011,7 +1013,12 @@ def cmd_project(args: List[str]):
             info(f"Default strategy from USER.md: {user_strat_display}")
             info("Does this project need a different strategy?")
             for i, (stem, display) in enumerate(available_strats, 1):
+                desc = _STRATEGY_DESCRIPTIONS.get(stem, '')
                 print(f"  {i}. {display}")
+                if desc:
+                    print(f"     {desc}")
+            print()
+            info("💡 Strategies can be chained — after one completes, you'll be asked if you want to run another.")
             while True:
                 strat_selection = read_input(
                     f"Selection, or Enter to keep [{user_strat_display}]", ""
@@ -1028,7 +1035,12 @@ def cmd_project(args: List[str]):
         else:
             info("Select development strategy for this project:")
             for i, (stem, display) in enumerate(available_strats, 1):
+                desc = _STRATEGY_DESCRIPTIONS.get(stem, '')
                 print(f"  {i}. {display}")
+                if desc:
+                    print(f"     {desc}")
+            print()
+            info("💡 Strategies can be chained — after one completes, you'll be asked if you want to run another.")
             while True:
                 strat_selection = read_input("Selection", "1")
                 if not strat_selection.strip():

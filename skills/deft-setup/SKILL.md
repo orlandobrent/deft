@@ -63,14 +63,17 @@ Python, R, Rust, SQL, Swift, TypeScript, VHDL, Visual Basic, Zig, 6502-DASM
 
 ## Available Strategies
 
-| Strategy      | Description                                                               |
-|---------------|---------------------------------------------------------------------------|
-| **interview** | Structured interview with sizing gate: Light or Full path (Recommended)  |
-| **yolo**      | Auto-pilot interview — Johnbot picks all recommended options              |
-| **map**       | Analyze existing codebase conventions before adding features              |
-| **discuss**   | Front-load decisions and alignment before planning                        |
-| **research**  | Investigate the domain before planning                                    |
-| **speckit**   | Five-phase spec-driven workflow for large/complex projects                |
+~ When presenting strategies to the user, always use this numbered list format (not a plain table).
+~ Always include the reiterative note below the list.
+
+1. **interview** ⭐ (recommended) — Structured interview with sizing gate: Light or Full path
+2. **yolo** — Auto-pilot interview — Johnbot picks all recommended options
+3. **map** — Analyze existing codebase conventions before adding features
+4. **discuss** — Front-load decisions and alignment before planning
+5. **research** — Investigate the domain before planning
+6. **speckit** — Five-phase spec-driven workflow for large/complex projects
+
+> 💡 Strategies can be chained — after one completes, you'll be asked if you want to run another.
 
 ---
 
@@ -108,7 +111,7 @@ Wait for answer. Then follow the track below.
 **Track 1 (technical) — 7 steps:**
 - Step 1: Ask their name
 - Step 2: Ask preferred languages (show Available Languages list; these become fallback defaults)
-- Step 3: Ask strategy preference (show Available Strategies table, recommend "interview"; fallback — projects can override)
+- Step 3: Ask strategy preference (show Available Strategies numbered list from the Available Strategies section, with descriptions and recommended marker; fallback — projects can override)
 - Step 4: Ask coverage threshold (default 85%; fallback — projects can override)
 - Step 5: Ask about meta-guidelines — all three are included by default; user can drop any they don't want.
   Present each with a description and ask to keep or drop (default: keep):
@@ -205,6 +208,27 @@ for project-scoped settings (strategy, coverage, languages).
 - ! Before asking, infer from codebase — look for `package.json`, `go.mod`, `requirements.txt`, `Cargo.toml`, `pyproject.toml`, `*.csproj`
 - ! Use inferences to pre-fill answers and confirm — don't ask blind
 
+### Track Detection
+
+! If Phase 1 was skipped (USER.md already existed), the user's track is unknown.
+Before asking any Phase 2 questions, ask the depth question:
+
+> "How deep do you want to go?"
+> 1. I'm technical — ask me everything
+> 2. I have some opinions but keep it simple
+> 3. Just pick good defaults — I care about the product, not the tools
+
+⊗ Assume Track 1 (technical) because USER.md exists or contains strategy/coverage fields.
+⊗ Infer the track from USER.md content — always ask.
+
+### Defaults in Agentic Mode
+
+! When a question has a USER.md default, phrase it as:
+> "{Field}: **{value}** from USER.md — keep this, or enter a different value?"
+
+! Accept any affirmative response ("keep", "yes", "same", "default", ✓) as confirmation to use the default.
+⊗ Phrase defaults as "press Enter to keep" — there is no Enter in conversational mode.
+
 ### Interview Rules (same as Phase 1)
 
 ! **Each message MUST contain exactly ONE question.** The Phase 1 interview rules
@@ -217,14 +241,14 @@ apply here too. Do not combine questions.
 - Step 2: Ask project type (CLI, TUI, REST API, Web App, Library, other)
 - Step 3: Ask languages (show detected, confirm or adjust)
 - Step 4: Ask tech stack (frameworks, libraries)
-- Step 5: Ask strategy (default to USER.md Defaults; ask if this project needs different)
+- Step 5: Ask strategy (default to USER.md Defaults; ask if this project needs different — show Available Strategies numbered list with descriptions and recommended marker)
 - Step 6: Ask coverage (default to USER.md Defaults; ask if this project needs different)
 
 **Track 2 (middle ground) — 4 steps:**
 - Step 1: Ask project name (infer from directory, confirm)
 - Step 2: Ask project type (CLI, TUI, REST API, Web App, Library, other)
 - Step 3: Ask languages (show detected, confirm or adjust)
-- Step 4: Ask strategy (default to USER.md Defaults; ask if this project needs different)
+- Step 4: Ask strategy (default to USER.md Defaults; ask if this project needs different — show Available Strategies numbered list with descriptions and recommended marker)
 - Default coverage to USER.md Defaults without asking
 
 **Track 3 (non-technical) — 1 step:**
