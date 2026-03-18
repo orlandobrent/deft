@@ -1332,7 +1332,7 @@ def cmd_spec(args: List[str]):
         
         if spec_name:
             info(f"Project name from project.md: {spec_name}")
-            if not read_yn("Use this name?"):
+            if not read_yn("Use this name?", default=True):
                 spec_name = read_input("Project name")
         else:
             spec_name = read_input("Project name")
