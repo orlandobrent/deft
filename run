@@ -673,6 +673,10 @@ def cmd_bootstrap(args: List[str]):
     if 'custom_rules' not in progress:
         if has_rules:
             rules_list = list(progress.get('custom_rules_wip', []))
+            if rules_list:
+                info(f"  [resumed] {len(rules_list)} rule(s) already collected:")
+                for r in rules_list:
+                    info(f"    {r}")
             while True:
                 rule = read_input("  Rule (or Enter to finish)")
                 if not rule.strip():
@@ -688,7 +692,8 @@ def cmd_bootstrap(args: List[str]):
         _save_progress(prog_file, progress)
     else:
         custom_rules = progress['custom_rules']
-        info(f"  [resumed] Custom rules: {custom_rules[:60] + '...' if len(custom_rules) > 60 else custom_rules or '(none)'}")
+        display = custom_rules.replace('\n', '; ')
+        info(f"  [resumed] Custom rules: {display[:60] + '...' if len(custom_rules) > 60 else display or '(none)'}")
     
     if any(k not in progress for k in ('use_soul', 'use_morals', 'use_code_field')):
         print()
