@@ -1041,9 +1041,14 @@ def cmd_project(args: List[str]):
             user_strat_display = user_defaults.get('strategy_display', user_strat_stem.title())
             info(f"Default strategy from USER.md: {user_strat_display}")
             info("Does this project need a different strategy?")
+            user_pref_strat_num = next(
+                (str(i) for i, (stem, _) in enumerate(available_strats, 1)
+                 if stem.lower() == user_strat_stem.lower()),
+                default_strat_num,
+            )
             for i, (stem, display) in enumerate(available_strats, 1):
                 desc = _STRATEGY_DESCRIPTIONS.get(stem, '')
-                marker = " ★ RECOMMENDED" if str(i) == default_strat_num else ""
+                marker = " ★ your default" if str(i) == user_pref_strat_num else ""
                 print(f"  {i}. {display}{marker}")
                 if desc:
                     print(f"     {desc}")
