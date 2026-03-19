@@ -1979,9 +1979,9 @@ if HAS_TEXTUAL:
                 yield Label("\nCustom rules (optional):")
                 yield Input(id="rules", placeholder="Press Enter to skip")
                 yield Label("\nExperimental Rules:")
-                yield Checkbox("Use meta/SOUL.md (Strategic context)", id="use_soul")
-                yield Checkbox("Use meta/morals.md (Ethical AI)", id="use_morals")
-                yield Checkbox("Use meta/code-field.md (Advanced arch)", id="use_code_field")
+                yield Checkbox("Use meta/SOUL.md (Strategic context)", id="use_soul", value=True)
+                yield Checkbox("Use meta/morals.md (Ethical AI)", id="use_morals", value=True)
+                yield Checkbox("Use meta/code-field.md (Advanced arch)", id="use_code_field", value=True)
                 yield Label("\nOutput location:")
                 yield Input(id="output_path", placeholder="~/.config/deft/USER.md", value=get_default_paths()['user'])
             with Horizontal():
@@ -2002,7 +2002,8 @@ if HAS_TEXTUAL:
         def handle_submit(self) -> None:
             name = self.query_one("#name", Input).value.strip()
             coverage = self.query_one("#coverage", Input).value.strip() or "85"
-            custom_rules = self.query_one("#rules", Input).value.strip()
+            custom_rules_raw = self.query_one("#rules", Input).value.strip()
+            custom_rules = f"- {custom_rules_raw}" if custom_rules_raw else ""
             
             # Get language selections from checkboxes
             languages = []
