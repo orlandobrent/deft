@@ -18,7 +18,6 @@ Fix reported bugs and UX problems blocking adoption.
 
 ### Cleanup
 
-- **#44** — CLI bootstrap overwrites USER.md + input validation (items 1-4 done in PR #66; issue still open on GitHub — verify remaining items and close)
 - **#31** — `default.md` and `interview.md` need to be merged into `interview.md` (duplicate strategy files)
 - **#50** — Strategies still have redundant old names (`brownfield.md` → `map.md`, `default.md` → `interview.md`)
 - **#49** — All CLI commands should display version on startup
@@ -139,6 +138,7 @@ Larger feature work — only after issues are resolved and content is stable.
 ---
 
 ## Completed
+
 - ~~#45 — Bootstrap parity~~ — 2026-03-19 (PR #83: CLI and agentic paths produce consistent output, released as v0.7.0)
 - ~~#39 — Strategy chaining options before spec generation~~ — 2026-03-16 (bidirectional orchestration, chaining gate, acceptance gate)
 - ~~#71 — CHANGELOG catch-up~~ — 2026-03-18 (PR #73: backfilled post-0.6.0 entries, updated release links to `deftai/directive` for v0.2.2+, preserved historical `visionik` links for older versions)
