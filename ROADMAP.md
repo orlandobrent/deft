@@ -73,6 +73,7 @@ Quick doc/content fixes that don't require code changes.
 - Codify PR workflow standards into `scm/github.md`
   - Opinionated PR workflow rules: single-purpose PRs, review required, squash-merge, well-documented
   - Cross-reference squash-merge rule in Branch Protection settings section
+  - Branch lifecycle: delete remote branch on merge; prune local branches after pull
 - ~~Write remaining CHANGELOG entries~~ — tracked by #71 (Phase 1)
 
 ---
