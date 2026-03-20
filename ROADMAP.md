@@ -133,6 +133,7 @@ Larger feature work — only after issues are resolved and content is stable.
 - **#76** — Obsidian Vault generation as structured agent memory (interlinked markdown notes, per-agent knowledge scopes)
 - **#12** — Deft Bootstrap CLI with TUI (Typer + Textual, strategy-aware feature branching, agent config generation)
 - **#9** — Issue tracking system integration (GitHub Issues, Jira, Asana — optional, via MCP)
+- **#95** — Compliance-aligned constitution templates + readiness scanners (SOC 2, ISO 27001, HIPAA, HiTrust); sub-issues #96–#100 cover config schema, control mapping registry, scoring, evidence gap analysis, and automation hooks
 - LLM-assisted content validation
 - Self-upgrade to Deft Directive product (branding, public docs, distribution packaging)
 
@@ -193,6 +194,9 @@ Larger feature work — only after issues are resolved and content is stable.
 | #51 | Project should be bootstrapped with own framework (partial — #67 tracks remainder) | 2 |
 | #52 | Install into .deft/ hidden directory | 5 |
 | #53 | deft-install should bootstrap current directory | 4 |
+| #91 | run bootstrap goes in a loop (usage log pending; #92 tracks code fix) | 1 |
+| #92 | Strategy selection infinite loop when strategies/ empty | 1 |
+| #94 | Agent auto-alignment on startup: thin skill pointer + change lifecycle rule | 1 |
 | #54 | AGENTS.md provides no actionable onboarding (absorbed #85) | 1 |
 | #55 | Register Deft commands as native agent slash commands (absorbs slash-command scope from #54) | 5 |
 | #56 | Reduce installation friction (shell one-liner, Homebrew) | 4 |
@@ -213,6 +217,7 @@ Larger feature work — only after issues are resolved and content is stable.
 | #82 | Replacement strategies need accept-or-scrap exit | 2 |
 | #84 | Deft as teacher: contract hierarchy, explain WHY, adaptive teaching mode | 2/5 |
 | ~~#85~~ | ~~Installer instructions inaccurate/unclear~~ | closed — absorbed by #54 |
+| #95 | Compliance templates + readiness scanners (SOC 2, ISO 27001, HIPAA; sub-issues #96-#100) | 5 |
 | #86 | Artifact-branch binding and complete audit trail for SDD | 5 |
 | #89 | Deft identity and positioning: resolve naming before README reframe | 2 |
 
@@ -224,3 +229,4 @@ Larger feature work — only after issues are resolved and content is stable.
 *Updated 2026-03-20 — added #89 (naming/positioning); moved #39 to Completed; full refresh: added #68/#72/#75-#82/#85/#86; promoted user-reported bugs to Phase 1; resolved #44 (all items done); cleaned stale entries from index; #84 Phase 2 README reframe blocked on #89 resolution*
 *Updated 2026-03-20 — promoted #54 to Phase 1 (absorbed #85); #54 scope narrowed (slash-command registration moved to #55); #75 gains depends-on-#54 note; #85 closed as duplicate*
 *Updated 2026-03-20 — added #94 to Phase 1 (thin skill pointer + change lifecycle rule; prerequisite for all deft behavior improvements)*
+*Updated 2026-03-20 — added #91/#92 (bootstrap loop) to Phase 1; added #95 compliance cluster to Phase 5 (#96–#100 sub-issues)*
