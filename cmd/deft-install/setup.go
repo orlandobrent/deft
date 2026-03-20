@@ -266,7 +266,8 @@ func PrintNextSteps(w *Wizard, result *WizardResult, configDir string) {
 	w.printf("  User config  : %s%c\n", configDir, os.PathSeparator)
 	w.printf("\nNext steps:\n")
 	w.printf("  1. Open your AI coding assistant in %s%c\n", result.ProjectDir, os.PathSeparator)
-	w.printf("  2. Deft skills are auto-discovered — your agent will guide setup automatically\n")
+	w.printf("  2. Deft skill auto-discovery is partially implemented — if your agent doesn't\n")
+	w.printf("     start setup automatically, tell it: \"Use AGENTS.md\"\n")
 	w.printf("  3. On first session, the agent will guide you through creating USER.md and PROJECT.md\n")
 	w.printf("\n")
 }

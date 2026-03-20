@@ -634,7 +634,7 @@ func TestPrintNextSteps(t *testing.T) {
 		result.DeftDir,
 		"AGENTS.md",
 		"User config",
-		"auto-discovered",
+		"Use AGENTS.md",
 		"USER.md and PROJECT.md",
 	} {
 		if !strings.Contains(out, want) {
