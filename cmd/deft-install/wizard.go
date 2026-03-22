@@ -429,16 +429,16 @@ func isSystemFolder(name string) bool {
 	system := map[string]bool{
 		"$recycle.bin":              true,
 		"system volume information": true,
-		"windows":                  true,
-		"program files":            true,
-		"program files (x86)":      true,
-		"programdata":              true,
-		"recovery":                 true,
-		"perflogs":                 true,
-		"config.msi":               true,
-		"msocache":                 true,
-		"boot":                     true,
-		"documents and settings":   true,
+		"windows":                   true,
+		"program files":             true,
+		"program files (x86)":       true,
+		"programdata":               true,
+		"recovery":                  true,
+		"perflogs":                  true,
+		"config.msi":                true,
+		"msocache":                  true,
+		"boot":                      true,
+		"documents and settings":    true,
 	}
 	return system[strings.ToLower(name)]
 }
