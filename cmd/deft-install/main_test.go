@@ -505,6 +505,9 @@ func TestWriteAgentsMD_CreateNew(t *testing.T) {
 			t.Errorf("AGENTS.md missing section %q", section)
 		}
 	}
+	if strings.Contains(string(data), "Skills: deft/SKILL.md") {
+		t.Error("AGENTS.md should not contain Skills line — .agents/skills/ handles discovery")
+	}
 }
 
 func TestWriteAgentsMD_AppendExisting(t *testing.T) {
@@ -570,6 +573,57 @@ func TestUserConfigDir_Default(t *testing.T) {
 	}
 }
 
+func TestWriteAgentsSkills_CreateNew(t *testing.T) {
+	tmp := t.TempDir()
+	w := NewWizard(strings.NewReader(""), &bytes.Buffer{}, false)
+
+	if _, err := WriteAgentsSkills(w, tmp); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, skill := range []string{"deft", "deft-setup", "deft-build"} {
+		path := filepath.Join(tmp, ".agents", "skills", skill, "SKILL.md")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("missing skill file for %s: %v", skill, err)
+		}
+		if !strings.Contains(string(data), "deft/") {
+			t.Errorf("%s/SKILL.md missing deft/-prefixed path, got:\n%s", skill, data)
+		}
+		if !strings.Contains(string(data), "name: "+skill) {
+			t.Errorf("%s/SKILL.md missing name frontmatter", skill)
+		}
+	}
+}
+
+func TestWriteAgentsSkills_Idempotent(t *testing.T) {
+	tmp := t.TempDir()
+	w := NewWizard(strings.NewReader(""), &bytes.Buffer{}, false)
+
+	// Write once (setup).
+	if _, err := WriteAgentsSkills(w, tmp); err != nil {
+		t.Fatal("setup WriteAgentsSkills failed:", err)
+	}
+
+	// Overwrite the deft SKILL.md with sentinel content.
+	sentinel := []byte("sentinel content")
+	deftPath := filepath.Join(tmp, ".agents", "skills", "deft", "SKILL.md")
+	os.WriteFile(deftPath, sentinel, 0o644)
+
+	// Second call should skip (all three files exist).
+	if _, err := WriteAgentsSkills(w, tmp); err != nil {
+		t.Fatalf("second WriteAgentsSkills call failed unexpectedly: %v", err)
+	}
+
+	data, err := os.ReadFile(deftPath)
+	if err != nil {
+		t.Fatalf("could not read sentinel file: %v", err)
+	}
+	if string(data) != string(sentinel) {
+		t.Error("expected second WriteAgentsSkills call to be idempotent (no overwrite)")
+	}
+}
+
 func TestPrintNextSteps(t *testing.T) {
 	var buf bytes.Buffer
 	w := NewWizard(strings.NewReader(""), &buf, false)
@@ -579,7 +633,7 @@ func TestPrintNextSteps(t *testing.T) {
 		DeftDir:     `E:\Repos\myproj\deft`,
 	}
 
-	PrintNextSteps(w, result, `C:\Users\me\AppData\Roaming\deft`)
+	PrintNextSteps(w, result, `C:\Users\me\AppData\Roaming\deft`, true)
 
 	out := buf.String()
 	for _, want := range []string{
@@ -587,12 +641,32 @@ func TestPrintNextSteps(t *testing.T) {
 		result.DeftDir,
 		"AGENTS.md",
 		"User config",
-		"read AGENTS.md and follow it",
+		"Use AGENTS.md",
 		"USER.md and PROJECT.md",
-		"do not read AGENTS.md automatically",
+		"created",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("output missing %q", want)
 		}
+	}
+}
+
+func TestPrintNextSteps_SkillsAlreadyPresent(t *testing.T) {
+	var buf bytes.Buffer
+	w := NewWizard(strings.NewReader(""), &buf, false)
+	result := &WizardResult{
+		ProjectName: "myproj",
+		ProjectDir:  `E:\Repos\myproj`,
+		DeftDir:     `E:\Repos\myproj\deft`,
+	}
+
+	PrintNextSteps(w, result, `C:\Users\me\AppData\Roaming\deft`, false)
+
+	out := buf.String()
+	if !strings.Contains(out, "already present") {
+		t.Error("output missing \"already present\" for skillsCreated=false")
+	}
+	if strings.Contains(out, "created") {
+		t.Error("output should not contain \"created\" for skillsCreated=false")
 	}
 }
