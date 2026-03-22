@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-03-22
+
 ### Added
 - **Agent Skill Auto-Discovery**: Added `.agents/skills/deft/`, `deft-setup/`, `deft-build/` thin pointer files to the repo — Warp and other agents now auto-discover deft skills on startup without user prompting (#94)
 - **WriteAgentsSkills**: Installer now creates `.agents/skills/` in user project root during install so agents auto-discover deft skills immediately (#94)
@@ -556,7 +558,8 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
-[Unreleased]: https://github.com/deftai/directive/compare/v0.7.1...HEAD
+[Unreleased]: https://github.com/deftai/directive/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/deftai/directive/compare/v0.7.1...v0.8.0
 [0.7.0]: https://github.com/deftai/directive/releases/tag/v0.7.0
 <!-- [0.6.0] has no git tag — it was a beta-only version that was never tagged on master. -->
 [0.5.2]: https://github.com/deftai/directive/releases/tag/v0.5.2
