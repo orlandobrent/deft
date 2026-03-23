@@ -174,6 +174,7 @@ Create CONTRIBUTING.md at repo root. Must cover: prerequisites (Go 1.22+, Python
 - CONTRIBUTING.md exists at repo root
 - Contains sections: Prerequisites, Dev Environment Setup, Running Tests, Running CLI Locally, Building the Installer
 - All commands listed are accurate and runnable
+- CONTRIBUTING.md documents `task check` as the authoritative pre-commit gate; explicitly states that a passing `task check` is the definition of ready-to-commit
 
 ## t2.4.1: Reframe README.md — remove Warping references (FR-23, depends on #89)  `[blocked]`
 

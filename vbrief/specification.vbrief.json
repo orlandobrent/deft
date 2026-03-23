@@ -268,9 +268,10 @@
       "acceptance": [
         "CONTRIBUTING.md exists at repo root",
         "Contains sections: Prerequisites, Dev Environment Setup, Running Tests, Running CLI Locally, Building the Installer",
-        "All commands listed are accurate and runnable"
+        "All commands listed are accurate and runnable",
+        "CONTRIBUTING.md documents `task check` as the authoritative pre-commit gate; explicitly states that a passing `task check` is the definition of ready-to-commit"
       ],
-      "traces": ["FR-22"]
+      "traces": ["FR-22", "NFR-5"]
     },
     {
       "id": "t2.4.1",
@@ -283,7 +284,7 @@
         "tests/content/test_standards.py Warping xfail flips to passing"
       ],
       "traces": ["FR-23"],
-      "dependencies": "#89"
+      "blockedBy": "#89"
     },
     {
       "id": "t2.4.2",
@@ -296,7 +297,7 @@
         "Consistent with #89 resolved framing"
       ],
       "traces": ["FR-24"],
-      "dependencies": "#89"
+      "blockedBy": "#89"
     },
     {
       "id": "t3.1.1",
@@ -310,7 +311,7 @@
         "Workflow triggers on pull_request and push to master",
         "CI passes on a clean branch"
       ],
-      "traces": ["FR-25", "FR-26"]
+      "traces": ["FR-25", "FR-26", "NFR-3"]
     },
     {
       "id": "t3.1.2",
