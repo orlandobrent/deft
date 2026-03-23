@@ -197,7 +197,7 @@ GitHub Actions CI workflow triggering on pull_request and push to master. Jobs: 
 
 - .github/workflows/ci.yml exists and is valid YAML
 - Python job runs: ruff, mypy, pytest with coverage
-- Go job builds installer for at least linux/amd64 and windows/amd64
+- Go job builds installer for linux/amd64, darwin/arm64, and windows/amd64 (per NFR-3)
 - Workflow triggers on pull_request and push to master
 - CI passes on a clean branch
 

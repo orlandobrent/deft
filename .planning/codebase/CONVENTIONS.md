@@ -73,7 +73,7 @@ Use these symbols consistently — no raw "MUST/SHOULD" prose without the symbol
 - `specification.vbrief.json` — spec source of truth (draft → approved)
 - `continue.vbrief.json` — interruption recovery
 
-**Schema:** Follow `https://github.com/deftai/vBRIEF` spec. Use `blocks` edges for task dependencies (not `[P]`/`[S]`/`[B]` markers).
+**Schema:** Follow `https://github.com/deftai/vBRIEF` spec. Use `blocks` edges in `plan.vbrief.json` (outbound: "task A blocks task B"). Use `dependencies` in `specification.vbrief.json` (inbound: "task B depends on task A"). Both express the same relationship from different perspectives. Do not use `[P]`/`[S]`/`[B]` markers.
 
 ---
 
