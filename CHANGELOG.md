@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Roadmap Triage**: Triaged issues #101–#108 into roadmap phases; #101 absorbed into #56; #105/#106 (directive gaps) and #107/#108 (language selection UX) added to Phase 1; #102/#103/#104 (docs/standards) added to Phase 2
+
 ## [0.8.0] - 2026-03-22
 
 ### Added
