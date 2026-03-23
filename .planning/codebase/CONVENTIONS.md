@@ -104,3 +104,31 @@ Read and follow: deft/SKILL.md
 ```
 
 **Root SKILL.md** (`SKILL.md`) is the canonical skill; files under `.agents/skills/` are thin pointers only.
+
+---
+
+## Review Workflow (Bot Reviewers)
+
+This project uses Greptile for automated PR review. Follow these conventions to avoid fix→review→fix loops:
+
+**Preflight validation — run before every commit that touches structured data:**
+```
+python -m json.tool vbrief/specification.vbrief.json > $null
+python -m json.tool vbrief/plan.vbrief.json > $null
+```
+Do not push until all vBRIEF JSON files parse cleanly.
+
+**Batch fixes, never drip-feed:**
+- Collect ALL bot reviewer findings before making any edits.
+- For each finding, grep the term/value across the full PR file set (SPECIFICATION.md, vbrief/*.json, PRD.md, CONVENTIONS.md, research docs) and fix every occurrence in the same commit.
+- Do a cross-file consistency audit before pushing: verify shared terms (status enums, task IDs, field names, acceptance criteria) match across all files.
+
+**Cross-file consistency checklist (spec PRs):**
+- vbrief/specification.vbrief.json ↔ SPECIFICATION.md (rendered output must match source)
+- vbrief/specification.vbrief.json ↔ PRD.md (traces, requirement IDs, enum values)
+- vbrief/*.json ↔ CONVENTIONS.md (required fields, schema rules)
+- Narrative ↔ acceptance criteria within each task (no contradictions)
+
+**Review timing:**
+- After pushing fixes, wait for the bot to review the latest commit before re-triggering.
+- Do not re-trigger while the bot's last review targets an older commit.

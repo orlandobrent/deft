@@ -28,8 +28,6 @@ task clean         # Clean artifacts
 **Quality:**
 - ! Run `task check` before every commit
 - ! Achieve ≥85% coverage overall + per-module
-- ! Store secrets in `secrets/` dir
-- ~ Provide `.example` templates for secrets
 
 ## Project-Specific Rules
 

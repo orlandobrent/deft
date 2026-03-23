@@ -265,7 +265,7 @@
       "id": "t2.3.1",
       "do": "Write CONTRIBUTING.md with full contributor bootstrap (FR-22, NFR-5)",
       "status": "pending",
-      "narrative": "Create CONTRIBUTING.md at repo root. Must cover: prerequisites (Go 1.22+, Python 3.11+, uv, task), dev environment setup, running tests (task test, task check), running CLI locally (python run or uv run python run), building the Go installer (go build ./cmd/deft-install/ or task install). Closes #67 AC item 3.",
+      "narrative": "Create CONTRIBUTING.md at repo root. Must cover: prerequisites (Go 1.22+, Python 3.11+, uv, task), dev environment setup, running tests (task test, task check), running CLI locally (python run or uv run python run), building the Go installer (go build ./cmd/deft-install/). Closes #67 AC item 3.",
       "acceptance": [
         "CONTRIBUTING.md exists at repo root",
         "Contains sections: Prerequisites, Dev Environment Setup, Running Tests, Running CLI Locally, Building the Installer",
@@ -284,8 +284,7 @@
         "Tagline reflects #89 resolution",
         "tests/content/test_standards.py Warping xfail flips to passing"
       ],
-      "traces": ["FR-23"],
-      "blockedBy": "#89"
+      "traces": ["FR-23"]
     },
     {
       "id": "t2.4.2",
@@ -297,8 +296,7 @@
         "Covers: spec as primary IP, contracts as derived artifacts, code as renewable output",
         "Consistent with #89 resolved framing"
       ],
-      "traces": ["FR-24"],
-      "blockedBy": "#89"
+      "traces": ["FR-24"]
     },
     {
       "id": "t3.1.1",
