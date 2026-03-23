@@ -103,7 +103,7 @@ End user
 AI agent (via AGENTS.md / SKILL.md)
   └─ reads main.md → USER.md → PROJECT.md → task-specific files
        └─ strategies/interview.md → spec interview
-            └─ vbrief/specification.vbrief.json (draft)
+            └─ vbrief/specification.vbrief.json (draft → approved via task spec:validate)
                  └─ task spec:render → SPECIFICATION.md
 
 Terminal user
