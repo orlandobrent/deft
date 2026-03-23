@@ -61,7 +61,7 @@ cmd_bootstrap enters an infinite loop when get_available_strategies() returns an
 
 ## t1.3.2: Add version display to all run CLI commands on startup (FR-10)  `[pending]`
 
-All cmd_* functions should print the VERSION on entry (e.g. 'Deft CLI v0.4.2'). Closes #49.
+All cmd_* functions should print the VERSION on entry (e.g. 'Deft CLI v0.4.2'). Note: VERSION in run is currently 0.4.2; this value is provisional and will display behind the framework's 0.5.2 until version unification is addressed (see PRD Open Question 1). Closes #49.
 
 - All cmd_* functions print version string on startup
 - Version string format: 'Deft CLI v{VERSION}'
@@ -74,7 +74,7 @@ default.md is a duplicate of interview.md. Merge any unique content into intervi
 - strategies/default.md no longer exists
 - strategies/interview.md contains all content from former default.md (or supersedes it)
 - No .md file in the repo references strategies/default.md
-- tests/content/test_structure.py passes (no missing files it expected)
+- tests/content/test_structure.py updated to not assert default.md exists; test passes
 
 ## t1.4.2: Update strategies/brownfield.md to redirect to strategies/map.md (FR-9)  `[pending]`
 
@@ -97,7 +97,7 @@ New file documenting rules for validating build output (dist/, bin/, artifacts).
 Add a toolchain validation section to coding/coding.md (or a new coding/toolchain.md) requiring agents to verify required tools are installed before beginning implementation. Closes #106.
 
 - Framework contains ! rule: before implementation begins, verify all required tools are available (e.g. go version, uv --version, task --version)
-- Rule lives in coding/coding.md, main.md, OR a new coding/toolchain.md that is referenced (linked) from coding/coding.md
+- Rule lives in a new coding/toolchain.md, referenced (linked) from coding/coding.md
 
 ## t2.1.1: Update all stale core/user.md and core/project.md references to canonical paths (FR-13)  `[pending]`
 
@@ -168,7 +168,7 @@ Add ! rule to interview.md Interview Rules section: when making an opinionated r
 - interview.md Interview Rules contains: ! When making an opinionated recommendation, state the principle (1 sentence)
 - Rule positioned near existing RECOMMENDED marker rule
 
-## t2.3.1: Write CONTRIBUTING.md with full contributor bootstrap (FR-22)  `[pending]`
+## t2.3.1: Write CONTRIBUTING.md with full contributor bootstrap (FR-22, NFR-5)  `[pending]`
 
 Create CONTRIBUTING.md at repo root. Must cover: prerequisites (Go 1.22+, Python 3.11+, uv, task), dev environment setup, running tests (task test, task check), running CLI locally (python run or uv run python run), building the Go installer (go build ./cmd/deft-install/ or task install). Closes #67 AC item 3.
 
@@ -217,4 +217,3 @@ Open a new GitHub issue titled 'Bring run CLI into test coverage measurement' in
 
 - GitHub issue exists with title containing 'run CLI' and 'coverage'
 - Issue is assigned to Phase 4 or Phase 5 milestone/label
-- pyproject.toml comment references the new issue number
