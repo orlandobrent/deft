@@ -38,7 +38,7 @@ Ask deployment platform (web, mobile, desktop, embedded, CLI, cloud service, oth
 
 ## t1.2.1: Audit and fix vBRIEF generation in cmd_spec (FR-6)  `[pending]`
 
-The run script's cmd_spec generates specification.vbrief.json. Audit the output format against spec_validate.py and vbrief/vbrief.md. Ensure: flat structure with title/status/tasks; status values from valid enum (pending/running/completed/blocked/cancelled for items, approved for top-level on render); no legacy 'todo'/'doing'/'done'. Closes #72 (CLI path).
+The run script's cmd_spec generates specification.vbrief.json. Audit the output format against spec_validate.py and vbrief/vbrief.md. Ensure: flat structure with top-level key 'plan' (not 'title') holding the spec name; task status values from valid enum (pending/running/completed/blocked/cancelled); top-level status 'approved' on render. The legacy 'todo'/'doing'/'done' values from old vBRIEF must not be used. Closes #72 (CLI path).
 
 - task spec:validate passes on all cmd_spec output
 - task spec:render succeeds on approved spec
@@ -48,7 +48,7 @@ The run script's cmd_spec generates specification.vbrief.json. Audit the output 
 
 The deft-setup skill Phase 3 also generates specification.vbrief.json. Same audit as t1.2.1 for the agent-skill path. Update skills/deft-setup/SKILL.md Output sections to reference the correct schema. Closes #72 (agent skill path).
 
-- SKILL.md Phase 3 Output sections reference correct vBRIEF field names (title, not plan at top level; pending not todo in task status)
+- SKILL.md Phase 3 Output sections reference correct vBRIEF field names (plan not title as top-level key; pending/running/completed/blocked for task status, not legacy todo/doing/done)
 - tests/content/test_vbrief_schema.py assertions strengthened to catch field name violations
 
 ## t1.3.1: Fix run bootstrap infinite loop when strategies/ is empty (FR-7)  `[pending]`
