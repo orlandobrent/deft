@@ -12,6 +12,8 @@ Add ⊗ rules to the Inference section of Phase 2 in skills/deft-setup/SKILL.md:
 
 ## t1.1.2: Add project name fallback prompt when no build files detected (FR-3)  `[pending]`
 
+**Depends on**: t1.1.1
+
 Update deft-setup SKILL.md Phase 2 to prompt the user for a project name when codebase inference finds no build files at the project root. Currently falls through to deft internals. Closes #80.
 
 - Phase 2 Question Sequence includes explicit fallback: if no build files found at project root, ask user to provide project name
@@ -30,6 +32,8 @@ Language is a project-level concern determined per-project via codebase inferenc
 
 ## t1.1.4: Add deployment platform question before language in deft-setup Phase 2 (FR-5)  `[pending]`
 
+**Depends on**: t1.1.3
+
 Ask deployment platform (web, mobile, desktop, embedded, CLI, cloud service, other) before asking about language. Platform context narrows language shortlist. Track 1 only. Closes #108.
 
 - Phase 2 Track 1 Question Sequence: deployment platform question precedes language question
@@ -45,6 +49,8 @@ The run script's cmd_spec generates specification.vbrief.json. Audit the output 
 - tests/cli/test_spec.py covers vBRIEF output format
 
 ## t1.2.2: Audit and fix vBRIEF generation in deft-setup Phase 3 (FR-6)  `[pending]`
+
+**Depends on**: t1.2.1
 
 The deft-setup skill Phase 3 also generates specification.vbrief.json. Same audit as t1.2.1 for the agent-skill path. Update skills/deft-setup/SKILL.md Output sections to reference the correct schema. Closes #72 (agent skill path).
 
@@ -195,11 +201,11 @@ Create meta/philosophy.md with full contract hierarchy narrative per #84 Phase 2
 
 ## t3.1.1: Write .github/workflows/ci.yml — lint + test on PRs and master pushes (FR-25, FR-26)  `[pending]`
 
-GitHub Actions CI workflow triggering on pull_request and push to master. Jobs: (1) Python: ruff check, mypy tests/ (the shim run.py cannot be typed directly - exclude run and run.py from mypy per pyproject.toml, type-check the test suite instead), pytest tests/ with coverage. (2) Go: go build ./cmd/deft-install/ for each platform matrix (linux/amd64, darwin/arm64, windows/amd64). Use current action versions. Closes #57.
+GitHub Actions CI workflow triggering on pull_request and push to master. Jobs: (1) Python: ruff check, mypy tests/ (the shim run.py cannot be typed directly - exclude run and run.py from mypy per pyproject.toml, type-check the test suite instead), pytest tests/ with coverage. (2) Go: go test ./cmd/deft-install/ + go build ./cmd/deft-install/ for each platform matrix (linux/amd64, darwin/arm64, windows/amd64). main_test.go already exists so go test is zero-cost. Use current action versions. Closes #57.
 
 - .github/workflows/ci.yml exists and is valid YAML
 - Python job runs: ruff, mypy tests/ (run and run.py excluded via pyproject.toml), pytest with coverage
-- Go job builds installer for linux/amd64, darwin/arm64, and windows/amd64 (per NFR-3)
+- Go job runs go test and builds installer for linux/amd64, darwin/arm64, and windows/amd64 (per NFR-3)
 - Workflow triggers on pull_request and push to master
 - CI passes on a clean branch
 
@@ -211,6 +217,8 @@ Open a new GitHub issue titled 'Bring run CLI into test coverage measurement' in
 - Issue is assigned to Phase 4 or Phase 5 milestone/label
 
 ## t3.1.3: Raise pyproject.toml coverage threshold to 85% and document run exclusion (NFR-1, NFR-2, FR-27)  `[pending]`
+
+**Depends on**: t3.1.1, t3.1.2
 
 Update pyproject.toml: fail_under = 85. Add comment in [tool.coverage.run] omit section explaining why run and run.py are excluded (terminal-only CLI path; pending dedicated refactor issue). Resolves stated-vs-enforced coverage gap.
 

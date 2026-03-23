@@ -78,7 +78,9 @@ Use these symbols consistently — no raw "MUST/SHOULD" prose without the symbol
 **Required top-level fields (in order):**
 - `"vbrief": "0.5.0"` — schema version (must be first field)
 - `"plan"` — spec/plan name
-- `"status"` — document lifecycle state (`draft` | `proposed` | `approved`)
+- `"status"` — document lifecycle state:
+  - `specification.vbrief.json`: `draft` | `proposed` | `approved`
+  - `plan.vbrief.json`: `pending` | `completed`
 
 ---
 
