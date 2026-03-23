@@ -203,6 +203,13 @@ GitHub Actions CI workflow triggering on pull_request and push to master. Jobs: 
 - Workflow triggers on pull_request and push to master
 - CI passes on a clean branch
 
+## t3.1.3: Open GitHub issue for run CLI coverage tracking (NFR-2)  `[pending]`
+
+Open a new GitHub issue titled 'Bring run CLI into test coverage measurement' in the Phase 4/5 backlog. Reference the exclusion in pyproject.toml. Include the rationale: run is terminal-only, excluded for now, refactor needed before coverage is meaningful.
+
+- GitHub issue exists with title containing 'run CLI' and 'coverage'
+- Issue is assigned to Phase 4 or Phase 5 milestone/label
+
 ## t3.1.2: Raise pyproject.toml coverage threshold to 85% and document run exclusion (NFR-1, NFR-2, FR-27)  `[pending]`
 
 Update pyproject.toml: fail_under = 85. Add comment in [tool.coverage.run] omit section explaining why run and run.py are excluded (terminal-only CLI path; pending dedicated refactor issue). Resolves stated-vs-enforced coverage gap.
@@ -210,10 +217,3 @@ Update pyproject.toml: fail_under = 85. Add comment in [tool.coverage.run] omit 
 - pyproject.toml fail_under = 85
 - omit entries for run and run.py include inline comment: '# terminal-only CLI; excluded pending #<issue>'
 - task test:coverage passes on current test suite (or failing tests are identified and fixed first)
-
-## t3.1.3: Open GitHub issue for run CLI coverage tracking (NFR-2)  `[pending]`
-
-Open a new GitHub issue titled 'Bring run CLI into test coverage measurement' in the Phase 4/5 backlog. Reference the exclusion in pyproject.toml. Include the rationale: run is terminal-only, excluded for now, refactor needed before coverage is meaningful.
-
-- GitHub issue exists with title containing 'run CLI' and 'coverage'
-- Issue is assigned to Phase 4 or Phase 5 milestone/label

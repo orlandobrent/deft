@@ -38,7 +38,7 @@ Use these symbols consistently — no raw "MUST/SHOULD" prose without the symbol
 
 **Resume support:** Use `_resume_or_ask()` + `_save_progress()` for multi-step questionnaires.
 
-**Line length:** 100 characters (ruff + black).
+**Line length:** 100 characters (ruff + black). Note: `run` is excluded from both ruff and black (see CONCERNS.md — Linting Exclusion); line-length is a convention, not an enforced gate, for code in `run`.
 
 **Test file naming:** `tests/cli/test_{command}.py` for CLI tests, `tests/content/test_{domain}.py` for content tests.
 

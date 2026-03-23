@@ -1,6 +1,6 @@
 # Deft Directive PRD
 **Scope**: Phases 1–3 (Bug Fixes, Content, CI)
-**Status**: Draft
+**Status**: Approved
 **Closes**: #67 (partial — Phases 4–5 remain open; see comment on #67)
 
 ---
