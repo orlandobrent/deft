@@ -94,7 +94,7 @@ New file documenting rules for validating build output (dist/, bin/, artifacts).
 
 ## t1.5.2: Document toolchain validation gate in framework (FR-12)  `[pending]`
 
-Add a toolchain validation section to coding/coding.md (or a new coding/toolchain.md) requiring agents to verify required tools are installed before beginning implementation. Closes #106.
+Create a new coding/toolchain.md requiring agents to verify required tools are installed before beginning implementation. Reference it from coding/coding.md. Closes #106.
 
 - Framework contains ! rule: before implementation begins, verify all required tools are available (e.g. go version, uv --version, task --version)
 - Rule lives in a new coding/toolchain.md, referenced (linked) from coding/coding.md
@@ -216,4 +216,4 @@ Update pyproject.toml: fail_under = 85. Add comment in [tool.coverage.run] omit 
 
 - pyproject.toml fail_under = 85
 - omit entries for run and run.py include inline comment: '# terminal-only CLI; excluded pending #<issue>'
-- task test:coverage passes on current test suite (or failing tests are identified and fixed first)
+- task test:coverage passes at >=85% threshold on the current test suite
