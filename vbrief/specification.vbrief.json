@@ -209,8 +209,9 @@
       "status": "pending",
       "narrative": "commands.md vBRIEF examples use status vocabulary that diverges from vbrief/vbrief.md. Update to use the canonical status enum. Closes #25.",
       "acceptance": [
-        "commands.md vBRIEF examples use status values from: draft|proposed|approved|pending|running|completed|blocked|cancelled",
-        "No use of 'todo', 'doing', 'done' in commands.md examples"
+        "commands.md vBRIEF file-level status examples use: draft | proposed | approved",
+        "commands.md vBRIEF task-level status examples use: pending | running | completed | blocked | cancelled",
+        "No use of 'todo', 'doing', 'done' in commands.md examples; no use of 'approved' as a task-level status"
       ],
       "traces": ["FR-17"]
     },

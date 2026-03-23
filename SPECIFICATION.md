@@ -134,8 +134,9 @@ speckit.md is missing the standard **⚠️ See also** cross-reference banner at
 
 commands.md vBRIEF examples use status vocabulary that diverges from vbrief/vbrief.md. Update to use the canonical status enum. Closes #25.
 
-- commands.md vBRIEF examples use status values from: draft|proposed|approved|pending|running|completed|blocked|cancelled
-- No use of 'todo', 'doing', 'done' in commands.md examples
+- commands.md vBRIEF file-level status examples use: draft | proposed | approved
+- commands.md vBRIEF task-level status examples use: pending | running | completed | blocked | cancelled
+- No use of 'todo', 'doing', 'done' in commands.md examples; no use of 'approved' as a task-level status
 
 ## t2.1.6: Clean core/project.md — remove Voxio Bot private content (FR-18)  `[pending]`
 
