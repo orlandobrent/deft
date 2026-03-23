@@ -97,7 +97,7 @@ New file documenting rules for validating build output (dist/, bin/, artifacts).
 Add a toolchain validation section to coding/coding.md (or a new coding/toolchain.md) requiring agents to verify required tools are installed before beginning implementation. Closes #106.
 
 - Framework contains ! rule: before implementation begins, verify all required tools are available (e.g. go version, uv --version, task --version)
-- Rule is in an always-loaded file (coding/coding.md or main.md)
+- Rule lives in coding/coding.md, main.md, OR a new coding/toolchain.md that is referenced (linked) from coding/coding.md
 
 ## t2.1.1: Update all stale core/user.md and core/project.md references to canonical paths (FR-13)  `[pending]`
 

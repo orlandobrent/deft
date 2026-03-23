@@ -69,4 +69,4 @@ Informed by `ROADMAP.md` and GitHub issues. Feeds into spec generation.
 2. **Phase 1 bugs (12 open)** are adoption blockers — SPEC should include task stubs for the highest priority ones: #79, #80, #107, #72, #91/#92, #31, #50
 3. **#89 (identity) is unblocked for mechanical spec work** — frame around behavior, not branding
 4. **Coverage standard must be resolved in SPEC** — pick 75% or 85%, enforce it, document `run` exclusion explicitly
-5. **Node.js 24 Actions upgrade (hard deadline June 2, 2026)** — treated as a CI authoring constraint (FR-26), not a standalone task. Rationale: constraint on action version selection when writing `ci.yml`, not an independent deliverable. The existing `release.yml` already uses v4/v5 actions.
+5. **Node.js 24 Actions upgrade (hard deadline June 2, 2026)** — treated as a CI authoring constraint (FR-26), not a standalone task. Use these versions when writing `ci.yml` (all already Node.js 24-compatible per existing `release.yml`): `actions/checkout@v4`, `actions/setup-python@v5`, `actions/setup-go@v5`, `actions/upload-artifact@v4`, `actions/download-artifact@v4`.

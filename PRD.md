@@ -93,7 +93,7 @@ Deft Directive is a Markdown framework for AI agents to use when generating soft
 ### Phase 3 — CI
 
 - **FR-25**: A GitHub Actions workflow MUST run on every PR and push to master: Python lint (`ruff`), type check (`mypy`), test suite (`pytest`), and Go build check (`go build ./cmd/deft-install/`). *(#57)*
-- **FR-26**: The CI workflow MUST use current action versions compatible with the GitHub-hosted runner Node.js runtime in effect at time of authoring.
+- **FR-26**: The CI workflow MUST use action versions that support the GitHub Actions Node.js 24 runtime. Recommended versions (consistent with existing `release.yml`): `actions/checkout@v4`, `actions/setup-python@v5`, `actions/setup-go@v5`, `actions/upload-artifact@v4`, `actions/download-artifact@v4`.
 - **FR-27**: CI MUST fail if test coverage falls below 85% on measurable code (excludes `run` and `run.py` — see NFR-2).
 
 ---
