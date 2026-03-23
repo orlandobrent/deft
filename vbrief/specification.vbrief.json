@@ -149,7 +149,7 @@
       "id": "t1.5.2",
       "do": "Document toolchain validation gate in framework (FR-12)",
       "status": "pending",
-      "narrative": "Add a toolchain validation section to coding/coding.md (or a new coding/toolchain.md) requiring agents to verify required tools are installed before beginning implementation. Closes #106.",
+      "narrative": "Create a new coding/toolchain.md requiring agents to verify required tools are installed before beginning implementation. Reference it from coding/coding.md. Closes #106."
       "acceptance": [
         "Framework contains ! rule: before implementation begins, verify all required tools are available (e.g. go version, uv --version, task --version)",
         "Rule lives in a new coding/toolchain.md, referenced (linked) from coding/coding.md"
@@ -333,7 +333,7 @@
       "acceptance": [
         "pyproject.toml fail_under = 85",
         "omit entries for run and run.py include inline comment: '# terminal-only CLI; excluded pending #<issue>'",
-        "task test:coverage passes on current test suite (or failing tests are identified and fixed first)"
+        "task test:coverage passes at >=85% threshold on the current test suite"
       ],
       "traces": ["NFR-1", "NFR-2", "FR-27"],
       "dependencies": ["t3.1.1", "t3.1.2"]

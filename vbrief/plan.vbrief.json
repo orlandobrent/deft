@@ -1,6 +1,7 @@
 {
   "vbrief": "0.5.0",
   "plan": "Deft Directive specification",
+  "status": "completed",
   "completedStrategies": [
     {
       "name": "map",
