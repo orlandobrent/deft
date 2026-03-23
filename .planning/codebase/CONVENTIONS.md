@@ -114,7 +114,12 @@ Read and follow: deft/SKILL.md
 This project uses Greptile for automated PR review. Follow these conventions to avoid fix→review→fix loops:
 
 **Preflight validation — run before every commit that touches structured data:**
-```
+```bash
+# Unix (bash/zsh)
+python -m json.tool vbrief/specification.vbrief.json > /dev/null
+python -m json.tool vbrief/plan.vbrief.json > /dev/null
+
+# PowerShell
 python -m json.tool vbrief/specification.vbrief.json > $null
 python -m json.tool vbrief/plan.vbrief.json > $null
 ```

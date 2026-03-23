@@ -51,7 +51,7 @@ def render_spec(spec_path: str, out_path: str) -> tuple[bool, str]:
 
     lines: list[str] = []
 
-    title = spec.get("title") or spec.get("plan") or "Specification"
+    title = spec.get("plan") or spec.get("title") or "Specification"
     lines.append(f"# {title}\n")
 
     if overview := spec.get("overview") or spec.get("description"):

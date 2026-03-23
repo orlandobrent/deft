@@ -109,7 +109,7 @@ Create a new coding/toolchain.md requiring agents to verify required tools are i
 
 Find all .md references to core/user.md and core/project.md legacy paths. Replace with canonical paths: ~/.config/deft/USER.md (or %APPDATA%\deft\USER.md on Windows) and ./PROJECT.md respectively. Closes #58.
 
-- grep for 'core/user.md' returns zero matches in non-history .md files
+- grep for 'core/user.md' returns zero matches in non-history .md files (except legacy fallback note in SKILL.md)
 - grep for 'core/project.md' returns zero matches in non-history .md files (except legacy fallback note in SKILL.md)
 - tests/content/test_contracts.py passes
 
