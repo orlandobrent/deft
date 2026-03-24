@@ -21,7 +21,6 @@ Fix reported bugs and UX problems blocking adoption.
 
 - **#72** — vBRIEF files still invalid on master — users get non-conforming JSON output
 - **#68** — Warp not always enforcing Deft testing protocols (core quality gates silently skipped)
-- **#117** — Interview command loops in CLI — after `run spec` completes, CLI immediately re-runs `run project`, overwriting completed work (relates to #91/#92)
 
 ### Cleanup
 
@@ -155,6 +154,7 @@ Larger feature work — only after issues are resolved and content is stable.
 
 ## Completed
 
+- ~~#117 — Interview command loops in CLI — `cmd_project` no longer re-runs questionnaire after `cmd_install` chains through `cmd_spec`~~ — 2026-03-24 (Unreleased)
 - ~~#94 — Agent auto-alignment on startup: thin skill pointer + change lifecycle rule~~ — 2026-03-22 (PR #109)
 - ~~#54 — AGENTS.md provides no actionable onboarding~~ — 2026-03-20 (PR #93: actionable AGENTS.md, honest installer output, README fixes; absorbed #85)
 - ~~#45 — Bootstrap parity~~ — 2026-03-19 (PR #83: CLI and agentic paths produce consistent output, released as v0.7.0)
@@ -253,7 +253,6 @@ Larger feature work — only after issues are resolved and content is stable.
 | #114 | Document all global Warp rules used for deft directive development | 2 |
 | #115 | Strengthen spec validation gate and rendered artifact freshness | 3 |
 | #116 | All files must be installed consistently under `./deft/` | 1 |
-| #117 | Interview command loops in CLI after `run spec` completes | 1 |
 | #118 | CLI code quality sweep (version mismatch, bare except, undocumented flags, env var naming) | 1 |
 
 ---
@@ -267,3 +266,4 @@ Larger feature work — only after issues are resolved and content is stable.
 *Updated 2026-03-20 — added #91/#92 (bootstrap loop) to Phase 1; added #95 compliance cluster to Phase 5 (#96–#100 sub-issues)*
 *Updated 2026-03-22 — triaged #101–#108: #101 absorbed into #56 (install path decision); #102 (Mermaid rules), #103 (standalone map), #104 (Holzmann rules) added to Phase 2; #105/#106 (build output + toolchain validation), #107/#108 (remove language from USER.md + platform-driven language shortlist) added to Phase 1*
 *Updated 2026-03-24 — moved #54/#94 to Completed (PRs #93/#109); added #112/#114 to Phase 2, #115 to Phase 3, #116/#117/#118 to Phase 1; indexed #96–#100 (compliance sub-issues individually); removed incorrect Node.js 24 deadline note*
+*Updated 2026-03-24 — moved #117 to Completed (CLI command chaining loop fixed, Unreleased)*
