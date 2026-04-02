@@ -25,8 +25,8 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 - ! ROADMAP.md and SPECIFICATION.md exist with actionable items
 - ! GitHub CLI (`gh`) is authenticated
-- ! `oz` CLI is available (for `oz agent run` fallback path)
 - ! `git` supports worktrees (`git worktree` available)
+- ~ `oz` CLI available (for cloud agent fallback — see Phase 3 Option C)
 
 ## Phase 1 — Select
 
@@ -36,6 +36,7 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 - ! Read ROADMAP.md for open items, prioritizing Phase 1 before Phase 2
 - ! Read SPECIFICATION.md for acceptance criteria of candidate tasks
+- ! Cross-reference ROADMAP.md items against SPECIFICATION.md task status — if a roadmap item has a spec task marked `[completed]`, verify the work is actually done (check files) before assigning. ROADMAP.md may lag behind SPECIFICATION.md.
 - ! Exclude items that are blocked, have unresolved dependencies, or require design decisions
 
 ### Step 2: File-Overlap Audit
@@ -43,10 +44,12 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 ! Before assigning tasks to agents, list every file each task is expected to touch.
 
 - ! Verify ZERO file overlap between agents — no two agents may modify the same file
+- ! Check **transitive** file touches, not just primary scope — trace each task's acceptance criteria to specific files. A task may require changes to files outside its obvious scope (e.g., an enforcement task adding an anti-pattern to a skill file owned by another agent).
 - ! Shared files (CHANGELOG.md, SPECIFICATION.md) are exceptions — each agent adds entries but does not edit existing content
 - ! If overlap exists, reassign tasks until overlap is eliminated
 
 ⊗ Proceed to Phase 2 while any file overlap exists between agents (excluding shared append-only files).
+⊗ Assume a task only touches files in its primary scope — always check acceptance criteria for cross-file requirements.
 
 ### Step 3: Present Assignment
 
@@ -64,41 +67,60 @@ git worktree add <path> -b <branch-name> master
 ```
 
 - ! One worktree per agent (e.g. `E:\Repos\deft-agent1`, `E:\Repos\deft-agent2`)
-- ! Branch naming: `<type>/<issue-numbers>-<short-description>` (e.g. `cleanup/31-50-23-strategy-consolidation`)
+- ! Branch naming: `agent<N>/<type>/<issue-numbers>-<short-description>` (e.g. `agent1/cleanup/31-50-23-strategy-consolidation`) — the agent number prefix aids traceability since GitHub PR numbers won't match agent numbers
 - ! All worktrees branch from the same base (typically `master`)
 
 ### Step 2: Generate Prompt Files
 
 ! Create a `launch-agent.ps1` (Windows) or `launch-agent.sh` (Unix) in each worktree using the Prompt Template below.
 
+~ For Option A (Warp agent chat), also prepare a plain-text version of each prompt that the user can paste directly. The launch scripts are still useful for Option B/C (they call `oz agent run`).
+
 ## Phase 3 — Launch
 
-### Option A: Warp Terminal Tabs (preferred)
+! **Critical distinction: `oz agent run` launches CLOUD agents, not local agents.** The `oz` CLI always spawns agents on remote VMs. Cloud agents work (they can push, create PRs, run review cycles) but they do NOT have access to the user's local MCP servers, codebase indexing, or Warp Drive rules. For truly local agent execution, the user must paste the prompt into a Warp agent conversation.
 
-Open a new Warp terminal tab for each agent, navigate to its worktree, and run the generated launch script:
+! **Warp tabs cannot be opened programmatically.** There is no API or CLI command to open a new Warp terminal tab from an agent or script.
+
+! The monitor agent MUST present all three options and their tradeoffs before launching:
+
+- **Option A (preferred):** User manually opens Warp tabs, pastes prompt into agent chat — fully local, gets MCP, codebase indexing, Warp Drive rules
+- **Option B:** `oz agent run` — cloud execution, no local context, but runs in parallel without user tab management
+- **Option C:** `Start-Process` standalone terminals with `oz agent run` — same as B but in visible local windows
+
+! If the user says "launch" or "do it", default to Option A (ask user to open tabs). Only use Option B/C if the user explicitly chooses cloud or standalone execution.
+
+⊗ Use `oz agent run` when the user expects local execution — always clarify that `oz` routes to cloud.
+⊗ Silently launch any option without presenting the tradeoffs first.
+
+### Option A: Warp Agent Conversations (preferred — truly local)
+
+Ask the user to open N new Warp terminal tabs. For each tab, the user:
+1. Navigates to the worktree: `cd <worktree>`
+2. Pastes the prompt directly into the Warp agent chat input (not the terminal)
+
+Provide the prompt text for each agent (from the generated launch scripts or the Prompt Template).
+
+This is the only option that preserves MCP server access, codebase indexing, and Warp Drive rules.
+
+### Option B: Cloud Agents via `oz` CLI (parallel, no local context)
 
 ```powershell
-# The launch script sets $prompt from a here-string and passes it to oz
-.\launch-agent.ps1
-```
-
-Alternatively, paste the prompt directly:
-
-```
+# From any terminal — agents run on cloud VMs
 oz agent run --prompt "TASK: You must complete..."
 ```
 
-This preserves MCP server access, codebase indexing, and Warp Drive rules.
+Agents execute on remote VMs with access to the git repo (they can clone, push, create PRs) but without the user's local MCP servers, codebase indexing, or Warp Drive rules. Agents MUST use `gh` CLI for GitHub operations.
 
-### Option B: Standalone Terminals (fallback)
-
-If Warp tabs are not available, launch via the generated scripts:
+### Option C: Standalone Terminal Windows (visible cloud agents)
 
 ```powershell
-Start-Process powershell -ArgumentList "-NoExit", "-File", "<worktree>/launch-agent.ps1"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '<worktree>'; .\launch-agent.ps1"
 ```
 
-⊗ Use `--mcp` with Warp MCP server UUIDs from standalone terminals — they require Warp app context and will fail with "Failed to start MCP servers". Agents MUST use `gh` CLI for GitHub operations in this mode.
+Same as Option B (cloud execution) but launched in visible terminal windows. The worktree directory provides context for the launch script but the actual agent runs remotely.
+
+⊗ Use `--mcp` with Warp MCP server UUIDs from standalone terminals — they require Warp app context and will fail.
 
 ## Phase 4 — Monitor
 
@@ -153,9 +175,14 @@ All PRs meet ALL of:
 
 ### Step 1: Merge
 
+! **Merge cascade warning:** Shared append-only files (CHANGELOG.md, SPECIFICATION.md) cause merge conflicts when PRs are merged sequentially — each merge changes the insertion point, conflicting remaining PRs. Each conflict requires rebase → push → wait for checks (~3 min). Plan for N-1 rebase cycles when merging N PRs.
+
+~ To minimize cascades: rebase ALL remaining PRs onto latest master before starting any merges, then merge in rapid succession.
+
 - ! Undraft PRs: `gh pr ready <number> --repo <owner/repo>`
 - ! Squash merge: `gh pr merge <number> --squash --delete-branch --admin` (if branch protection requires)
 - ! Use descriptive squash subject: `type(scope): description (#issues)`
+- ! After each merge, rebase remaining PRs onto updated master before merging the next
 
 ### Step 2: Close Issues
 
@@ -230,3 +257,5 @@ CONSTRAINTS:
 - ⊗ Launch agents without checking SPECIFICATION.md for task coverage first
 - ⊗ Skip the file-overlap audit in Phase 1
 - ⊗ Use `git reset --hard` or force-push in any worktree
+- ⊗ Launch standalone terminals without first asking the user if they want Warp tabs instead — Warp tabs preserve MCP, codebase indexing, and Warp Drive rules; standalone shells do not. Always default to asking for manual tab opens (Option A) unless the user explicitly requests standalone shells.
+- ⊗ Use `oz agent run` when the user asked for local agents — `oz` always spawns cloud agents on remote VMs, not local Warp agents. For truly local execution, the user must paste the prompt into a Warp agent conversation.
