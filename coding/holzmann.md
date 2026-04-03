@@ -64,7 +64,7 @@ JPL/NASA-inspired rules for reliable, verifiable code
    ⊗ Complex/multi-level macros or preprocessor abuse are forbidden (C/C++).  
    ≉ Heavy decorators, metaclasses, or code generation that obscures control flow SHOULD be avoided.  
    ~ Metaprogramming SHOULD remain minimal and local in safety-critical paths.
-   ! Analyzability MUST not be compromised by metaprogramming.
+   ! Analyzability MUST be preserved; metaprogramming MUST NOT obscure control flow.
 
 9. Restricted indirection  
    ⊗ Multi-level pointers / double indirection are forbidden (C/C++ raw pointers).  
