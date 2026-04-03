@@ -1,4 +1,4 @@
-﻿# Deft Directive — Roadmap
+# Deft Directive — Roadmap
 
 Prioritized work items. **Principle: resolve open issues before new features.**
 
@@ -7,9 +7,9 @@ Prioritized work items. **Principle: resolve open issues before new features.**
 ## Phase 1 — Bug Fixes & Issue Resolution (Next Up)
 
 Fix reported bugs and UX problems blocking adoption.
-
 ### Adoption Blockers (user-reported, highest priority)
 
+- **#172** — deft-swarm skill incorrectly claims `oz agent run` launches cloud agents — rewrite Phase 3 to use `oz agent run` as preferred local launch path; correct `meta/lessons.md` lessons #1 and #7; update `SPECIFICATION.md` t2.5.4 acceptance criteria (**tackle next**)
 - **#126** — specification.vbrief.json does not conform to vbrief schema/spec — agent generates wildly non-conformant output (possibly fixed by #72 / PR #130; verify before working)
 - **#144** — Directive generates vBRIEF files with wrong narrative value type (object instead of string) and wrong child key (`items` instead of `subItems`), causing nested items to be invisible in vBRIEF-Studio — address with #126
 - **#133** — Generated vBRIEF files use invalid reference types (`x-vbrief/context`, `x-vbrief/research`) that fail schema validation — blocked on upstream `deftai/vBRIEF#2` to expand the enum; vendor updated schema once resolved
@@ -19,6 +19,8 @@ Fix reported bugs and UX problems blocking adoption.
 
 - **#116** — All deft files must be installed consistently under `./deft/` — placement is inconsistent across projects
 - **#167** — PRs merged but issues not closed and roadmap not updated — root cause investigation needed (closing keywords, squash merge, ROADMAP convention); update PR template and review cycle skill (xrefs #114, #123, #166)
+- **#171** — Agents must not commit/push directly to master — add `⊗` hard gate to `main.md`, `skills/deft-build/SKILL.md`, `skills/deft-review-cycle/SKILL.md`, and `AGENTS.md`; closes gap exposed when an agent pushed directly to master during #166 work (xrefs #138)
+- **#175** — deft-review-cycle skill: prohibit pushing while review in progress + fix polling cadence — add `⊗` no-push rule to Step 4; add `~` 60s minimum poll interval guidance (agents were spamming `get_check_runs` seconds apart with no real delay); add both lessons to `meta/lessons.md` (incident: PR #173)
 
 ---
 
@@ -39,6 +41,7 @@ Quick doc/content fixes that don't require code changes.
 - **#151** — [Playtest Feedback] First-time non-technical user session report (19 issues + 4 strategic recommendations) — umbrella issue; content/wording fixes here, strategic recommendations (cost interview, co-pilot, tiered UX, IP risk flagging) deferred to Phase 5 (xrefs #77, #84, #89, #136)
 - **#159** — Deterministic > Probabilistic — design principle: prefer deterministic components for repeatable actions; document in `meta/philosophy.md` or `contracts/hierarchy.md`; ongoing application across CLI/skills/workflows is Phase 5 (xrefs #84, #160, #95, #86)
 - **#168** — deft-roadmap-refresh skill: add MUST rule to confirm analysis comment posting to user — transparency improvement (xref #147)
+- **#174** — deft-roadmap-refresh skill: add PR & review cycle phase — when triage is complete, prompt user for PR readiness; run pre-push pre-flight (CHANGELOG + `task check`) before pushing; after PR creation, automatically sequence into `skills/deft-review-cycle/SKILL.md` (review cycle Phase 1 audit must happen before push, not after) (xrefs #168, #147)
 - **#58** — Stale cross-references to legacy `core/user.md` and `core/project.md` paths throughout framework
 - **#51** — Project should be fully bootstrapped with its own framework (partially done in PR #66)
 - Rename: purge remaining "Warping" references from README.md, `warping.sh`, Taskfile.yml; reframe README per #89 resolution (#84 Phase 2, blocked on #89)
@@ -76,6 +79,7 @@ Quick doc/content fixes that don't require code changes.
 - **#136** — Warp doesn't load deft's AGENTS.md by default — document global rule workaround in README/installer output; real fix is Warp platform feature request (to be done with #114)
 - **#146** — Add `skills/deft-sync/SKILL.md` — session-start sync skill: submodule update, vBRIEF file validation, AGENTS.md freshness check, new-skills listing; design complete in issue body (related: #140 CLI counterpart, #75 auto-discovery)
 - **#147** — Skills `deft-roadmap-refresh` and `deft-review-cycle` not documented in README or AGENTS.md — add to README directory tree and `### 🤖 Skills` section; add `deft-roadmap-refresh` reference to AGENTS.md (to be done with #114)
+- **#170** — Move ROADMAP.md updates from merge-time to release-time — batch-move merged issues to Completed during the CHANGELOG promotion commit; update AGENTS.md convention, `skills/deft-swarm/SKILL.md` Phase 6, and any release checklist (root-cause fix for the pattern #167 identified; aligns with #74 release automation)
 
 ---
 
@@ -292,14 +296,19 @@ Larger feature work — only after issues are resolved and content is stable.
 | #140 | Automatically check for updates to cloned repos in a project (deft doctor/update) | 5 |
 | ~~#142~~ | ~~AGENTS.md onboarding gate blocks headless/cloud agents~~ | completed — v0.10.1 |
 | ~~#145~~ | ~~deft-review-cycle: Greptile issue comment not primary review signal (false wait loops)~~ | completed — v0.10.1 |
+| #172 | deft-swarm skill: `oz agent run` incorrectly described as cloud (tackle next) | 1 |
 | #166 | Greptile Review status check blocks merge — no re-review after fixes pushed | 1 |
 | #167 | PRs merged but issues not closed and roadmap not updated | 1 |
+| #171 | Agents must not commit/push directly to master — add hard gate | 1 |
+| #175 | deft-review-cycle: prohibit pushing while Greptile review in progress | 1 |
 | #151 | [Playtest Feedback] First-time non-technical user session report (umbrella) | 2 |
 | #159 | Deterministic > Probabilistic — design principle documentation | 2 |
 | #160 | Consider TypeScript instead of Python for run CLI | 5 |
 | #168 | deft-roadmap-refresh skill: confirm analysis comment posting to user | 2 |
+| #174 | deft-roadmap-refresh skill: add review cycle step after PR push | 2 |
 | #146 | Add skills/deft-sync/SKILL.md — session-start framework sync skill | 2 |
 | #147 | Skills deft-roadmap-refresh and deft-review-cycle not documented in README or AGENTS.md | 2 |
+| #170 | Move ROADMAP.md updates from merge-time to release-time | 2 |
 
 ---
 
@@ -326,3 +335,8 @@ Larger feature work — only after issues are resolved and content is stable.
 *Updated 2026-04-02 — added #163 to Phase 3 (Enforce USER.md gate in CLI path — parity with agentic skills path)*
 *Updated 2026-04-03 — stale entry cleanup: moved 21 closed issues (#23, #24, #25, #31, #49, #50, #59, #68, #79, #80, #107, #108, #118, #123, #131, #135, #137, #138, #139, #142, #145) from Phase 1/2 body to Completed section; struck through in Open Issues Index; closed #104, #137, #145 on GitHub*
 *Updated 2026-04-03 — roadmap refresh triage: added #166 (Greptile re-review, Phase 1), #167 (PR merge hygiene, Phase 1), #151 (playtest feedback umbrella, Phase 2), #159 (deterministic principle, Phase 2), #160 (TypeScript CLI, Phase 5), #168 (skill transparency, Phase 2)*
+*Updated 2026-04-03 — roadmap refresh triage: added #170 (ROADMAP update timing, Phase 2)*
+*Updated 2026-04-03 — roadmap refresh triage: added #171 (no direct-to-master agent commits, Phase 1 Cleanup)*
+*Updated 2026-04-03 — roadmap refresh triage: added #172 (deft-swarm oz agent run correction, Phase 1 Adoption Blockers, priority next)*
+*Updated 2026-04-03 — filed and triaged #175 (deft-review-cycle no-push-during-review gate, Phase 1 Cleanup)*
+*Updated 2026-04-03 — filed and triaged #174 (deft-roadmap-refresh review cycle chaining, Phase 2)*
