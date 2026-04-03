@@ -7,12 +7,71 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.1] - 2026-04-02
+
+### Changed
+- **README restructure**: Moved Getting Started section (install, setup, spec, build) from below the architecture/layers documentation to immediately after the TL;DR; added prominent installer download callout at the top of the page (#137, t2.5.3)
+- **Language removed from USER.md**: Removed `**Primary Languages**` field from USER.md template and Phase 1 interview (Track 1 Step 2, Track 2 Step 2, Track 3 language inference) — language is a project-level concern determined per-project via codebase inference, not a user preference (#107, t1.1.3)
+- **Deployment platform question**: Phase 2 Track 1 now asks deployment platform (cross-platform, Windows-native, macOS-native, Linux/Unix, embedded, web/cloud, mobile, other) before language — platform context drives a filtered language shortlist with progressive "Other" disclosure and missing-standards-file warning (#108, t1.1.4)
+
+### Fixed
+- **Testing enforcement gate**: Added `!` hard gate rule to `main.md` Decision Making — no implementation is complete until tests written and `task check` passes; a general 'proceed' does not waive testing; added anti-pattern to `deft-build/SKILL.md` (#68, t1.6.1)
+- **Change lifecycle gate enforcement**: Strengthened `/deft:change` rule in `main.md` — broad 'proceed'/'do it'/'go ahead' explicitly does NOT satisfy the gate; user must acknowledge the **named** change; added pre-flight gate to `deft-build/SKILL.md`, checklist item to `.github/PULL_REQUEST_TEMPLATE.md`, verification step to `deft-review-cycle/SKILL.md` Phase 1 audit; Phase 1 audit gaps now batched with Phase 2 fixes (#123, t1.6.2)
+- **Context-aware branching for solo projects**: Added solo-project qualifier to `main.md` change lifecycle rule — `/deft:change` mandatory for team projects (2+ contributors), recommended for solo projects with quality gate as enforcement; mandatory regardless of team size for cross-cutting, architectural, or high-risk changes; full config-driven approach deferred to Phase 5 (#138, t1.6.3)
+- **vBRIEF source step enforcement**: Added `⊗` rule to `main.md` vBRIEF Persistence — SPECIFICATION.md must never be written directly, must be generated from `specification.vbrief.json`; added anti-pattern to `deft-build/SKILL.md` (#139, t1.6.4)
+- **deft-review-cycle Greptile signal**: Updated `skills/deft-review-cycle/SKILL.md` Step 4 to document that Greptile may advance its review by editing an existing PR issue comment rather than creating a new PR review object; added dual-surface detection guidance (issue comments as primary signal, PR review objects as secondary) with `updated_at` timestamp checking; added anti-pattern for relying solely on `pulls/{number}/reviews` (#145, t2.5.2)
+- **Phase 2 inference boundary**: Added ⊗ rules to `deft-setup/SKILL.md` Phase 2 Inference section — MUST NOT scan `./deft/` for build files or run git commands inside `./deft/`; only inspect project root and non-deft subdirectories (#79, t1.1.1)
+- **Phase 2 project name fallback**: Added fallback rule — when no build files exist at project root, default project name to current directory name and ask for confirmation (#80, t1.1.2)
+- **AGENTS.md headless bypass**: Added headless/task-mode bypass to First Session gate so cloud agents, CI agents, and scheduled tasks skip interactive onboarding when dispatched with an explicit task (#142, t1.1.5)
+- **CLI version display**: All `cmd_*` functions now print `Deft CLI v{VERSION}` on startup — previously `cmd_validate`, `cmd_doctor`, and `cmd_update` had no version display; existing headers normalized from `Deft v` to `Deft CLI v` (#49, t1.3.2)
+- **CLI code quality sweep** (#118):
+  - Removed stale `v0.3.7` from module docstring — VERSION constant (`0.4.2`) is the single source of truth
+  - Removed `Requires: Python 3.6+` from docstring — conflicts with `run.bat` enforcing 3.13+; `run.bat` handles Windows version check independently
+  - Changed bare `except:` in `cmd_spec` project-name parsing to `except (OSError, UnicodeDecodeError):` — no longer swallows `KeyboardInterrupt`/`SystemExit`
+  - Documented `--force` flag in `usage()` help text for the `spec` command
+  - Fixed `DEFT_PRD_PATH` env var misuse on Light sizing path — Light path now reads `DEFT_INTERVIEW_PATH` instead of overloading the PRD env var
+- **Installer post-install text** (#131): Verified already fixed in v0.8.0 — `PrintNextSteps` says "Use AGENTS.md" (not "read agents.md")
+
+## [0.10.0] - 2026-04-02
+
 ### Added
+- **Review Cycle Skill**: Added `skills/deft-review-cycle/SKILL.md` — Greptile bot reviewer response workflow covering Phase 1 deft process audit, Phase 2 review/fix loop (batch fixes, wait-for-bot, exit condition), GitHub review submission rules, and anti-patterns; enables cloud agents to run autonomous PR review cycles; thin pointer added at `.agents/skills/deft-review-cycle/SKILL.md` (#135)
+- **Roadmap Refresh Skill**: Added `skills/deft-roadmap-refresh/SKILL.md` — structured contributor workflow for triaging open issues into the phased roadmap (discovery, one-at-a-time analysis with human review, cleanup)
+- **Roadmap Maintenance Strategy**: Added `strategies/roadmap.md` — optional user-facing guide for maintaining a living roadmap with agent-assisted triage
+- **Agent Skill Pointer**: Added `.agents/skills/deft-roadmap-refresh/SKILL.md` thin pointer for auto-discovery
+- **Swarm Skill**: Added `skills/deft-swarm/SKILL.md` — parallel local agent orchestration workflow with 6 phases (Select, Setup, Launch, Monitor, Review, Close), proven prompt template, file-overlap audit gate, monitoring checkpoints, takeover triggers, and anti-patterns; thin pointer at `.agents/skills/deft-swarm/SKILL.md` (#152)
+- **history/changes/ README**: Added `history/changes/README.md` documenting the change lifecycle artifact structure — directory layout, lifecycle stages, and rules (#59, t2.1.2)
+- **Contract hierarchy**: Created `contracts/hierarchy.md` documenting two hierarchy lenses — durability axis (Standards > APIs > Specs > Code) and generative axis (Spec → Contracts → Code); includes RFC2119 legend, examples, and anti-patterns (#84 Phase 1, t2.2.1)
+- **Adaptive teaching behavior**: Added three adaptive teaching rules to `main.md` Agent Behavior section — be concise when accepted, explain reasoning when questioned, never lecture unprompted (#84 Phase 1, t2.2.2)
+
+### Fixed
+- **commands.md vBRIEF vocabulary**: Status lifecycle rule and example now use canonical vBRIEF v0.5 vocabulary — plan-level `draft`/`proposed`/`approved`, task-level `pending`/`running`/`completed`/`blocked`/`cancelled`; added missing `narrative` to task t3 in example; no use of legacy `todo`/`doing`/`done` (#25, t2.1.5)
+- **core/project.md cleanup**: Replaced leaked personal project content with generic template; added legacy-location redirect note pointing to `./PROJECT.md` as the canonical path (t2.1.6)
+
+### Changed
+- **Yolo Strategy Deduplication**: Refactored `strategies/yolo.md` to reference `interview.md` for shared Light/Full path flows, SPECIFICATION guidelines, and Artifacts Summary — reduced from 165 to ~115 lines (#23)
+- **Chaining Gate Cleanup**: Removed "Brownfield" alias from `interview.md` chaining gate options — now just "Map"
+- **SpecKit Cross-Reference**: Added **⚠️ See also** banner to `strategies/speckit.md` (#24)
+- **Strategies README**: Removed redundant `brownfield.md` row from strategy table; added roadmap strategy
+- **README.md**: Updated directory tree and strategies reference list to reflect `default.md` deletion and `brownfield.md` redirect
+- **Baseline Snapshot**: Regenerated `tests/content/snapshots/baseline.json` to reflect strategy file changes
+- **Roadmap Refresh**: Triaged 12 new issues (#124, #126, #127, #131, #133–#140) into roadmap phases; moved #67, #91, #92 to Completed; cleaned stale index entries; filed upstream deftai/vBRIEF#2 for #133
+- **Roadmap Refresh (2026-04-02)**: Triaged 5 new issues — #142 (AGENTS.md onboarding gate blocks headless/cloud agents, Phase 1), #144 (vBRIEF wrong narrative type + items/subItems, Phase 1 with #126), #145 (deft-review-cycle Greptile signal bug, Phase 1), #146 (deft-sync session-start skill, Phase 2), #147 (skills undocumented in README/AGENTS.md, Phase 2); fixed index formatting
+
+### Removed
+- **Redundant Strategy Files**: Deleted `strategies/default.md` (fully superseded by `interview.md`) and replaced `strategies/brownfield.md` with a redirect to `map.md` (#31, #50)
+
+## [0.9.0] - 2026-03-29
+
+### Added
+- **Minimal CI Workflow**: Added .github/workflows/ci.yml — runs 	ask check (ruff, mypy, pytest) on all PRs and master pushes; gates merges until lint + tests pass (#57 partial)
 - **Toolchain Validation Directive**: Added `coding/toolchain.md` with RFC2119 pre-implementation gate — MUST verify task runner, language compiler/runtime, and platform SDK (if applicable) before beginning implementation, stop and report if any are missing; pointer added to `coding/coding.md`; toolchain check added to `strategies/interview.md` Acceptance Gate and `skills/deft-build/SKILL.md` Step 2; iOS/Swift incident codified in `meta/lessons.md` (#106)
 - **Build Output Validation Directive**: Added `coding/build-output.md` with RFC2119 rules for post-build artifact verification — MUST verify expected output files exist and are structurally valid after custom build scripts, especially non-compiled assets bundlers don't track; referenced from `coding/coding.md`; added `### Build Output Tests` section to `coding/testing.md`; codified root cause in `meta/lessons.md` (#105)
 - **AGENTS.md Development Process**: Added "Development Process (always follow)" section codifying pre-code spec review, pre-commit `task check` gate, CHANGELOG/PR-template requirements, and commit message conventions — ensures agents follow deft conventions automatically via Warp project rules (partially addresses #114)
 
 ### Fixed
+- **vBRIEF Generation Chain**: Fixed five-component vBRIEF generation chain that produced invalid `specification.vbrief.json` files — validator now enforces vBRIEF v0.5 schema (`vBRIEFInfo` envelope + `plan` object with `title`/`status`/`items`); migrated `specification.vbrief.json` and `plan.vbrief.json` from legacy flat format to conformant v0.5; renderer reads from new structure; `make-spec.md` and `deft-setup/SKILL.md` now include concrete vBRIEF output examples; `CONVENTIONS.md` corrected from documenting wrong format; `working-memory.md` example and `long-horizon.md` status lifecycle updated to v0.5 vocabulary; vBRIEF file validation tests added (#72, t1.2.1, t1.2.2)
+- **vBRIEF Repo Reference Inconsistency**: Normalized vBRIEF source repo URL from `visionik/vBRIEF` to `deftai/vBRIEF` across `REFERENCES.md` and `vbrief/vbrief.md`
 - **CLI Command Chaining Loop**: `cmd_project` no longer falls through and re-runs the entire questionnaire after `cmd_install` chains through `cmd_project` → `cmd_spec` — the original call now returns cleanly (#117, closes #91)
 - **Strategy Selection Infinite Loop**: Strategy selection in `cmd_bootstrap` and `cmd_project` no longer enters an unbreakable loop when `strategies/` is empty or unresolvable — callers now warn and default to Interview when no strategy files are found (#92)
 - **Strategy Fallback Value**: Strategy parsing fallback changed from deprecated `("default", "Default")` to `("interview", "Interview")` in both `cmd_bootstrap` and `cmd_project`
@@ -572,7 +631,10 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
-[Unreleased]: https://github.com/deftai/directive/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/deftai/directive/compare/v0.10.1...HEAD
+[0.10.1]: https://github.com/deftai/directive/compare/v0.10.0...v0.10.1
+[0.10.0]: https://github.com/deftai/directive/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/deftai/directive/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/deftai/directive/compare/v0.7.1...v0.8.0
 [0.7.0]: https://github.com/deftai/directive/releases/tag/v0.7.0
 <!-- [0.6.0] has no git tag — it was a beta-only version that was never tagged on master. -->
