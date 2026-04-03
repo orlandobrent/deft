@@ -2,7 +2,7 @@
 
 Patterns and techniques from [obra/superpowers](https://github.com/obra/superpowers) worth adopting into Deft Directive, prioritized by impact.
 
-**Superpowers commit**: `<sha>` (main branch, 2026-03-28)
+**Superpowers commit**: `eafe962b18f6c5dc70fb7c8cc7e83e61f4cdde06` (main branch, as of 2026-03-28)
 
 ---
 

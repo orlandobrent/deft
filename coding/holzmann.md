@@ -2,7 +2,11 @@
 JPL/NASA-inspired rules for reliable, verifiable code  
 (Original: Gerard J. Holzmann, "The Power of Ten – Rules for Developing Safety-Critical Code", IEEE Computer, June 2006)
 
-! These rules MUST be understood as the canonical high-assurance reference for Deft.  
+**⚠️ See also** (load only when needed):
+- [coding.md](coding.md) - General coding guidelines
+- [../verification/verification.md](../verification/verification.md) - Verification practices (Holzmann ladder)
+
+! These rules MUST be understood as the canonical high-assurance reference for Deft.
 ~ Apply the general intent across all languages.  
 ~ Put language-specific enforcement, tooling, and exceptions only in languages/*.md files.
 
@@ -17,7 +21,7 @@ JPL/NASA-inspired rules for reliable, verifiable code
 
 1. Simple control flow  
    ⊗ Use direct or indirect recursion
-   ? use explicit iteration or stacks instead.  
+   ~ Use explicit iteration or stacks instead.
    ⊗ Exotic/non-local jumps (goto where supported, longjmp equivalents, setjmp). 
    ~ Restrict control flow to basic constructs: if/else, bounded for/while, switch/case/match.  
    ! Keep code analyzable and provably terminating where possible.
@@ -35,12 +39,12 @@ JPL/NASA-inspired rules for reliable, verifiable code
    ! Resource usage MUST remain predictable after initialization.
 
 4. Small functions  
-   ! Functions SHOULD be ≤ 40–60 lines (aim for one screen / printed page).  
+   ~ Functions SHOULD be ≤ 40–60 lines (aim for one screen / printed page).
    ~ Cyclomatic complexity SHOULD be ≤ 10 per function.  
    ! Small, focused functions MUST be preferred for verifiability and reviewability.
 
 5. Runtime checks & assertions  
-   ! Every non-trivial function SHOULD include at least two explicit runtime checks/assertions.  
+   ~ Every non-trivial function SHOULD include at least two explicit runtime checks/assertions.
    ~ Use preconditions, postconditions, or invariants via language-native mechanisms.  
    ! Runtime checks MUST catch violations early in non-trivial logic.
 
@@ -59,7 +63,7 @@ JPL/NASA-inspired rules for reliable, verifiable code
 8. Restricted metaprogramming  
    ⊗ Complex/multi-level macros or preprocessor abuse are forbidden (C/C++).  
    ≉ Heavy decorators, metaclasses, or code generation that obscures control flow SHOULD be avoided.  
-   ~ Metaprogramming MUST remain minimal and local in safety-critical paths.  
+   ~ Metaprogramming SHOULD remain minimal and local in safety-critical paths.
    ! Analyzability MUST not be compromised by metaprogramming.
 
 9. Restricted indirection  
