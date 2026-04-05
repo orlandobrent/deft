@@ -352,6 +352,20 @@ Add a versioned skill for orchestrating multiple parallel local agents working o
 
 **Traces**: FR-29
 
+## t2.5.5: Codify Mermaid GitHub/Gist sequence rendering guidance (#102)  `[completed]`
+
+Codify issue #102 in `languages/mermaid.md` using explicit RFC2119 MUST/SHOULD rules that are scoped to `sequenceDiagram` behavior on GitHub/Gist renderers. Document that `init.background` and `themeCSS` are insufficient on their own for reliable readability, require the participant-only `box ... end` pattern for gist-safe sequence diagrams, and preserve black text with grayscale fills. Add focused content tests so these rules and example pattern are regression-protected. Closes #102.
+
+- `languages/mermaid.md` contains explicit GitHub/Gist `sequenceDiagram` MUST guidance:
+  - do not rely on `init.background` or `themeCSS` alone
+  - require grey `box ... end` around participant declarations
+  - require messages and notes outside the `box ... end` block
+- `languages/mermaid.md` includes a concrete gist-safe sequence example with `box rgb(192, 192, 192)` and message flow outside the box
+- Guidance explicitly states diagram-type specificity (`sequenceDiagram` workarounds SHOULD NOT be generalized without testing)
+- `tests/content/test_mermaid_guidance.py` asserts rule presence and safe example structure
+
+**Traces**: #102
+
 ## t3.1.1: Write .github/workflows/ci.yml — lint + test on PRs and master pushes (FR-25, FR-26)  `[pending]`
 
 GitHub Actions CI workflow triggering on pull_request and push to master. Jobs: (1) Python: ruff check, mypy tests/ (the shim run.py cannot be typed directly - exclude run and run.py from mypy per pyproject.toml, type-check the test suite instead), pytest tests/ with coverage. (2) Go: go test ./cmd/deft-install/ + go build ./cmd/deft-install/ for each platform matrix (linux/amd64, darwin/arm64, windows/amd64). main_test.go already exists so go test is zero-cost. Use current action versions. Closes #57.

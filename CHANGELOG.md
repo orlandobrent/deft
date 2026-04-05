@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Mermaid gist-rendering guidance**: Codified GitHub/Gist sequence-diagram readability rules in `languages/mermaid.md` as explicit RFC2119 MUST/SHOULD guidance: do not rely on `init.background`/`themeCSS` alone, use a grey participant-only `box ... end`, keep messages/notes outside the box, and keep sequence workarounds diagram-type-scoped; added regression tests in `tests/content/test_mermaid_guidance.py` (#102)
+
 ## [0.10.2] - 2026-04-03
 
 ### Added
