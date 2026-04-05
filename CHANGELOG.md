@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.10.3] - 2026-04-05
+
 ### Fixed
 - **vBRIEF schema conformance — agent generation guidance + validation** (#126, #144):
   - Fixed `speckit.md` Phase 4 Task Structure: replaced legacy flat format (`vbrief`, `tasks`, `do`, `todo/doing/done`) with correct vBRIEF v0.5 envelope (`vBRIEFInfo` + `plan` object, `title` field, `pending/running/completed` lifecycle)

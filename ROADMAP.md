@@ -9,8 +9,6 @@ Prioritized work items. **Principle: resolve open issues before new features.**
 Fix reported bugs and UX problems blocking adoption.
 ### Adoption Blockers (user-reported, highest priority)
 
-- **#126** — specification.vbrief.json does not conform to vbrief schema/spec — agent generates wildly non-conformant output (possibly fixed by #72 / PR #130; verify before working)
-- **#144** — Directive generates vBRIEF files with wrong narrative value type (object instead of string) and wrong child key (`items` instead of `subItems`), causing nested items to be invisible in vBRIEF-Studio — address with #126
 - **#133** — Generated vBRIEF files use invalid reference types (`x-vbrief/context`, `x-vbrief/research`) that fail schema validation — blocked on upstream `deftai/vBRIEF#2` to expand the enum; vendor updated schema once resolved
 - **#166** — Greptile Review status check blocks merge — no re-review after fixes pushed; `triggerOnUpdates` defaults to `false`; need `.greptile/config.json` and deft-review-cycle pre-flight check (xrefs #145, #135)
 
@@ -18,8 +16,6 @@ Fix reported bugs and UX problems blocking adoption.
 
 - **#116** — All deft files must be installed consistently under `./deft/` — placement is inconsistent across projects
 - **#167** — PRs merged but issues not closed and roadmap not updated — root cause investigation needed (closing keywords, squash merge, ROADMAP convention); update PR template and review cycle skill (xrefs #114, #123, #166)
-- **#171** — Agents must not commit/push directly to master — add `⊗` hard gate to `main.md`, `skills/deft-build/SKILL.md`, `skills/deft-review-cycle/SKILL.md`, and `AGENTS.md`; closes gap exposed when an agent pushed directly to master during #166 work (xrefs #138)
-- **#175** — deft-review-cycle skill: prohibit pushing while review in progress + fix polling cadence — add `⊗` no-push rule to Step 4; add `~` 60s minimum poll interval guidance (agents were spamming `get_check_runs` seconds apart with no real delay); add both lessons to `meta/lessons.md` (incident: PR #173)
 
 ---
 
@@ -57,7 +53,6 @@ Quick doc/content fixes that don't require code changes.
 - Create `meta/philosophy.md` — full contract hierarchy narrative for agent reference and direct user reading (#84 Phase 2)
 - **#82** — Replacement strategies need accept-or-scrap exit when plan artifacts already exist (design: artifact awareness for chaining gate)
 - **#81** — Add BDD/acceptance-test-first strategy (`strategies/bdd.md` — Given/When/Then scenarios drive requirements)
-- **#102** — Codify Mermaid gist-rendering best practices as must/should rules (`coding/mermaid.md`)
 - **#134** — Visual indicator that Deft is active — add behavioral rule for agent to confirm Deft alignment at session start and after context resets (true UI indicator deferred to Phase 5 / platform support)
 - **#103** — Standalone brownfield/map analysis without requiring interview (allow `/deft:run:map` as independent entry point)
 - **#127** — Improved support for Deft in existing repositories — bootstrap should detect existing code and offer brownfield/map analysis path instead of greenfield-only questionnaire (related to #103; CLI integration in Phase 4 with #53)
@@ -78,7 +73,6 @@ Quick doc/content fixes that don't require code changes.
 - **#136** — Warp doesn't load deft's AGENTS.md by default — document global rule workaround in README/installer output; real fix is Warp platform feature request (to be done with #114)
 - **#146** — Add `skills/deft-sync/SKILL.md` — session-start sync skill: submodule update, vBRIEF file validation, AGENTS.md freshness check, new-skills listing; design complete in issue body (related: #140 CLI counterpart, #75 auto-discovery)
 - **#147** — Skills `deft-roadmap-refresh` and `deft-review-cycle` not documented in README or AGENTS.md — add to README directory tree and `### 🤖 Skills` section; add `deft-roadmap-refresh` reference to AGENTS.md (to be done with #114)
-- **#170** — Move ROADMAP.md updates from merge-time to release-time — batch-move merged issues to Completed during the CHANGELOG promotion commit; update AGENTS.md convention, `skills/deft-swarm/SKILL.md` Phase 6, and any release checklist (root-cause fix for the pattern #167 identified; aligns with #74 release automation)
 
 ---
 
@@ -148,6 +142,10 @@ Larger feature work — only after issues are resolved and content is stable.
 ---
 
 ## Completed
+- ~~#170 — Move ROADMAP.md updates from merge-time to release-time — AGENTS.md convention updated, deft-swarm SKILL.md Phase 6 Step 5 added, ⊗ swarm anti-patterns added~~ — 2026-04-05 (PR #183, v0.10.3)
+- ~~#102 — Codify Mermaid gist-rendering best practices — RFC2119 MUST/SHOULD rules + box/end pattern in `languages/mermaid.md`, regression tests added~~ — 2026-04-05 (PR #176, v0.10.3)
+- ~~#144 — vBRIEF wrong narrative type (object) + wrong child key (`items` vs `subItems`) — fixed in agent guidance + spec_validate.py (with #126)~~ — 2026-04-05 (PR #181, v0.10.3)
+- ~~#126 — specification.vbrief.json schema non-conformance — agent generation guidance, subItems/narrative rules, spec_validate.py hardened, 5 new tests~~ — 2026-04-05 (PR #181, v0.10.3)
 - ~~#175 — deft-review-cycle: no-push-while-reviewing + 60s poll cadence — ⊗ rule + ~ guidance + meta/lessons.md #2+#3~~ — 2026-04-03 (PR #178, v0.10.2)
 - ~~#172 — deft-swarm skill: oz agent run is local, oz agent run-cloud is cloud — corrected Phase 3, lessons #1+#7, SPECIFICATION.md t2.5.4~~ — 2026-04-03 (PR #177, v0.10.2)
 - ~~#171 — No direct-to-master agent commits — ⊗ gate + PROJECT.md trunk-based opt-in, full agentic + CLI parity~~ — 2026-04-03 (PR #178, v0.10.2)
@@ -265,7 +263,7 @@ Larger feature work — only after issues are resolved and content is stable.
 | #86 | Artifact-branch binding and complete audit trail for SDD | 5 |
 | #89 | Deft identity and positioning: resolve naming before README reframe | 2 |
 | ~~#101~~ | ~~Should manual clone path exist?~~ | closed — absorbed by #56 |
-| #102 | Codify Mermaid gist-rendering best practices | 2 |
+| ~~#102~~ | ~~Codify Mermaid gist-rendering best practices~~ | completed — v0.10.3 |
 | #103 | Standalone brownfield/map analysis without requiring interview | 2 |
 | ~~#104~~ | ~~Holzmann Power of 10 rules (`coding/holzmann.md`)~~ | completed — PR #158 |
 | ~~#105~~ | ~~Build output validation directive for custom build scripts~~ | completed — PR #121 |
@@ -284,8 +282,8 @@ Larger feature work — only after issues are resolved and content is stable.
 | ~~#123~~ | ~~Change lifecycle gate skipped on broad 'proceed' instruction~~ | completed — v0.10.1 |
 | ~~#118~~ | ~~CLI code quality sweep (version mismatch, bare except, undocumented flags, env var naming)~~ | completed — v0.10.1 |
 | ~~#124~~ | ~~Warp context window improvements (behavioral rule + handoff notes)~~ | completed |
-| #126 | specification.vbrief.json does not conform to vbrief schema/spec (verify post-PR #130) | 1 |
-| #144 | Directive giving invalid vBRIEF files & wrong key names (address with #126) | 1 |
+| ~~#126~~ | ~~specification.vbrief.json does not conform to vbrief schema/spec~~ | completed — v0.10.3 |
+| ~~#144~~ | ~~Directive giving invalid vBRIEF files & wrong key names (address with #126)~~ | completed — v0.10.3 |
 | #127 | Improved support for Deft in existing repositories (brownfield bootstrap path; related #103, #53) | 2 |
 | ~~#131~~ | ~~Mac installer post-install text wording fix~~ | completed — v0.10.1 |
 | #133 | Generated vBRIEF files use invalid reference types (blocked on upstream deftai/vBRIEF#2) | 1 |
@@ -310,7 +308,7 @@ Larger feature work — only after issues are resolved and content is stable.
 | #174 | deft-roadmap-refresh skill: add review cycle step after PR push | 2 |
 | #146 | Add skills/deft-sync/SKILL.md — session-start framework sync skill | 2 |
 | #147 | Skills deft-roadmap-refresh and deft-review-cycle not documented in README or AGENTS.md | 2 |
-| #170 | Move ROADMAP.md updates from merge-time to release-time | 2 |
+| ~~#170~~ | ~~Move ROADMAP.md updates from merge-time to release-time~~ | completed — v0.10.3 |
 
 ---
 
@@ -343,3 +341,4 @@ Larger feature work — only after issues are resolved and content is stable.
 *Updated 2026-04-03 — filed and triaged #175 (deft-review-cycle no-push-during-review gate, Phase 1 Cleanup)*
 *Updated 2026-04-03 — filed and triaged #174 (deft-roadmap-refresh review cycle chaining, Phase 2)*
 *Updated 2026-04-03 — v0.10.2 release: moved #171, #172, #175 to Completed*
+*Updated 2026-04-05 — v0.10.3 release: moved #126, #144 (vBRIEF conformance), #102 (Mermaid guidance), #170 (ROADMAP update convention) to Completed; cleaned #171/#175 from Phase 1 Cleanup body (already completed in v0.10.2)*
