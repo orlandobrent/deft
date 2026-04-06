@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **PR merge hygiene — squash-merge issue-close verification** (#167, t1.8.4): Root cause documented in `meta/lessons.md` — GitHub squash merges can silently fail to process closing keywords (`Closes #N`) from PR bodies, leaving referenced issues open with no error; added closing keyword guidance and post-merge verification checklist to `.github/PULL_REQUEST_TEMPLATE.md`; added Post-Merge Verification section to `skills/deft-review-cycle/SKILL.md` mirroring `deft-swarm` Phase 6 Step 2; added issue-close verification convention to `AGENTS.md` PR conventions; added anti-pattern for assuming squash merge auto-closed issues
 
+### Fixed
+- **Consistent ./deft/ installation path** (#116, t1.8.3): Installer now creates thin pointers for all 6 skills (deft, deft-setup, deft-build, deft-review-cycle, deft-roadmap-refresh, deft-swarm) instead of only 3 — previously deft-review-cycle, deft-roadmap-refresh, and deft-swarm were missing from the installer's `.agents/skills/` setup, making them undiscoverable in installed projects; all thin pointers consistently use `deft/`-prefixed paths; added 3 path consistency tests verifying skill pointer `deft/` prefix, only expected files at project root, and DeftDir placement
+
 ## [0.12.0] - 2026-04-06
 
 ### Added
