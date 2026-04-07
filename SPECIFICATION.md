@@ -729,3 +729,105 @@ README.md directory tree is missing CONTRIBUTING.md, contracts/hierarchy.md, and
 - No broken internal links introduced
 
 **Traces**: #219
+
+## t2.7.1: deft-roadmap-refresh: add MUST rule to confirm analysis comment posting to user (#168)  `[pending]`
+
+Add ! rule to skills/deft-roadmap-refresh/SKILL.md Phase 2 Step 4 (Apply): after posting the analysis comment on a GitHub issue, the agent MUST confirm to the user that the comment was posted (including issue number and a link). Ensures transparency -- the user always knows when their GitHub issues are being commented on. Closes #168.
+
+- skills/deft-roadmap-refresh/SKILL.md Phase 2 Step 4 contains ! rule: after posting the analysis comment, confirm to the user with the issue number and a link to the comment
+- Rule is positioned after the existing '! Post the analysis as a comment on the GitHub issue' line
+- tests/content/test_skills.py passes
+
+**Traces**: #168
+
+## t2.7.2: deft-roadmap-refresh: add Phase 4 -- PR & review cycle (#174)  `[pending]`
+
+**Depends on**: t2.7.1
+
+Add Phase 4 -- PR & Review Cycle to skills/deft-roadmap-refresh/SKILL.md. When triage is complete and user confirms readiness, run pre-flight BEFORE pushing: verify CHANGELOG.md has an [Unreleased] entry, run task check, verify PR template checklist is satisfiable. Then commit, push, create PR, and automatically sequence into skills/deft-review-cycle/SKILL.md. The Phase 1 audit from deft-review-cycle is the reason pre-flight must happen before push. Closes #174.
+
+- SKILL.md contains Phase 4 -- PR & Review Cycle after Phase 3 Cleanup
+- Phase 4 asks user: "Ready to commit and create a PR?"
+- Phase 4 pre-flight steps run BEFORE pushing: CHANGELOG [Unreleased] entry, task check, PR template checklist
+- Phase 4 commits, pushes, creates PR, then sequences automatically into skills/deft-review-cycle/SKILL.md
+- User is informed of the handoff to review cycle
+- tests/content/test_skills.py passes
+
+**Traces**: #174
+
+## t2.7.3: deft-roadmap-refresh: explicit cleanup convention -- remove from phase body, not strike through (#196)  `[pending]`
+
+Replace the ambiguous Phase 3 cleanup instruction ('Strike through or move any stale entries') with explicit rules. ! Remove the entry from the phase section body entirely -- do NOT leave a struck-through line in place. The Completed section is the sole record for closed issues. ! In the Open Issues Index, strike through the row (keep for history) and update Phase column to 'completed -- YYYY-MM-DD'. Add anti-pattern: striking through in the phase body AND adding to Completed creates a duplicate and breaks the single-record convention. Closes #196.
+
+- SKILL.md Phase 3 contains ! rule: remove the entry from the phase section body entirely -- do NOT leave a struck-through line in place
+- SKILL.md Phase 3 contains ⊗ rule: strike through an entry in the phase body and also add it to Completed -- this creates a duplicate
+- SKILL.md Phase 3 contains ! rule for Open Issues Index: strike through the row (keep for history), update Phase column to 'completed -- YYYY-MM-DD'
+- Anti-Patterns section contains ⊗ entry matching the duplicate-record prohibition
+- tests/content/test_skills.py passes
+
+**Traces**: #196
+
+## t2.7.4: deft-review-cycle: replace blocking polling with start_agent orchestration (#195)  `[pending]`
+
+Replace the blocking shell polling loop in the review monitor with a tiered approach. Approach 1 (preferred, start_agent available): spawn a sub-agent review monitor that polls gh pr view/checks on a cadence and sends a message to the parent agent when the exit condition is met -- main conversation pane stays interactive. Approach 2 (fallback): use discrete run_shell_command (wait mode) calls with a yield (no tool calls) between checks -- no shell pane lock. Capability detection reuses the start_agent tool-presence pattern from #188. Existing exit conditions preserved. Closes #195.
+
+- skills/deft-review-cycle/SKILL.md contains tiered monitoring: start_agent sub-agent (preferred) vs. tool-call polling with yield (fallback)
+- Approach 1: spawn sub-agent via start_agent to poll; sub-agent sends message to parent agent when exit condition met
+- Approach 2: discrete run_shell_command (wait mode) + yield between checks -- no blocking shell
+- Capability detection: start_agent tool presence = Approach 1; absent = Approach 2
+- Blocking Start-Sleep shell guidance removed
+- Existing exit conditions preserved (review current, no P1/P2 issues, Greptile confidence > 3)
+- tests/content/test_skills.py passes
+
+**Traces**: #195
+
+## t2.7.5: Add skills/deft-sync/SKILL.md -- session-start framework sync skill (#146)  `[pending]`
+
+Create skills/deft-sync/SKILL.md with RFC2119 legend and frontmatter. Triggered by 'good morning', 'update deft', 'update vbrief', or 'sync frameworks'. Phases: (1) pre-flight dirty check on deft/ submodule and record current version; (2) submodule update (git submodule update --remote --merge deft); (3) project sync: validate ./vbrief/*.vbrief.json against vendored schema, check AGENTS.md freshness against deft template, list new skills; (4) summary with commit prompt. Do NOT include separate vBRIEF schema fetch from upstream (CI concern per #128). Create .agents/skills/deft-sync/SKILL.md thin pointer. Update AGENTS.md Returning Sessions section and Skill Routing table. Closes #146.
+
+- skills/deft-sync/SKILL.md exists with RFC2119 legend and frontmatter
+- Triggers: 'good morning', 'update deft', 'update vbrief', 'sync frameworks'
+- Covers: pre-flight dirty check, submodule update, vBRIEF file validation, AGENTS.md freshness check, new skills listing, summary with commit prompt
+- Does NOT include separate vBRIEF schema fetch from upstream
+- Anti-patterns: auto-commit without approval, skip dirty check, overwrite project vbrief files
+- .agents/skills/deft-sync/SKILL.md thin pointer exists
+- AGENTS.md Returning Sessions section references skills/deft-sync/SKILL.md
+- AGENTS.md Skill Routing table contains 'sync' / 'good morning' / 'update deft' -> deft-sync entry
+- tests/content/test_skills.py updated to cover new skill
+
+**Traces**: #146
+
+## t2.7.6: Add behavioral rule for Deft alignment confirmation at session start (#134)  `[pending]`
+
+Add a behavioral rule to AGENTS.md requiring the agent to confirm Deft Directive is active at session start and after context resets. Confirmation should be unambiguous (e.g. agent states 'Deft Directive active' or equivalent at start of each session after loading AGENTS.md). Covers context reset recovery. True UI indicators deferred to Phase 5. Closes #134.
+
+- AGENTS.md contains a rule requiring the agent to confirm Deft alignment at session start
+- Rule specifies the confirmation form (e.g. agent states that Deft Directive is active and AGENTS.md was loaded)
+- Rule covers context reset recovery (agent re-confirms after context window shifts)
+- tests/content/test_agents_md.py passes
+
+**Traces**: #134
+
+## t2.7.7: Document deterministic > probabilistic design principle (#159)  `[pending]`
+
+Create meta/philosophy.md documenting the 'prefer deterministic components for repeatable actions' design principle. The principle extends Directive's use of Taskfile tasks for repeatable work to any domain where a deterministic component (fixed command, schema validator, CI check) replaces a probabilistic one (LLM inference). Content: definition, rationale, examples (Taskfile tasks, spec_validate.py, CI checks as deterministic components), and scope note (ongoing application across CLI/skills/workflows is Phase 5 -- do not implement now). Reference from contracts/hierarchy.md or main.md. Closes #159.
+
+- meta/philosophy.md exists with RFC2119 legend
+- Documents deterministic > probabilistic principle: definition, rationale, concrete examples
+- Scope note explicitly defers broad application to Phase 5
+- Referenced from contracts/hierarchy.md or main.md
+- tests/content/test_structure.py or test_standards.py passes
+
+**Traces**: #159
+
+## t2.7.8: Add BDD/acceptance-test-first strategy -- strategies/bdd.md (#81)  `[pending]`
+
+Create strategies/bdd.md: a Behaviour-Driven Development strategy where failing acceptance tests drive requirements. Triggered when features are better expressed as examples than written requirements. Workflow: (1) identify user scenarios (Given/When/Then), (2) write failing acceptance tests, (3) let failures surface missing decisions and ambiguity, (4) lock decisions (feeds context.md like discuss strategy), (5) generate spec from test+decision artifacts, (6) chain into interview sizing gate. Output: specs/{feature}/acceptance-tests/ + {feature}-bdd-context.md. Include standard See also banner. Update strategies/README.md. Closes #81.
+
+- strategies/bdd.md exists with RFC2119 legend and standard See also banner
+- Workflow covers 6 steps: scenario identification, failing test writing, ambiguity surfacing, decision locking, spec generation, sizing gate chaining
+- Output artifacts defined: acceptance-tests/ directory + bdd-context.md
+- strategies/README.md lists bdd.md (removes 'future' annotation if present)
+- tests/content/test_structure.py updated to assert strategies/bdd.md exists
+
+**Traces**: #81
