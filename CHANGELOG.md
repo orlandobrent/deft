@@ -7,9 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Rename deft-rwldl skill to deft-pre-pr** (#226, t2.8.3): Renamed `skills/deft-rwldl/` to `skills/deft-pre-pr/` for clarity -- the acronym "RWLDL" was opaque and collided with the RWLDL tool pattern; updated frontmatter, `.agents/skills/` thin pointer, AGENTS.md Skill Routing table, and `tests/content/test_skills.py`; added auto-suggestion to AGENTS.md Development Process section
+
 ### Added
 - **Strategy stubs: rapid.md and enterprise.md** (#51, t2.8.5): Created `strategies/rapid.md` (quick prototyping workflow -- SPECIFICATION-only output, minimal gates, forced-Light path) and `strategies/enterprise.md` (compliance-heavy workflow -- PRD -> ADR -> SPECIFICATION with explicit approval gates); both have RFC2119 legend, See also banner, and full workflow structure; updated `strategies/README.md` to remove "(future)" annotations and add links; added `test_rapid_strategy_exists` and `test_enterprise_strategy_exists` to `tests/content/test_structure.py`; flipped xfail entries in `known_failures.json`
 - **docs/getting-started.md stub** (#112, t2.8.6): Created `docs/getting-started.md` with title, purpose statement, deferred-content note, and placeholder section outline (Prerequisites, Installation, First Project, Using Strategies, Agent Configuration); added `test_getting_started_exists` to `tests/content/test_structure.py`; posted confirmation comment on GitHub issue #112
+- **README.md "Your Artifacts" section** (#234, t2.8.4): Added concise bulleted list documenting where user-generated artifacts live in a consumer project -- `./vbrief/`, `SPECIFICATION.md`, `PROJECT.md`, `USER.md`, and `./deft/`
+- **deft-pre-pr in README.md and AGENTS.md**: Added skill to README.md directory tree and Skills listing; added keyword routing entry ("pre-pr" / "quality loop" / "rwldl" / "self-review") to AGENTS.md Skill Routing table
 
 ### Fixed
 - **Roadmap-refresh explicit row format template** (#221, t2.8.1): Added explicit `| #NNN | title | Phase |` row format template to `skills/deft-roadmap-refresh/SKILL.md` Phase 2 Step 4 for Open Issues Index rows; added 2 anti-patterns: creating rows without the template format, and double-pipe `||` entries from omitting a column value
@@ -23,7 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Autonomous Greptile re-review monitoring in swarm merge cascade** (#249, t1.12.1): Added `!` rule to `skills/deft-swarm/SKILL.md` Phase 6 Step 1 requiring the monitor to autonomously wait for Greptile re-review completion after each `--force-with-lease` push during rebase cascade -- references `skills/deft-review-cycle/SKILL.md` Step 4 tiered monitoring approach (start_agent sub-agent preferred, discrete tool-call polling fallback); added gate prohibiting proceeding to next merge until review is current (SHA match) and exit condition met (confidence > 3, no P0/P1); added corresponding anti-pattern
 
 ### Added
-- **Semantic contradiction check for !/⊗ rules** (#251, t1.12.3): Added 2 `!` rules to `skills/deft-build/SKILL.md` pre-commit checklist and `skills/deft-rwldl/SKILL.md` Read phase -- when adding a `!` or `⊗` rule, search the same file for conflicting `~`/`≉` rules referencing the same term; when strengthening a rule, verify no weaker-strength duplicate remains; added `⊗` anti-pattern to both skills prohibiting adding a prohibition without scanning for softer-strength conflicts
+- **Semantic contradiction check for !/⊗ rules** (#251, t1.12.3): Added 2 `!` rules to `skills/deft-build/SKILL.md` pre-commit checklist and `skills/deft-pre-pr/SKILL.md` Read phase (formerly `deft-rwldl`, renamed in [Unreleased]) -- when adding a `!` or `⊗` rule, search the same file for conflicting `~`/`≉` rules referencing the same term; when strengthening a rule, verify no weaker-strength duplicate remains; added `⊗` anti-pattern to both skills prohibiting adding a prohibition without scanning for softer-strength conflicts
 
 ### Changed
 - **Roadmap Refresh (2026-04-09)**: Triaged 2 new issues -- #228 (bring run CLI into test coverage measurement, Phase 3 -- confirm #160 before implementing), #248 (roadmap refresh does not surface spec task coverage, Phase 2 -- strengthen swarm Phase 0 skeleton spec tasks); no stale entries; analysis comments posted on both issues
