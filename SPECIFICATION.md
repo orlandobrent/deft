@@ -986,8 +986,70 @@ Update `scm/github.md` to instruct agents to write `--body-file` temp files to t
 
 **Traces**: #256
 
-## t2.8.1: Add explicit row format template to deft-roadmap-refresh skill (#221)  `[completed]`
+## t1.14.1: Clarify Approach 2 idle-stoppage limitation in deft-review-cycle (#279)  `[pending]`
 
+Approach 2 (yield-between-polls) silently breaks for swarm agents because yielding ends the agent's turn with no self-wake mechanism. Add guidance clarifying the limitation, a ! rule directing swarm agents to prefer Approach 1, and an anti-pattern against assuming Approach 2 is self-sustaining.
+
+- skills/deft-review-cycle/SKILL.md Approach 2 section contains warning that Approach 2 requires the monitor to detect idle lifecycle events and re-trigger -- it is NOT autonomous for swarm agents
+- skills/deft-review-cycle/SKILL.md contains ! rule: swarm agents launched via start_agent SHOULD prefer Approach 1 (spawn their own review-monitor sub-agent) when start_agent is available
+- Anti-Patterns section contains entry: assume Approach 2 produces a self-sustaining polling loop
+
+**Traces**: #279
+
+## t1.15.1: Add semantic accuracy check to mandatory pre-commit file review (#274)  `[pending]`
+
+Extend the mandatory pre-commit file review step in deft-roadmap-refresh and deft-build with a fourth check category: verify that counts, claims, and summaries in CHANGELOG entries and ROADMAP changelog lines match the actual data in the commit.
+
+- skills/deft-roadmap-refresh/SKILL.md Phase 4 pre-flight mandatory file review step contains semantic accuracy check: verify counts and claims in CHANGELOG entries and ROADMAP changelog lines match actual data
+- skills/deft-build/SKILL.md pre-commit checklist contains equivalent semantic accuracy check
+
+**Traces**: #274
+
+## t1.16.1: Anchor deft-setup path resolution to pwd at skill entry (#272)  `[pending]`
+
+When directive is cloned into a project subdirectory, deft-setup reads ./PROJECT.md relative to the framework clone instead of the user's pwd, silently concluding bootstrap is complete. Add a ! rule to skills/deft-setup/SKILL.md Phase 2 explicitly anchoring all path resolution to pwd at skill entry.
+
+- skills/deft-setup/SKILL.md Phase 2 contains ! rule: resolve all paths relative to pwd at skill entry -- never relative to the skill file, AGENTS.md, or any framework directory
+
+**Traces**: #272
+
+## t1.17.1: Add post-interview confirmation gate to deft-setup and document Warp auto-approve setting (#269)  `[pending]`
+
+Warp auto-approve silently self-answers the deft-setup interview, producing garbage USER.md/PROJECT.md with no error or warning. Add a post-interview confirmation gate to deft-setup/SKILL.md that displays all captured values and requires explicit yes/no before writing files. Also document the Warp "Always ask" setting. Absorbs #271.
+
+- skills/deft-setup/SKILL.md contains post-interview confirmation gate: after completing the interview, display a summary of all captured values and require explicit yes/no confirmation before writing USER.md, PROJECT.md, or any other artifacts
+- skills/deft-setup/SKILL.md documents the Warp "Always ask" setting (AI -> Profile Settings) as the recommended configuration for running deft-setup
+
+**Traces**: #269
+
+## t1.18.1: Fix WinError 448 -- pytest-current symlink cleanup fails on Windows 11 24H2+ (#281)  `[pending]`
+
+pytest creates a pytest-current symlink in the temp directory tree; Windows 11 24H2+ security policy flags it as an untrusted mount point and raises WinError 448 during cleanup, causing task check to fail locally even when all tests pass. Fix: add tmp_path_retention_count = 0 to [tool.pytest.ini_options] in pyproject.toml.
+
+- pyproject.toml [tool.pytest.ini_options] contains tmp_path_retention_count = 0
+
+**Traces**: #281
+
+## t1.19.1: Add MCP capability detection and task check pre-existing failure carve-out to deft-review-cycle (#282)  `[pending]`
+
+Two gaps in deft-review-cycle/SKILL.md: (1) Phase 2 Step 1 has no capability detection for MCP -- when MCP is unavailable the agent can silently skip the second review source with no rule violation; (2) Step 3 has no carve-out for pre-existing task check failures unrelated to the PR, causing agents to rationalize partial test runs without documentation requirements.
+
+- skills/deft-review-cycle/SKILL.md Phase 2 Step 1 contains MCP capability probe mirroring deft-swarm Phase 3 pattern: if MCP unavailable, use gh api as explicit fallback and document why
+- skills/deft-review-cycle/SKILL.md Phase 2 Step 1 Anti-Patterns contains entry: skip the second review source without probing for capability and documenting fallback
+- skills/deft-review-cycle/SKILL.md Phase 2 Step 3 contains carve-out: partial test suite acceptable only if (a) task check failure is pre-existing with open issue number AND (b) PR description explicitly notes the failure and issue reference
+- skills/deft-review-cycle/SKILL.md Anti-Patterns contains entry: run partial test suite instead of task check without documenting pre-existing failure reason and issue number in PR body
+
+**Traces**: #282
+
+## t1.20.1: Add ! rule to AGENTS.md for BOM-safe PowerShell file writes (#283)  `[pending]`
+
+Agents on Windows writing files via PowerShell reach for [System.Text.Encoding]::UTF8 (writes a BOM) instead of the BOM-free constructor documented in scm/github.md. The rule exists in a reference document but is absent from AGENTS.md -- the always-loaded behavioral document. Add a ! rule to AGENTS.md making BOM-safe writes a hard gate at the decision point.
+
+- AGENTS.md contains ! rule: when writing files using PowerShell, MUST use New-Object System.Text.UTF8Encoding $false -- never [System.Text.Encoding]::UTF8 (writes BOM); see scm/github.md PS 5.1 section
+
+**Traces**: #283
+
+## t2.8.1: Add explicit row format template to deft-roadmap-refresh skill (#221)  `[completed]`
 Add an explicit `| #NNN | title | Phase |` row format template to skills/deft-roadmap-refresh/SKILL.md at the step that creates or updates Open Issues Index rows. Add 2 anti-patterns: one against creating index rows without using the template format, one against double-pipe `||` entries from omitting a column value. Closes #221.
 
 - skills/deft-roadmap-refresh/SKILL.md Phase 2 Step 4 contains explicit row format template: `| #NNN | title | Phase |`
