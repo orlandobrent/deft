@@ -66,7 +66,6 @@ Quick doc/content fixes that don't require code changes.
 - **#163** -- Enforce USER.md gate in CLI path -- parity with agentic (skills) path
   - `cmd_spec` and `cmd_project` should check for USER.md at entry; if absent, warn and redirect to `run bootstrap`
   - Skills path already done (deft-build); this covers the CLI fallback path only
-- **#235** -- feat(tasks): add task toolchain:check and task changelog:check as task check deps (split from #233; no dependency on tasks/ restructure)
 - **#228** -- Bring run CLI into test coverage measurement -- refactor run/run.py to separate pure logic from terminal I/O, add unit tests, remove pyproject.toml omit entries (confirm #160 disposition before implementing)
 - Code signing for installer binaries
 - Low-end LLM compatibility testing
@@ -117,13 +116,15 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#140** -- Automatically check for updates to cloned repos in a project -- detect stale cloned dependencies, notify user; part of future `deft doctor`/`deft update` (new CLI tooling)
 - **#160** -- Consider TypeScript instead of Python for `run` CLI -- architectural decision for CLI overhaul; decide before #11 and #12 (xrefs #118)
 - **#212** -- discussion: Process control belongs in Directive -- universal process principles (review cycle, parallel work, batch-fix) as first-class Directive content; skills become tool-specific adapters; explicitly DO NOT IMPLEMENT until team decision reached (xrefs #89, #147, #194, #159)
-- **#233** -- More Determinism: full initiative -- Phase 0 spec scaffolding (generated per-phase task gates), tasks/ directory restructure (monolithic Taskfile -> modular includes), task doctor, and remaining deterministic enforcement tasks (verify:stubs, build:verify, change:init, change:archive, validate:links, commit:lint); implementation layer for meta/philosophy.md #159; early-win subset split to #235 (Phase 3)
+- **#233** -- More Determinism: full initiative -- Phase 0 spec scaffolding (generated per-phase task gates), task doctor, and remaining deterministic enforcement tasks (build:verify, change:archive); tasks/ restructure, toolchain:check, verify:stubs, validate:links, changelog:check, change:init, commit:lint completed in v0.17.0; early-win subset #235 closed in v0.17.0
 - LLM-assisted content validation
 - Self-upgrade to Deft Directive product (branding, public docs, distribution packaging)
 
 ---
 
 ## Completed
+- ~~#235 -- feat(tasks): toolchain:check + changelog:check as task check deps (split from #233) -- fully resolved by tasks/ restructure~~ -- 2026-04-10 (v0.17.0)
+- ~~#233 (partial) -- More Determinism: tasks/ restructure, toolchain:check, verify:stubs, validate:links, spec:pipeline, changelog:check, change:init, commit:lint, enhanced check -- remaining items (Phase 0 generation, build:verify, change:archive, doctor) still open~~ -- 2026-04-10 (v0.17.0)
 - ~~#256 -- fix(docs): use OS temp directory for --body-file to avoid rm denylist collision~~ -- 2026-04-10 (v0.16.0)
 - ~~#261 + #263 -- fix(skill): deft-swarm Phase 5->6 gate hardening + crash recovery -- context-pressure bypass prohibition + structured merge-readiness checklist~~ -- 2026-04-10 (v0.16.0)
 - ~~#279 -- fix(skill): deft-review-cycle Approach 2 idle-stoppage warning + prefer Approach 1 rule for swarm agents~~ -- 2026-04-10 (v0.16.0)
@@ -377,7 +378,7 @@ Larger feature work -- only after issues are resolved and content is stable.
 | ~~#226~~ | ~~refactor: rename deft-rwldl to deft-pre-pr + auto-suggestion + keyword routing~~ | completed -- v0.15.0 |
 | #233 | More Determinism: full deterministic task initiative (Phase 0, tasks/ restructure, doctor, etc.) | 5 |
 | ~~#234~~ | ~~docs: README Your Artifacts section~~ | completed -- v0.15.0 |
-| #235 | feat(tasks): toolchain:check + changelog:check as task check deps (split from #233) | 3 |
+| ~~#235~~ | ~~feat(tasks): toolchain:check + changelog:check as task check deps (split from #233)~~ | completed -- v0.17.0 |
 | ~~#236~~ | ~~fix(docs): Get-Content -Raw UTF-8 footgun + BOM-safe round-trip pattern for PS 5.1~~ | completed -- v0.14.1 |
 | ~~#237~~ | ~~chore(docs): migrate ROADMAP.md existing em-dashes to ASCII -- to enable edit_files on Windows~~ | completed -- v0.14.1 |
 | ~~#238~~ | ~~fix(skill): deft-roadmap-refresh batch changelog line at session end, not per-issue~~ | completed -- v0.14.1 |
@@ -463,3 +464,4 @@ Larger feature work -- only after issues are resolved and content is stable.
 *Updated 2026-04-10 -- filed and triaged #282 (Phase 1 Cleanup, t1.19.1): deft-review-cycle MCP capability detection + task check carve-out*
 *Updated 2026-04-10 -- filed and triaged #283 (Phase 1 Cleanup, t1.20.1): AGENTS.md ! rule for BOM-safe PowerShell file writes*
 *Updated 2026-04-10 -- v0.16.0 release: moved #256, #261, #263, #269, #272, #279 (Phase 1 Adoption Blockers), #274, #281, #282, #283 (Phase 1 Cleanup), #266, #268 (Phase 2), #270 (Phase 3) to Completed; struck through in Open Issues Index; Phase 1 Adoption Blockers and Cleanup sections now empty*
+*Updated 2026-04-10 -- v0.17.0 release: #235 closed (toolchain:check + changelog:check as check deps); #233 partial progress (tasks/ restructure + 7 new deterministic tasks); removed #235 from Phase 3 body; updated #233 in Phase 5; struck through #235 in Open Issues Index*
