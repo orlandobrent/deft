@@ -1005,20 +1005,22 @@ Extend the mandatory pre-commit file review step in deft-roadmap-refresh and def
 
 **Traces**: #274
 
-## t1.16.1: Anchor deft-setup path resolution to pwd at skill entry (#272)  `[pending]`
+## t1.16.1: Anchor deft-setup path resolution to pwd at skill entry (#272)  `[completed]`
 
 When directive is cloned into a project subdirectory, deft-setup reads ./PROJECT.md relative to the framework clone instead of the user's pwd, silently concluding bootstrap is complete. Add a ! rule to skills/deft-setup/SKILL.md Phase 2 explicitly anchoring all path resolution to pwd at skill entry.
 
 - skills/deft-setup/SKILL.md Phase 2 contains ! rule: resolve all paths relative to pwd at skill entry -- never relative to the skill file, AGENTS.md, or any framework directory
+- tests/content/test_skills.py: test coverage deferred -- constraint prohibits modifying test file in this PR; existing tests pass
 
 **Traces**: #272
 
-## t1.17.1: Add post-interview confirmation gate to deft-setup and document Warp auto-approve setting (#269)  `[pending]`
+## t1.17.1: Add post-interview confirmation gate to deft-setup and document Warp auto-approve setting (#269)  `[completed]`
 
 Warp auto-approve silently self-answers the deft-setup interview, producing garbage USER.md/PROJECT.md with no error or warning. Add a post-interview confirmation gate to deft-setup/SKILL.md that displays all captured values and requires explicit yes/no before writing files. Also document the Warp "Always ask" setting. Absorbs #271.
 
 - skills/deft-setup/SKILL.md contains post-interview confirmation gate: after completing the interview, display a summary of all captured values and require explicit yes/no confirmation before writing USER.md, PROJECT.md, or any other artifacts
 - skills/deft-setup/SKILL.md documents the Warp "Always ask" setting (AI -> Profile Settings) as the recommended configuration for running deft-setup
+- tests/content/test_skills.py: test coverage deferred -- constraint prohibits modifying test file in this PR; existing tests pass
 
 **Traces**: #269
 
