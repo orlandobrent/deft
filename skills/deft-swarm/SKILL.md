@@ -288,13 +288,15 @@ All PRs meet ALL of:
 
 ! **Greptile re-review on rebase force-push:** Force-pushing a rebased branch triggers a **full** Greptile re-review (not an incremental diff), even if the rebase introduced no logic changes. Expected latency is ~2-5 minutes per PR in the cascade. Factor this into merge sequencing.
 
-! **Autonomous re-review monitoring after force-push:** After each `--force-with-lease` push of a rebased branch in the cascade, the monitor MUST autonomously wait for the Greptile re-review to complete before proceeding to the next merge. Use the tiered monitoring approach defined in `skills/deft-review-cycle/SKILL.md` Step 4 Review Monitoring (Approach 1: spawn sub-agent via `start_agent` to poll and report back; Approach 2 fallback: discrete `run_shell_command` wait-mode calls with yield between polls, ~60s cadence). Do NOT duplicate the full monitoring logic here -- follow the canonical skill.
+! **Autonomous re-review monitoring after force-push:** After each `--force-with-lease` push of a rebased branch in the cascade, the monitor MUST autonomously wait for the Greptile re-review to complete before proceeding to the next merge. Use the tiered monitoring approach defined in `skills/deft-review-cycle/SKILL.md` Step 4 Review Monitoring (Approach 1: spawn sub-agent via `start_agent` to poll and report back; Approach 2 fallback: discrete `run_shell_command` wait-mode calls with yield between polls, adaptive cadence -- see deft-review-cycle SKILL.md). Do NOT duplicate the full monitoring logic here -- follow the canonical skill.
 
 ! **Gate:** Do NOT proceed to the next merge in the cascade until the Greptile review for the rebased branch is current (pushed SHA matches "Last reviewed commit" SHA) AND the exit condition is met (confidence > 3, no P0/P1 issues remaining). A stale or in-progress review is not sufficient.
 
 ? **Rebase-only annotation:** If the force-push contains no logic changes (pure rebase onto updated master), the monitor MAY post a brief PR comment noting "rebase-only, no logic changes" to give Greptile context and help reviewers triage the re-review.
 
 ~ To minimize cascades: rebase ALL remaining PRs onto latest master before starting any merges, then merge in rapid succession.
+
+~ **Parallel rebase + review monitoring (start_agent available):** When `start_agent` is available during the merge cascade, the monitor MAY launch parallel sub-agents to overlap rebase and review monitoring work. For example: while Greptile re-reviews PR #A after a rebase push, spawn a sub-agent to begin rebasing PR #B onto the latest master. Each sub-agent reports back via `send_message_to_agent` when its task (rebase complete, review passed) is done. This reduces total cascade wall-clock time from serial (rebase + review per PR) to overlapped. The gate remains: do NOT merge PR #B until its own Greptile review passes the exit condition.
 
 - ! Undraft PRs: `gh pr ready <number> --repo <owner/repo>`
 - ! Squash merge: `gh pr merge <number> --squash --delete-branch --admin` (if branch protection requires)
