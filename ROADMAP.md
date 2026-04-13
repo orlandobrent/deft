@@ -7,17 +7,7 @@ Prioritized work items. **Principle: resolve open issues before new features.**
 ## Phase 1 -- Bug Fixes & Issue Resolution (Next Up)
 
 Fix reported bugs and UX problems blocking adoption.
-### Adoption Blockers (user-reported, highest priority)
-
-- **#305** -- Greptile review cycle bottlenecks: mandate deft-pre-pr, PR scope gate, adaptive poll cadence, parallel swarm cascade monitoring, `.greptile/rules.md` template (all 5 changes in one PR)
-- **#307** -- deft-review-cycle Approach 2 silent failure in interactive sessions -- no start_agent + no scheduler = agent claims to yield but never re-polls; add Approach 3 blocking fallback with user warning
-
-### Cleanup
-- **#301**
-- **#301** -- Tighten deft-interview routing keyword -- bare `interview` collides with spec-creation intent; replace with `interview loop` / `q&a loop` / `run interview loop`
-- **#302** -- Clarify deft-interview invocation contract: distinguish embedded mode (inline rules, no contract object) from delegation mode (formal sub-skill invocation)
-- **#303** -- Fix deft-interview Rule 5 vs Rule 6 inconsistency: `ok` accepted for default-acceptance but silently rejected at confirmation gate
-- **#304** -- Add regression test for deft-setup Phase 1/2 referencing deft-interview (coverage gap from PR #299)
+Phase 1 is now empty -- all adoption blockers and cleanup items resolved as of v0.19.0.
 
 ---
 
@@ -169,6 +159,13 @@ Larger feature work -- only after issues are resolved and content is stable.
 ---
 
 ## Completed
+- ~~#305 -- perf(review-cycle): Greptile review cycle bottlenecks -- 5-change optimization bundle (mandate deft-pre-pr, PR scope gate, adaptive poll cadence, parallel swarm cascade monitoring, .greptile/rules.md template)~~ -- 2026-04-13 (v0.19.0)
+- ~~#307 -- fix(skill): deft-review-cycle Approach 2 capability detection gap -- add Approach 3 interactive blocking fallback with user warning~~ -- 2026-04-13 (v0.19.0)
+- ~~#328 -- docs(deft-review-cycle): add Select-String fallback for oversized gh pr view output~~ -- 2026-04-13 (v0.19.0)
+- ~~#301 -- fix(agents): tighten deft-interview routing keyword -- replace bare interview with interview loop / q&a loop / run interview loop~~ -- 2026-04-13 (v0.19.0)
+- ~~#302 -- fix(skill): deft-interview invocation contract -- clarify embedded vs delegation usage modes~~ -- 2026-04-13 (v0.19.0)
+- ~~#303 -- fix(skill): deft-interview Rule 5 vs Rule 6 inconsistency -- ok accepted for default but not confirmation gate~~ -- 2026-04-13 (v0.19.0)
+- ~~#304 -- test(skill): add regression test for deft-setup Phase 1/2 referencing deft-interview~~ -- 2026-04-13 (v0.19.0)
 - ~~#293 -- test(cli): add subprocess-based unit tests for v0.17.0 task scripts -- 25 test cases in tests/cli/test_task_scripts.py~~ -- 2026-04-13
 - ~~#298 -- chore(spec): flip all 24 stale [pending] task statuses to [completed] in SPECIFICATION.md~~ -- 2026-04-13
 - ~~#235 -- feat(tasks): toolchain:check + changelog:check as task check deps
@@ -475,13 +472,14 @@ Larger feature work -- only after issues are resolved and content is stable.
 | #322 | Story M: Post-cutover GitHub issue reconciliation | 2 |
 | #323 | Story N: PROJECT-DEFINITION regeneration tool (task project:render) | 2 |
 | #324 | Story O: Scope lifecycle task commands (task scope:*) | 2 |
-| #305 | perf(review-cycle): Greptile review cycle bottlenecks -- 5-change optimization bundle | 1 |
-| #307 | fix(skill): deft-review-cycle Approach 2 capability detection gap -- no start_agent + no sleep fallback | 1 |
+| ~~#305~~ | ~~perf(review-cycle): Greptile review cycle bottlenecks -- 5-change optimization bundle~~ | completed -- v0.19.0 |
+| ~~#307~~ | ~~fix(skill): deft-review-cycle Approach 2 capability detection gap -- no start_agent + no sleep fallback~~ | completed -- v0.19.0 |
 | ~~#298~~ | ~~chore(spec): flip 5 stale [pending] statuses to [completed] in SPECIFICATION.md~~ | completed -- 2026-04-13 |
-| #301 | fix(agents): tighten deft-interview routing keyword | 1 |
-| #302 | fix(skill): deft-interview invocation contract -- clarify embedded vs delegation usage modes | 1 |
-| #303 | fix(skill): deft-interview Rule 5 vs Rule 6 inconsistency -- 'ok' accepted for default but not confirmation gate | 1 |
-| #304 | test(skill): add regression test for deft-setup Phase 1/2 referencing deft-interview | 1 |
+| ~~#301~~ | ~~fix(agents): tighten deft-interview routing keyword~~ | completed -- v0.19.0 |
+| ~~#302~~ | ~~fix(skill): deft-interview invocation contract -- clarify embedded vs delegation usage modes~~ | completed -- v0.19.0 |
+| ~~#303~~ | ~~fix(skill): deft-interview Rule 5 vs Rule 6 inconsistency -- 'ok' accepted for default but not confirmation gate~~ | completed -- v0.19.0 |
+| ~~#304~~ | ~~test(skill): add regression test for deft-setup Phase 1/2 referencing deft-interview~~ | completed -- v0.19.0 |
+| ~~#328~~ | ~~docs(deft-review-cycle): add Select-String fallback for oversized gh pr view output~~ | completed -- v0.19.0 |
 
 ---
 
@@ -558,3 +556,4 @@ Larger feature work -- only after issues are resolved and content is stable.
 *Updated 2026-04-13 -- roadmap refresh triage: added #307 (Phase 1 Adoption Blockers, t1.31.1): deft-review-cycle Approach 2 silent failure -- add Approach 3 interactive blocking fallback; analysis comment posted*
 *Updated 2026-04-13 -- roadmap refresh: restructured phases -- inserted Phase 2 (vBRIEF Architecture Cutover, RFC #309 + stories #310-#324); shifted Documentation & Content Fixes to Phase 3, CI/Testing to Phase 4, Distribution to Phase 5, Features to Phase 6; closed #308 (absorbed by #309); analysis comment posted on #309*
 *Updated 2026-04-13 -- roadmap refresh cleanup: moved #293 (closed) and #298 (closed) to Completed; removed from phase bodies; struck through in Open Issues Index*
+*Updated 2026-04-13 -- v0.19.0 release: moved #305, #307, #328, #301, #302, #303, #304 to Completed; emptied Phase 1 body; added #328 to Open Issues Index; struck through all 7 + #328 in index; Phase 1 now empty*

@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.19.0] - 2026-04-13
+
 ### Added
 - **Regression tests for deft-setup Phase 1/2 deft-interview references** (#304, t1.29.1): Added `test_deft_setup_phase1_references_deft_interview` and `test_deft_setup_phase2_references_deft_interview` to `tests/content/test_skills.py` verifying both phases reference deft-interview
 - **Greptile review cycle optimization -- 5-change bundle** (#305, t1.30.1): Mandated deft-pre-pr before PR creation (upgraded AGENTS.md rule from ~ to !, added Phase 1 verification gate); added PR scope gate warning for 3+ unrelated surfaces; replaced fixed 60s poll with adaptive cadence (~20-30s/60s/90s); added parallel rebase + review monitoring guidance to deft-swarm Phase 6; elevated .greptile/rules.md to SHOULD with starter template
