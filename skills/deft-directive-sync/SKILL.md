@@ -23,6 +23,43 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - Beginning of a new session where framework updates may be available
 - After a known upstream deft release
 
+## Pre-Cutover Detection Guard
+
+! Before proceeding with sync, detect whether the project uses the pre-v0.20 document model and report model state.
+
+### Detection Criteria
+
+A project is **pre-cutover** if ANY of the following are true:
+
+1. `SPECIFICATION.md` exists and does NOT contain the `<!-- deft:deprecated-redirect -->` sentinel (real content, not a deprecation redirect)
+2. `PROJECT.md` exists and does NOT contain the `<!-- deft:deprecated-redirect -->` sentinel (real content, not a deprecation redirect)
+3. `vbrief/specification.vbrief.json` exists but the lifecycle folders (`vbrief/proposed/`, `vbrief/pending/`, `vbrief/active/`, `vbrief/completed/`, `vbrief/cancelled/`) do NOT exist
+
+### Action on Detection
+
+! If pre-cutover state is detected, display the actionable migration message, then **skip Phases 1-6** and proceed directly to Phase 7 with the Document Model line set to "pre-v0.20 (legacy)":
+
+> "This project uses the pre-v0.20 document model. Run `task migrate:vbrief` to upgrade to the vBRIEF-centric model."
+
+! Include specific details about what was detected:
+
+- Missing lifecycle folders: "Run `task migrate:vbrief` to create the lifecycle folder structure"
+- `SPECIFICATION.md` with real content: "SPECIFICATION.md contains non-redirect content -- this file is deprecated; use scope vBRIEFs in `vbrief/` instead"
+- `PROJECT.md` with real content: "PROJECT.md contains non-redirect content -- this file is deprecated; use `PROJECT-DEFINITION.vbrief.json` instead"
+- Missing `PROJECT-DEFINITION.vbrief.json`: "Run `task project:render` to generate the project definition"
+- Scope vBRIEF in wrong folder: "Status is '{status}' but file is in {folder}/ -- run `task scope:activate <file>` to fix"
+
+### Model State in Sync Output
+
+! Include a **Document Model** line in the Phase 7 summary:
+
+- Pre-cutover detected: "**Document Model**: pre-v0.20 (legacy) -- run `task migrate:vbrief` to upgrade"
+- Post-cutover (lifecycle folders present, no stale artifacts): "**Document Model**: v0.20+ (vBRIEF-centric) -- OK"
+- Post-cutover with tampered placeholders: "**Document Model**: v0.20+ with warnings -- SPECIFICATION.md or PROJECT.md contains non-redirect content"
+
+⊗ Skip model state detection during sync -- always report the document model state.
+⊗ Silently ignore pre-cutover artifacts -- the user must be informed with an actionable command to fix the state.
+
 ## Phase 1 -- Pre-flight
 
 ! Check that the deft/ submodule working tree is clean before attempting any update.
@@ -173,8 +210,9 @@ After structure validation, sync framework-level assets.
 4. **vBRIEF validation results**: pass/fail per file, with details on any failures
 5. **Lifecycle consistency**: all consistent / N mismatches found (with details)
 6. **Origin freshness**: N stale / N externally-closed / N current (with details)
-7. **AGENTS.md status**: current / has upstream changes / needs review
-8. **New skills**: list any newly added skills with descriptions
+7. **Document Model**: pre-v0.20 (legacy) / v0.20+ (vBRIEF-centric) OK / v0.20+ with warnings (see Pre-Cutover Detection Guard)
+8. **AGENTS.md status**: current / has upstream changes / needs review
+9. **New skills**: list any newly added skills with descriptions
 
 ! Ask the user: "Shall I commit the submodule update?" -- do NOT auto-commit.
 
