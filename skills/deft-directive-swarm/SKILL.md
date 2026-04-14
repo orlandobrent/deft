@@ -13,7 +13,7 @@ Structured workflow for a monitor agent to orchestrate N parallel local agents w
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ See also**: [swarm.md](../../swarm/swarm.md) | [deft-review-cycle](../deft-review-cycle/SKILL.md)
+**⚠️ See also**: [swarm.md](../../swarm/swarm.md) | [deft-directive-review-cycle](../deft-directive-review-cycle/SKILL.md)
 
 ## When to Use
 
@@ -32,12 +32,34 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 ! Before assigning work to agents, scan the active vBRIEFs and plan allocation.
 
+### Step 0: Work-Item Source
+
+! Determine where work items come from before proceeding to allocation.
+
+Ask the user: **"Are work items already in `vbrief/active/` as vBRIEFs, or should I generate them from GitHub issue numbers?"**
+
+- **Option A — Existing vBRIEFs**: Proceed directly to Step 1.
+- **Option B — GitHub issue numbers**: The user provides a list of issue numbers. For each issue:
+  1. ! Fetch issue data: `gh issue view <N> --json title,body,labels,number`
+  2. ! Generate a minimal vBRIEF in `vbrief/active/` following the `YYYY-MM-DD-descriptive-slug.vbrief.json` naming convention
+  3. ! The generated vBRIEF must conform to `vbrief/schemas/vbrief-core.schema.json` (vBRIEFInfo with version `"0.5"`, plan with title/status/narratives/items):
+     - `vBRIEFInfo.version`: `"0.5"`
+     - `plan.title`: issue title
+     - `plan.status`: `"running"`
+     - `plan.narratives`: object with `{ "Overview": "<issue body content>" }`
+     - `plan.items`: empty array (to be enriched)
+     - `plan.references`: array containing `{ "type": "github-issue", "id": "#<N>" }`
+  4. ! Proceed to Step 1 as normal after all vBRIEFs are generated
+
+! Auto-generated vBRIEFs are minimal scaffolds -- the monitor or user should review and enrich acceptance criteria before proceeding to Phase 1.
+
 ### Step 1: Read Project State
 
 - ! Scan `vbrief/active/` for all story-level vBRIEFs (files matching `*.vbrief.json`)
 - ! Read each vBRIEF's `plan.title`, `plan.status`, `plan.items`, `references`, and `planRef` (for epic linkage)
 - ! Read `vbrief/PROJECT-DEFINITION.vbrief.json` for project-wide context (narratives, scope registry)
 - ! Cross-reference: every candidate vBRIEF should have acceptance criteria in its `plan.items`
+- ! Determine the base branch: ask the user which branch to target for worktree creation, PR targets, and rebase cascade (default: `master`). Record this as the **configured base branch** for all subsequent phases.
 
 ### Step 2: Surface Blockers
 
@@ -106,12 +128,12 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 For each agent, create an isolated git worktree:
 
 ```
-git worktree add <path> -b <branch-name> master
+git worktree add <path> -b <branch-name> <configured-base-branch>
 ```
 
 - ! One worktree per agent (e.g. `E:\Repos\deft-agent1`, `E:\Repos\deft-agent2`)
 - ! Branch naming: `agent<N>/<type>/<issue-numbers>-<short-description>` (e.g. `agent1/cleanup/31-50-23-strategy-consolidation`) — the agent number prefix aids traceability since GitHub PR numbers won't match agent numbers
-- ! All worktrees branch from the same base (typically `master`)
+- ! All worktrees branch from the same base (the configured base branch from Phase 0)
 
 ### Step 2: Generate Prompt Files
 
@@ -226,7 +248,7 @@ When taking over: read the agent's current state (git log, diff, PR comments), c
 
 ! Long monitoring sessions accumulate large conversation history (hundreds of tool_use/tool_result pairs) and are susceptible to conversation corruption — the tool_use/tool_result mismatch observed in #263 occurred at approximately message 158 in a single monitor conversation. To mitigate:
 
-- ! Offload rebase, review-watch, and merge sub-tasks to ephemeral sub-agents using the tiered approach from `skills/deft-review-cycle/SKILL.md` (spawn via `start_agent` when available, discrete tool calls with yield otherwise) — this keeps the monitor conversation shallow
+- ! Offload rebase, review-watch, and merge sub-tasks to ephemeral sub-agents using the tiered approach from `skills/deft-directive-review-cycle/SKILL.md` (spawn via `start_agent` when available, discrete tool calls with yield otherwise) — this keeps the monitor conversation shallow
 - ~ Target <100 tool-call round-trips in any single monitor conversation before considering a fresh session handoff
 - ! If the monitor detects degraded output (repeated errors, inconsistent state references, tool call failures), stop and hand off to a fresh session with a state summary rather than continuing in a corrupted context
 
@@ -239,7 +261,7 @@ For each agent's PR:
 1. ! Check that Greptile has reviewed the latest commit (compare "Last reviewed commit" SHA to branch HEAD)
 2. ! Verify Greptile confidence score > 3
 3. ! Verify no P0 or P1 issues remain (P2 are non-blocking style suggestions)
-4. ! If the agent did not complete its review cycle, the monitor runs it per `skills/deft-review-cycle/SKILL.md`
+4. ! If the agent did not complete its review cycle, the monitor runs it per `skills/deft-directive-review-cycle/SKILL.md`
 
 ### Complete vBRIEFs
 
@@ -290,7 +312,7 @@ All PRs meet ALL of:
 
 ! **Merge authority:** Monitor proposes merge order and executes merges; user approves before the first merge. Do not merge without explicit user approval.
 
-! **Rebase cascade ownership:** Monitor owns rebase cascade sequencing. Swarm agents do not rebase -- by the time merges begin, swarm agents are idle or complete. The monitor fetches updated master, rebases each remaining branch, resolves conflicts, and force-pushes.
+! **Rebase cascade ownership:** Monitor owns rebase cascade sequencing. Swarm agents do not rebase -- by the time merges begin, swarm agents are idle or complete. The monitor fetches the updated configured base branch, rebases each remaining branch, resolves conflicts, and force-pushes.
 
 ! **Read-back verification after conflict resolution:** After resolving any rebase conflict and BEFORE running `git add`, re-read the resolved file and verify structural integrity:
 - ! No conflict markers remain (`<<<<<<<`, `=======`, `>>>>>>>`)
@@ -305,7 +327,7 @@ All PRs meet ALL of:
 
 ! **Greptile re-review on rebase force-push:** Force-pushing a rebased branch triggers a **full** Greptile re-review (not an incremental diff), even if the rebase introduced no logic changes. Expected latency is ~2-5 minutes per PR in the cascade. Factor this into merge sequencing.
 
-! **Autonomous re-review monitoring after force-push:** After each `--force-with-lease` push of a rebased branch in the cascade, the monitor MUST autonomously wait for the Greptile re-review to complete before proceeding to the next merge. Use the tiered monitoring approach defined in `skills/deft-review-cycle/SKILL.md` Step 4 Review Monitoring (Approach 1: spawn sub-agent via `start_agent` to poll and report back; Approach 2 fallback: discrete `run_shell_command` wait-mode calls with yield between polls, adaptive cadence -- see deft-review-cycle SKILL.md). Do NOT duplicate the full monitoring logic here -- follow the canonical skill.
+! **Autonomous re-review monitoring after force-push:** After each `--force-with-lease` push of a rebased branch in the cascade, the monitor MUST autonomously wait for the Greptile re-review to complete before proceeding to the next merge. Use the tiered monitoring approach defined in `skills/deft-directive-review-cycle/SKILL.md` Step 4 Review Monitoring (Approach 1: spawn sub-agent via `start_agent` to poll and report back; Approach 2 fallback: discrete `run_shell_command` wait-mode calls with yield between polls, adaptive cadence -- see deft-directive-review-cycle SKILL.md). Do NOT duplicate the full monitoring logic here -- follow the canonical skill.
 
 ! **Gate:** Do NOT proceed to the next merge in the cascade until the Greptile review for the rebased branch is current (pushed SHA matches "Last reviewed commit" SHA) AND the exit condition is met (confidence > 3, no P0/P1 issues remaining). A stale or in-progress review is not sufficient.
 
@@ -318,7 +340,7 @@ All PRs meet ALL of:
 - ! Undraft PRs: `gh pr ready <number> --repo <owner/repo>`
 - ! Squash merge: `gh pr merge <number> --squash --delete-branch --admin` (if branch protection requires)
 - ! Use descriptive squash subject: `type(scope): description (#issues)`
-- ! After each merge, rebase remaining PRs onto updated master before merging the next
+- ! After each merge, rebase remaining PRs onto the updated configured base branch before merging the next
 
 ### Step 2: Close Issues and Update Origins
 
@@ -331,7 +353,7 @@ All PRs meet ALL of:
 
 ### Step 3: Update Master
 
-- ! Pull merged changes: `git pull origin master`
+- ! Pull merged changes: `git pull origin <configured-base-branch>`
 
 ### Step 4: Clean Up
 
@@ -391,7 +413,7 @@ When a monitor session crashes or a new session must take over an in-progress sw
    - Is this PR already merged? (state = MERGED) → skip, move to issue verification
    - Is this PR still open? → check if it needs rebase, re-review, or merge
    - Is this PR closed without merge? → investigate (was it superseded?)
-3. ! For open PRs, check rebase status: `git --no-pager log --oneline <branch> ^origin/master -5` — if empty, the branch is already up-to-date with master
+3. ! For open PRs, check rebase status: `git --no-pager log --oneline <branch> ^origin/<configured-base-branch> -5` — if empty, the branch is already up-to-date with the configured base branch
 4. ! For open PRs, check review status: `gh pr checks <number>` and `gh pr view <number> --comments` to verify Greptile review state
 5. ! Resume the cascade from the first incomplete step — the idempotent pre-check pattern (see Step 1 above) ensures re-running any step on an already-completed PR is safe
 
@@ -399,7 +421,7 @@ When a monitor session crashes or a new session must take over an in-progress sw
 
 ! Every Phase 6 action MUST be safe to re-run:
 - Merging an already-merged PR → `gh pr merge` will report "already merged" and exit cleanly
-- Rebasing a branch already on latest master → rebase is a no-op
+- Rebasing a branch already on latest configured base branch → rebase is a no-op
 - Closing an already-closed issue → `gh issue close` will report "already closed"
 - Force-pushing a branch that hasn't changed → push reports "Everything up-to-date"
 
@@ -414,7 +436,7 @@ run task check, commit, push, create a PR, and run the review cycle.
 DO NOT STOP until all steps are complete.
 
 STEP 1 — Read directives: Read AGENTS.md, vbrief/vbrief.md, and the assigned vBRIEF(s) from vbrief/active/.
-Read skills/deft-review-cycle/SKILL.md.
+Read skills/deft-directive-review-cycle/SKILL.md.
 
 STEP 2 — Implement these N tasks (see assigned vBRIEF(s) for full acceptance criteria):
 
@@ -429,11 +451,11 @@ STEP 3 — Validate: Run task check. Fix any failures.
 STEP 4 — Commit: Add CHANGELOG.md entries under [Unreleased].
 Commit with message: [type]([scope]): [description] — with bullet-point body.
 
-STEP 5 — Push and PR: Push branch to origin. Create PR targeting master using gh CLI.
+STEP 5 — Push and PR: Push branch to origin. Create PR targeting <configured-base-branch> using gh CLI.
 Note: --body-file must use a temp file in the OS temp directory ($env:TEMP on PowerShell,
 $TMPDIR or /tmp on Unix) -- do NOT write temp files in the worktree. See scm/github.md.
 
-STEP 6 — Review cycle: Follow skills/deft-review-cycle/SKILL.md to run the
+STEP 6 — Review cycle: Follow skills/deft-directive-review-cycle/SKILL.md to run the
 Greptile review cycle on the PR. Do NOT merge — leave for human review.
 
 CONSTRAINTS:
@@ -450,7 +472,7 @@ CONSTRAINTS:
 - ! Include `DO NOT STOP until all steps are complete` in the preamble
 - ! Each task MUST include its vBRIEF filename and origin issue number
 - ! CONSTRAINTS section MUST list files the agent must not touch (other agents' scope)
-- ! Review cycle step MUST reference `skills/deft-review-cycle/SKILL.md` explicitly
+- ! Review cycle step MUST reference `skills/deft-directive-review-cycle/SKILL.md` explicitly
 - ⊗ Start the prompt with context ("You are working in...") — agents treat this as passive setup and may stop after reading
 
 ## Push Autonomy
@@ -474,10 +496,11 @@ CONSTRAINTS:
 - ⊗ Proceed to Phase 1 (Select) without completing Phase 0 (Allocate) and receiving explicit user approval
 - ⊗ Begin merge cascade without presenting the version bump proposal and receiving explicit user approval — the Phase 5→6 gate is mandatory
 - ⊗ Ignore Greptile re-review latency when planning merge cascade timing -- each rebase force-push triggers a full re-review (~2-5 min), not an incremental diff
-- ⊗ Proceed to the next merge in the rebase cascade before confirming the Greptile re-review is current (SHA match) and exit condition is met (confidence > 3, no P0/P1) on the rebased branch -- see `skills/deft-review-cycle/SKILL.md` Step 4 for the monitoring approach
+- ⊗ Proceed to the next merge in the rebase cascade before confirming the Greptile re-review is current (SHA match) and exit condition is met (confidence > 3, no P0/P1) on the rebased branch -- see `skills/deft-directive-review-cycle/SKILL.md` Step 4 for the monitoring approach
 - ⊗ Spawn a replacement sub-agent without confirming the original is unresponsive via a lifecycle event (idle/blocked) — original Warp tabs can resume after apparent failure, and two concurrent agents on the same worktree will corrupt the tool_use/tool_result call chain (#261, #263)
 - ⊗ Skip Phase 5 or the Phase 5→6 confirmation gate under time pressure or due to long context — the gate is mandatory regardless of conversation length, elapsed time, or context-window pressure
 - ⊗ Run `git add` on a conflict-resolved file without re-reading and verifying structural integrity (no conflict markers, no collapsed lines, no encoding artifacts) -- see Phase 6 Step 1 read-back verification rule (#288)
 - ⊗ Use shell regex (`sed`, `Select-String -replace`) to resolve `CHANGELOG.md` rebase conflicts -- prefer `edit_files` for encoding safety and exact match verification (#288)
 - ⊗ Hardcode a 1:1 vBRIEF-per-agent allocation rule — the monitor decides allocation dynamically based on scope, complexity, and dependencies
 - ⊗ Complete a story without moving its vBRIEF from `active/` to `completed/` and updating its origin references
+- ⊗ Hardcode `master` as the base branch -- always use the configured base branch from Phase 0
