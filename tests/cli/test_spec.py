@@ -14,10 +14,12 @@ Covers spec_validate:
 Covers spec_render:
   - render_spec: file missing → False (delegates to validate)
   - render_spec: invalid JSON → False (delegates to validate)
-  - render_spec: valid JSON, status != 'approved' → False
-  - render_spec: valid JSON, status == 'approved' → True, writes SPECIFICATION.md
+  - render_spec: valid JSON, status not in renderable set → False
+  - render_spec: valid JSON, renderable status → True, writes SPECIFICATION.md
   - render_spec: renders title, overview, tasks correctly
   - render_spec: tasks with list fields rendered as bullet points
+  - render_spec: completed/running status accepted (#384)
+  - render_spec: pending status rejected (#384)
   - main(): no args → exit code 2
   - main(): not-approved file → exit code 1
   - main(): approved file → exit code 0, output file created
@@ -222,7 +224,7 @@ def test_render_invalid_json_returns_false(render_mod, tmp_path) -> None:
 
 
 def test_render_not_approved_returns_false(render_mod, tmp_path) -> None:
-    """render_spec() must return False when status is not 'approved'."""
+    """render_spec() must return False when status is not renderable."""
     spec_file = tmp_path / "spec.json"
     _write_json(spec_file, _MINIMAL_DRAFT)
     ok, msg = render_mod.render_spec(str(spec_file), str(tmp_path / "SPECIFICATION.md"))
@@ -308,6 +310,48 @@ def test_render_output_item_title(render_mod, tmp_path) -> None:
     render_mod.render_spec(str(spec_file), str(out_file))
     content = out_file.read_text(encoding="utf-8")
     assert "## T2: Fallback title key" in content
+
+
+def test_render_completed_status_accepted(render_mod, tmp_path) -> None:
+    """render_spec() must accept status 'completed' (#384)."""
+    spec = {
+        "vBRIEFInfo": {"version": "0.5"},
+        "plan": {"title": "Completed Spec", "status": "completed", "items": []},
+    }
+    spec_file = tmp_path / "spec.json"
+    out_file = tmp_path / "SPECIFICATION.md"
+    _write_json(spec_file, spec)
+    ok, msg = render_mod.render_spec(str(spec_file), str(out_file))
+    assert ok is True
+    assert out_file.exists()
+
+
+def test_render_running_status_accepted(render_mod, tmp_path) -> None:
+    """render_spec() must accept status 'running' (#384)."""
+    spec = {
+        "vBRIEFInfo": {"version": "0.5"},
+        "plan": {"title": "Running Spec", "status": "running", "items": []},
+    }
+    spec_file = tmp_path / "spec.json"
+    out_file = tmp_path / "SPECIFICATION.md"
+    _write_json(spec_file, spec)
+    ok, msg = render_mod.render_spec(str(spec_file), str(out_file))
+    assert ok is True
+    assert out_file.exists()
+
+
+def test_render_pending_status_rejected(render_mod, tmp_path) -> None:
+    """render_spec() must reject status 'pending' (#384)."""
+    spec = {
+        "vBRIEFInfo": {"version": "0.5"},
+        "plan": {"title": "Pending Spec", "status": "pending", "items": []},
+    }
+    spec_file = tmp_path / "spec.json"
+    out_file = tmp_path / "SPECIFICATION.md"
+    _write_json(spec_file, spec)
+    ok, msg = render_mod.render_spec(str(spec_file), str(out_file))
+    assert ok is False
+    assert "pending" in msg
 
 
 def test_render_output_plan_title_as_h1(render_mod, tmp_path) -> None:
