@@ -204,8 +204,6 @@ The entire change folder moves as-is. The archive is a historical record — nev
 
 ---
 
----
-
 ## Command Lifecycle: `run` vs `task`
 
 Deft uses two complementary command surfaces that together cover the full document lifecycle:
@@ -233,9 +231,7 @@ These are the entry points for humans and agents starting new work.
 - `task project:render` — Regenerate `PROJECT-DEFINITION.vbrief.json` items registry from lifecycle folders
 - `task migrate:vbrief` — One-time migration from pre-v0.20 model to vBRIEF lifecycle folders
 - `task vbrief:validate` — Validate vBRIEF schema, filenames, folder/status consistency (runs as part of `task check`)
-- `task agents:init` — Write canonical AGENTS.md to project root (idempotent)
-
-These transform vBRIEF source files into readable artifacts or enforce structural rules.
+These transform
 
 ### Why the split?
 
