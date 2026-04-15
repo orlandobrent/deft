@@ -44,8 +44,13 @@ A project is **pre-cutover** if ANY of the following are true:
 - `PROJECT.md` with real content: "PROJECT.md contains non-redirect content -- this file is deprecated; use `PROJECT-DEFINITION.vbrief.json` instead"
 - Missing `PROJECT-DEFINITION.vbrief.json`: "Run `task project:render` to generate the project definition"
 
+! After displaying the diagnostic message, ask the user: "Would you like me to run `task migrate:vbrief` now?"
+- If yes: run the migration command, then re-run the pre-cutover detection guard to verify clean state before proceeding
+- If no: stop and let the user handle migration manually
+
 ⊗ Proceed with setup phases when pre-cutover artifacts are detected -- always redirect to migration first.
 ⊗ Silently ignore pre-cutover artifacts -- the user must be informed with an actionable command to fix the state.
+⊗ Display the migration diagnostic without offering to run it -- always ask the user if they want the agent to handle it.
 
 ### Greenfield Projects (No Migration Needed)
 

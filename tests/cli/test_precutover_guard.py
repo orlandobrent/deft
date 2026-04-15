@@ -279,6 +279,14 @@ class TestSkillActionableMessages:
         content = read_skill("deft-directive-sync")
         assert "task scope:activate" in content
 
+    def test_setup_offers_to_run_migration(self):
+        """Setup skill offers to run migration on the user's behalf (#396)."""
+        content = read_skill("deft-directive-setup")
+        assert "Would you like me to run" in content
+        assert "task migrate:vbrief" in content
+        # Must re-run the guard after migration to verify clean state
+        assert "re-run" in content.lower()
+
     def test_setup_precutover_message_text(self):
         """Setup skill contains the standard pre-cutover user message."""
         content = read_skill("deft-directive-setup")
