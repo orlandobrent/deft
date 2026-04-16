@@ -1427,7 +1427,7 @@ def cmd_spec(args: List[str]):
                             spec_name = line.replace('# ', '').replace(' Project Guidelines', '').strip()
                             break
             except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-                pass
+                pass  # Best-effort: fall back to manual name entry
         
         if spec_name:
             info(f"Project name from PROJECT-DEFINITION: {spec_name}")

@@ -24,6 +24,7 @@ import re
 import sys
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Lifecycle folders per RFC #309 D13
 LIFECYCLE_FOLDERS = ("proposed", "pending", "active", "completed", "cancelled")
@@ -268,7 +269,7 @@ def _resolve_repo_url(spec_vbrief: dict | None) -> str:
         refs = spec_vbrief.get("plan", {}).get("references", [])
         for ref in refs:
             uri = ref.get("uri", "")
-            if "github.com" in uri:
+            if urlparse(uri).netloc in ("github.com", "www.github.com"):
                 # Extract owner/repo from URL
                 parts = uri.split("github.com/")[-1].split("/")
                 if len(parts) >= 2:

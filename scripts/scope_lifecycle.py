@@ -152,7 +152,7 @@ def run_transition(action: str, file_path: Path) -> tuple[bool, str]:
     file_path.write_text(updated_json, encoding="utf-8")
 
     # Move file if target folder differs from current
-    if target_folder is not None and target_folder != current_folder:
+    if target_folder is not None:
         vbrief_root = file_path.parent.parent
         dest_dir = vbrief_root / target_folder
         dest_dir.mkdir(parents=True, exist_ok=True)

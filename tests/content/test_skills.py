@@ -1332,7 +1332,6 @@ def test_deft_directive_swarm_no_old_name_references() -> None:
     """deft-directive-swarm must not reference the old deft-swarm name."""
     text = _read_skill(_SWARM_PATH)
     # Check that 'deft-swarm' does not appear without the 'directive-' prefix
-    import re
     old_refs = re.findall(r'(?<!directive-)deft-swarm', text)
     assert len(old_refs) == 0, (
         f"{_SWARM_PATH}: found {len(old_refs)} reference(s) to old 'deft-swarm' name (#317)"
@@ -1520,8 +1519,7 @@ def test_deft_directive_swarm_see_also_link_correct() -> None:
         f"{_SWARM_PATH}: See also link still references old ../deft-review-cycle/SKILL.md path"
     )
     # Also check root-relative references in the body
-    import re as _re
-    old_refs = _re.findall(r'(?<!directive-)deft-review-cycle/SKILL\.md', text)
+    old_refs = re.findall(r'(?<!directive-)deft-review-cycle/SKILL\.md', text)
     assert len(old_refs) == 0, (
         f"{_SWARM_PATH}: body still references old deft-review-cycle/SKILL.md path "
         f"({len(old_refs)} occurrence(s))"
