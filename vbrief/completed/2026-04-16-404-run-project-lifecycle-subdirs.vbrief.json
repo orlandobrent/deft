@@ -8,7 +8,7 @@
   "plan": {
     "id": "fix-404-run-project-lifecycle-subdirs",
     "title": "fix(cli): run project should create vbrief lifecycle subdirectories",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Problem": "`run project` creates vbrief/PROJECT-DEFINITION.vbrief.json but does not scaffold the 5 lifecycle subdirectories (proposed/, pending/, active/, completed/, cancelled/). skills/deft-directive-setup/SKILL.md creates them correctly; the CLI cmd_project() only creates vbrief/ implicitly via _atomic_write.",
       "Action": "After _atomic_write in cmd_project(), iterate LIFECYCLE_FOLDERS and mkdir each with parents=True, exist_ok=True. Add tests verifying the 5 folders exist after `run project`. Surface LIFECYCLE_FOLDERS as a module-level constant kept in sync with scripts/vbrief_validate.py.",
@@ -43,6 +43,7 @@
         "url": "https://github.com/deftai/directive/issues/402",
         "id": "#402"
       }
-    ]
+    ],
+    "updated": "2026-04-20T17:07:51Z"
   }
 }

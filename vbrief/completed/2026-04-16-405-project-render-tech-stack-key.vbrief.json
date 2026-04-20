@@ -8,7 +8,7 @@
   "plan": {
     "id": "fix-405-project-render-tech-stack-key",
     "title": "fix(scripts): project_render.py SKELETON_NARRATIVES TechStack key breaks vbrief:validate",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Problem": "scripts/project_render.py SKELETON_NARRATIVES uses 'TechStack' (camelCase). scripts/vbrief_validate.py PROJECT_DEF_EXPECTED_NARRATIVES requires 'tech stack' (space-separated) via lowercase comparison. 'TechStack'.lower() == 'techstack' != 'tech stack', so every skeleton created by `task project:render` immediately fails `task vbrief:validate` (part of `task check`).",
       "Action": "Rename 'TechStack' to 'tech stack' in SKELETON_NARRATIVES. Update the corresponding assertion in tests/cli/test_project_render.py (TestSkeletonCreation.test_skeleton_has_empty_narratives) so the end-to-end contract is covered.",
@@ -43,6 +43,7 @@
         "url": "https://github.com/deftai/directive/issues/402",
         "id": "#402"
       }
-    ]
+    ],
+    "updated": "2026-04-20T17:07:59Z"
   }
 }

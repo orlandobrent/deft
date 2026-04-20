@@ -8,7 +8,7 @@
   "plan": {
     "id": "fix-410-run-upgrade-gate",
     "title": "feat(cli): add version/upgrade gate to deft/run entry point",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Problem": "After a consumer updates their deft submodule, there is no deterministic gate that detects the project needs migration. The sync skill only fires on explicit agent triggers; the consumer's `task check` is their own. `deft/run` is the only deterministic entry point directive controls that runs in consumer project context, so that is where the CLI gate belongs.",
       "Action": "Add a non-fatal upgrade gate in main() before subcommand dispatch. Write a vbrief/.deft-version marker on first setup (cmd_project) and on explicit `run upgrade`. On every invocation, compare the recorded version to VERSION; warn on drift. If no marker but legacy SPECIFICATION.md/PROJECT.md without the <!-- deft:deprecated-redirect --> sentinel are found, warn about pre-v0.20 state. Interactive sessions prompt 'continue anyway? [y/N]'; non-interactive sessions warn and continue so CI is never blocked. Skip the gate entirely when running inside the deft repo itself (detected by root main.md + missing ./deft/ subdir).",
@@ -59,6 +59,7 @@
         "url": "https://github.com/deftai/directive/issues/402",
         "id": "#402"
       }
-    ]
+    ],
+    "updated": "2026-04-20T17:08:02Z"
   }
 }
