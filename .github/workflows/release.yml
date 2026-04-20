@@ -61,7 +61,11 @@ jobs:
   # -----------------------------------------------------------------------
   universal-macos:
     needs: build
-    runs-on: blacksmith-6vcpu-macos-15
+    # Use GitHub-hosted macos-latest here -- blacksmith-6vcpu-macos-15 cannot reach
+    # the GitHub Actions artifact API (ECONNREFUSED on actions/download-artifact@v4).
+    # Other runners in this workflow stay on Blacksmith; only the macOS lipo step
+    # falls back until the Blacksmith macOS runner networking is fixed.
+    runs-on: macos-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
