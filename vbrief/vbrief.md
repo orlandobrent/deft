@@ -4,7 +4,7 @@ Canonical reference for vBRIEF file conventions within Deft-managed projects.
 
 Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
-**⚠️ See also**: [context/working-memory.md](../context/working-memory.md) | [resilience/continue-here.md](../resilience/continue-here.md) | [context/long-horizon.md](../context/long-horizon.md)
+**⚠️ See also**: [context/working-memory.md](../context/working-memory.md) | [resilience/continue-here.md](../resilience/continue-here.md) | [context/long-horizon.md](../context/long-horizon.md) | [glossary.md](../glossary.md)
 
 ---
 
@@ -16,6 +16,7 @@ Key `task` commands for working with vBRIEF files:
 - `task roadmap:render` — Regenerate `ROADMAP.md` from `vbrief/pending/` scope vBRIEFs
 - `task project:render` — Refresh `PROJECT-DEFINITION.vbrief.json` items registry from lifecycle folders
 - `task migrate:vbrief` — Migrate existing project to vBRIEF lifecycle folder structure (one-time)
+- `task issue:ingest -- <N>` / `task issue:ingest -- --all [--label L] [--status S] [--dry-run]` — Ingest GitHub issues as scope vBRIEFs in `vbrief/proposed/` (deduplicates via existing references)
 - `task vbrief:validate` — Validate schema, filenames, folder/status consistency (part of `task check`)
 - `task scope:promote|activate|complete|cancel|restore|block|unblock <file>` — Lifecycle transitions
 
@@ -81,6 +82,15 @@ Individual units of work (features, bugs, initiatives) live as scope vBRIEFs in 
 - ! Scope vBRIEF filenames MUST follow: `YYYY-MM-DD-descriptive-slug.vbrief.json`
 - ! The date MUST be the **creation date** (immutable — does not change as the scope progresses)
 - ~ Use lowercase hyphen-separated slugs (e.g. `2026-04-12-add-oauth-flow.vbrief.json`)
+
+#### speckit Phase 4 scope vBRIEFs
+
+When the [speckit strategy](../strategies/speckit.md#phase-4-tasks-scope-vbrief-emission) emits Phase 4 scope vBRIEFs:
+
+- ! Filename MUST follow `YYYY-MM-DD-ip<NNN>-<slug>.vbrief.json` where `<NNN>` is the implementation phase index zero-padded to **exactly 3 digits** (e.g. `ip001`, `ip007`, `ip042`, `ip128`).
+- ! The 3-digit padding ensures lexical sort order matches numeric order across the first 999 phases and keeps filename length predictable for swarm allocation.
+- ~ The `<slug>` SHOULD describe the IP, not the issue (e.g. `ip003-data-layer.vbrief.json`, not `ip003-issue-123.vbrief.json`).
+- ~ Use lowercase hyphen-separated slugs (e.g. `2026-04-12-ip003-data-layer.vbrief.json`).
 
 ### Origin Provenance
 
@@ -253,6 +263,33 @@ draft | proposed | approved | pending | running | completed | blocked | cancelle
 - ! `plan.narratives` values MUST be plain strings — never objects or arrays
 - ! `PlanItem.narrative` values MUST be plain strings — never objects or arrays
 - ⊗ Use `{"Requirements": {"Functional": [...], "NonFunctional": [...]}}` — split into separate string keys instead (e.g. `"FunctionalRequirements": "FR-1: ...\nFR-2: ..."`, `"NonFunctionalRequirements": "NFR-1: ...\nNFR-2: ..."`)
+
+#### Scope vBRIEF narrative keys
+
+Scope vBRIEFs use a small set of **canonical narrative keys** at the `plan.narratives` level so tooling (`task roadmap:render`, swarm allocator) and downstream agents agree on meaning:
+
+- ! `Description` — 1-3 sentence human summary of the scope
+- ! `Acceptance` — acceptance criteria copied from the spec; the work is done when these are satisfied
+- ! `Traces` — spec requirement IDs this scope implements (e.g. `FR-001, FR-003, NFR-002, IP-3`)
+- ? `Phase`, `PhaseDescription`, `Tier` — organisational metadata for roadmap grouping
+- ? strategy-specific keys (`Problem`, `Action`, `Test`, `Outcome`) are allowed but ⊗ MUST NOT replace the canonical keys above
+
+### Plan-level metadata
+
+- ! Cross-scope dependencies between scope vBRIEFs MUST live in `plan.metadata.dependencies` as an array of dependency IDs (IP-N, scope slug, or issue number) — NOT on individual items.
+- ! `plan.metadata.dependencies` is **plan-level** by design: scope vBRIEFs are themselves the unit of work, so dependencies between them belong at the plan level (mirrors the `edges[].blocks` structure used inside monolithic speckit plans).
+- ~ Use lowercase hyphen IDs (e.g. `"ip-1"`, `"ip-2"`) for speckit-generated scope vBRIEFs; issue-based scopes may use `"#123"`.
+- ⊗ Put cross-scope dependencies inside `plan.items[].narrative` or on individual items — `task roadmap:render` only reads `plan.metadata.dependencies`.
+
+```json
+{
+  "plan": {
+    "metadata": {
+      "dependencies": ["ip-1", "ip-2"]
+    }
+  }
+}
+```
 
 ### Hierarchical Items (subItems)
 

@@ -28,12 +28,17 @@ After you update `deft/` to v0.20.0, `vbrief/*.vbrief.json` files are the source
 5. **Start a new agent session.** Your current session still holds stale rules from the previous `AGENTS.md`. Close the tab / session and open a new one; the agent will read the refreshed `AGENTS.md` and v0.20 skills on its own.
 6. **Verify.** Run `task check` -- the full pre-commit pipeline (fmt + lint + typecheck + tests + vbrief validation + link check) must be green. If `task vbrief:validate` warns about `SPECIFICATION.md` or `PROJECT.md`, the deprecation redirect stubs were not written correctly; re-run `task migrate:vbrief` or patch the stubs to include the `<!-- deft:deprecated-redirect -->` line on the first line.
 
+### Upgrade safety
+
+~ When running `task migrate:vbrief` against a non-trivial project for the first time, test it on a fork or a clean working copy before applying it to your primary checkout. The migration is designed to be idempotent and preserves existing narratives, but real-world repos vary -- exercising the migration once against a disposable copy lets you review the redirect stubs, lifecycle folder contents, and `task check` output before accepting the changes.
+
 ### What to expect
 
 - Your `SPECIFICATION.md`, `PROJECT.md`, and `ROADMAP.md` are replaced with short redirect stubs containing `<!-- deft:deprecated-redirect -->` on the first line. Existing content is migrated into `vbrief/specification.vbrief.json` narratives + `vbrief/pending/` scope vBRIEFs + `vbrief/PROJECT-DEFINITION.vbrief.json` narratives.
 - `.md` files continue to exist as **rendered views**, generated on demand via `task spec:render`, `task prd:render`, `task roadmap:render`. ⊗ Edit them directly — your changes are overwritten on the next render; edit the underlying `.vbrief.json` instead.
 - Skills live under new `deft-directive-*` directory names. Legacy `skills/deft-*/SKILL.md` files contain small redirect stubs that point agents at `deft/QUICK-START.md`; they exist for one release cycle so v0.19 `AGENTS.md` files that still reference old paths keep working until you re-run QUICK-START.
 - The CLI (`deft/run`) now has a **non-fatal upgrade gate** (issue #410). After updating, the gate warns once per invocation until you run `deft/run upgrade` or `task migrate:vbrief`. Interactive sessions get a `Continue anyway? [y/N]` prompt; non-interactive sessions (CI, cloud agents) warn and continue.
+- **New `task issue:ingest`** (#454) -- materialise GitHub issues as scope vBRIEFs in `vbrief/proposed/` (single-issue mode `task issue:ingest -- <N>` or bulk `task issue:ingest -- --all [--label L] [--status S] [--dry-run]`). Deduplicates against existing origin-provenance references so the `task reconcile:issues` unlinked section stops growing monotonically post-GA.
 
 ### Troubleshooting
 
@@ -47,6 +52,7 @@ After you update `deft/` to v0.20.0, `vbrief/*.vbrief.json` files are the source
 - [docs/BROWNFIELD.md](./docs/BROWNFIELD.md) — detailed brownfield adoption / migration walkthrough.
 - [QUICK-START.md](./QUICK-START.md) — agent-facing bootstrap + upgrade detection.
 - [vbrief/vbrief.md](./vbrief/vbrief.md) — canonical vBRIEF file taxonomy.
+- [glossary.md](./glossary.md) — canonical v0.20 vocabulary (Scope vBRIEF, lifecycle folder, canonical narrative keys, rendered export, source of truth, ...).
 - [CHANGELOG.md](./CHANGELOG.md) — full v0.20.0 change list.
 
 ---
