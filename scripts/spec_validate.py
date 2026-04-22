@@ -24,9 +24,11 @@ from _stdio_utf8 import reconfigure_stdio  # noqa: E402
 
 reconfigure_stdio()
 
+# v0.6 Status enum (includes the new ``failed`` terminal status per
+# the canonical schema at vbrief/schemas/vbrief-core.schema.json, #533).
 VALID_STATUSES = frozenset({
     "draft", "proposed", "approved", "pending",
-    "running", "completed", "blocked", "cancelled",
+    "running", "completed", "blocked", "failed", "cancelled",
 })
 
 
@@ -45,7 +47,13 @@ def _validate_narratives(narratives: object, path: str, errors: list[str]) -> No
 def _validate_plan_item(
     item: dict, path: str, errors: list[str],
 ) -> None:
-    """Recursively validate a PlanItem and its subItems."""
+    """Recursively validate a PlanItem and its nested children.
+
+    Per the canonical v0.6 schema, ``PlanItem.items`` is the PREFERRED
+    nested field and ``PlanItem.subItems`` is the deprecated legacy alias
+    kept for backward compatibility (#533 / Greptile P1). Both are accepted
+    here and recursively validated; neither is treated as an error.
+    """
     item_id = item.get("id", "<no-id>")
     item_path = f"{path}[{item_id}]"
 
@@ -62,14 +70,18 @@ def _validate_plan_item(
     if "narrative" in item:
         _validate_narratives(item["narrative"], f"{item_path}.narrative", errors)
 
-    # Detect items misuse inside PlanItem (should be subItems)
+    # v0.6 preferred nested field.
     if "items" in item:
-        errors.append(
-            f"{item_path} uses 'items' for children — use 'subItems' instead "
-            "('items' is only valid at plan level)"
-        )
+        if not isinstance(item["items"], list):
+            errors.append(f"{item_path}.items must be an array")
+        else:
+            for j, sub in enumerate(item["items"]):
+                if not isinstance(sub, dict):
+                    errors.append(f"{item_path}.items[{j}] must be an object")
+                    continue
+                _validate_plan_item(sub, f"{item_path}.items", errors)
 
-    # Recurse into subItems
+    # Deprecated legacy alias -- still accepted for backward compatibility.
     if "subItems" in item:
         if not isinstance(item["subItems"], list):
             errors.append(f"{item_path}.subItems must be an array")
@@ -81,23 +93,18 @@ def _validate_plan_item(
                 _validate_plan_item(sub, f"{item_path}.subItems", errors)
 
 
-# --- v0.6 transition accommodation (#533) ---
-# The migrator now emits ``"0.6"`` on every vBRIEF it writes (#561/agent1).
-# During the transition the validator accepts BOTH strings so mixed
-# pre-migration (``"0.5"``) and post-migration (``"0.6"``) trees round-trip
-# cleanly through ``task check`` + ``tests/content/test_vbrief_schema.py``.
-#
-# TODO(#533): tighten to 0.6-only after Agent 2 merge -- drop "0.5" from
-# ACCEPTED_VBRIEF_VERSIONS once the schema vendor PR removes the last
-# 0.5-only fixtures.
-ACCEPTED_VBRIEF_VERSIONS: frozenset[str] = frozenset({"0.5", "0.6"})
+# Strict v0.6-only acceptance (#533). The canonical schema at
+# vbrief/schemas/vbrief-core.schema.json pins vBRIEFInfo.version to
+# const "0.6"; this validator rejects every other version. Any legacy
+# v0.5 vBRIEF must be swept to v0.6 via the migrator.
+VALID_VBRIEF_VERSIONS: frozenset[str] = frozenset({"0.6"})
 
 
 def _validate_schema(data: dict, path: str) -> list[str]:
-    """Validate vBRIEF structural requirements. Returns a list of errors.
+    """Validate vBRIEF structural requirements (v0.6). Returns a list of errors.
 
-    Accepts both ``"0.5"`` and ``"0.6"`` in ``vBRIEFInfo.version`` during
-    the #533 schema vendor transition (see ACCEPTED_VBRIEF_VERSIONS).
+    Strictly requires ``vBRIEFInfo.version == "0.6"`` to match the canonical
+    v0.6 schema (#533). Any v0.5 vBRIEF must be migrated to v0.6.
     """
     errors: list[str] = []
 
@@ -108,11 +115,11 @@ def _validate_schema(data: dict, path: str) -> list[str]:
         info = data["vBRIEFInfo"]
         if not isinstance(info, dict):
             errors.append("'vBRIEFInfo' must be an object")
-        elif info.get("version") not in ACCEPTED_VBRIEF_VERSIONS:
-            accepted = sorted(ACCEPTED_VBRIEF_VERSIONS)
+        elif info.get("version") != "0.6":
             errors.append(
-                f"'vBRIEFInfo.version' must be one of {accepted}, "
-                f"got {info.get('version')!r}"
+                f"'vBRIEFInfo.version' must be '0.6' (canonical v0.6 schema, "
+                f"#533), got {info.get('version')!r}. Migrate legacy v0.5 "
+                f"vBRIEFs via the migrator sweep."
             )
 
     if "plan" not in data:
