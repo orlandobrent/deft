@@ -8,7 +8,7 @@
   "plan": {
     "id": "rc3-477-click-commit-rendering",
     "title": "Interview skill: click-commit rendering mode + plain-text Confirmation Gate (#477)",
-    "status": "running",
+    "status": "completed",
     "tags": [
       "rc3",
       "wave-1",
@@ -65,6 +65,7 @@
         "url": "https://github.com/deftai/directive/issues/506",
         "id": "#506"
       }
-    ]
+    ],
+    "updated": "2026-04-23T02:28:02Z"
   }
 }

@@ -8,7 +8,7 @@
   "plan": {
     "id": "rc3-499-lifecycle-routing",
     "title": "migrate:vbrief lifecycle folder routing per reconciled status (#499)",
-    "status": "running",
+    "status": "completed",
     "tags": [
       "rc3",
       "wave-2",
@@ -90,6 +90,7 @@
         "url": "https://github.com/deftai/directive/issues/506",
         "id": "#506"
       }
-    ]
+    ],
+    "updated": "2026-04-23T02:28:03Z"
   }
 }

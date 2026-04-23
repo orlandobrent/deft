@@ -8,7 +8,7 @@
   "plan": {
     "id": "rc3-500-discoverability",
     "title": "Pre-cutover migration discoverability from project root and AGENTS.md (#500)",
-    "status": "running",
+    "status": "completed",
     "tags": [
       "rc3",
       "wave-1",
@@ -81,6 +81,7 @@
         "url": "https://github.com/deftai/directive/issues/506",
         "id": "#506"
       }
-    ]
+    ],
+    "updated": "2026-04-23T02:28:03Z"
   }
 }

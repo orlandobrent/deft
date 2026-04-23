@@ -8,7 +8,7 @@
   "plan": {
     "id": "rc3-497-safety",
     "title": "migrate:vbrief safety: backups, dry-run, dirty-tree guard, rollback (#497)",
-    "status": "running",
+    "status": "completed",
     "tags": [
       "rc3",
       "wave-1",
@@ -80,6 +80,7 @@
         "url": "https://github.com/deftai/directive/issues/506",
         "id": "#506"
       }
-    ]
+    ],
+    "updated": "2026-04-23T02:28:02Z"
   }
 }

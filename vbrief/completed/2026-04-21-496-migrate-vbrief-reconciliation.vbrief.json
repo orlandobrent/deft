@@ -8,7 +8,7 @@
   "plan": {
     "id": "rc3-496-reconciliation",
     "title": "migrate:vbrief reconciliation strategy when SPEC and ROADMAP disagree (#496)",
-    "status": "running",
+    "status": "completed",
     "tags": [
       "rc3",
       "wave-2",
@@ -85,6 +85,7 @@
         "url": "https://github.com/deftai/directive/issues/506",
         "id": "#506"
       }
-    ]
+    ],
+    "updated": "2026-04-23T02:28:02Z"
   }
 }
