@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **docs(upgrading): add explicit post-migration render step and correct ROADMAP.md deprecation scope** (#630 follow-up): Inserted a new Step 4 under `UPGRADING.md` "Upgrade steps" that tells consumers to run `task roadmap:render`, `task project:render`, and (if pre-existing) `task prd:render -- --force` manually after `task migrate:vbrief` so `ROADMAP.md` and `PRD.md` reflect the migrated `vbrief/` source of truth. The `deft-directive-pre-pr` Phase 3b auto-render (#398) covers PRD/SPEC on subsequent PRs but not `ROADMAP.md` and not the immediate post-migration window. Corrected the "What to expect" section to clarify that `ROADMAP.md` remains an actively rendered view (only `SPECIFICATION.md` and `PROJECT.md` become deprecation redirects per v0.20.0 Breaking Changes). Proper fix tracked in #630 for v0.21 (migrator auto-invokes render tasks at end of `task migrate:vbrief`).
+
 ## [0.20.0] - 2026-04-23
 
 ### Added
