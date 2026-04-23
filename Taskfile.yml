@@ -2,7 +2,31 @@ version: '3'
 
 vars:
   PROJECT_NAME: deft
-  VERSION: 0.19.0
+  VERSION: 0.20.0
+  # Each included sub-taskfile (tasks/*.yml) defines its own DEFT_ROOT as
+  # `{{joinPath .TASKFILE_DIR ".."}}` so scripts can be dispatched via
+  # `{{.DEFT_ROOT}}/scripts/...` on every platform (#566). `joinPath` is
+  # evaluated eagerly by go-task's templating and uses Go's `filepath.Clean`,
+  # which yields a native-separator, `..`-free absolute path that
+  # `uv run python` can open on Windows. The previous
+  # `{{.TASKFILE_DIR}}/../scripts/...` shape mixed native separators with
+  # forward-slash traversal and normalized incorrectly under Windows Python,
+  # dropping the deft/ prefix.
+  #
+  # DEFT_ROOT is intentionally NOT defined here at the root Taskfile level
+  # because go-task re-evaluates var templates at use site in included
+  # subfiles -- a root-level `DEFT_ROOT: '{{.TASKFILE_DIR}}'` would expand
+  # to the subfile's own directory (tasks/) when referenced from a subfile,
+  # not to the deft/ root.
+
+# Top-level env propagates into included taskfiles (Task v3 includes inherit
+# the parent env:). PYTHONUTF8=1 ensures Python scripts invoked from any
+# deft task have UTF-8 stdout/stderr on Windows (cp1252 default would crash
+# on the ✓/→/✗/⚠ symbols emitted by spec_validate / roadmap_render / etc.).
+# Every task that runs Python ALSO sets this in its own env: block as a
+# belt-and-suspenders guard -- see #540 for the full audit.
+env:
+  PYTHONUTF8: "1"
 
 includes:
   core:
@@ -29,6 +53,30 @@ includes:
   commit:
     taskfile: ./tasks/commit.yml
     optional: true
+  scope:
+    taskfile: ./tasks/scope.yml
+    optional: true
+  roadmap:
+    taskfile: ./tasks/roadmap.yml
+    optional: true
+  project:
+    taskfile: ./tasks/project.yml
+    optional: true
+  migrate:
+    taskfile: ./tasks/migrate.yml
+    optional: true
+  vbrief:
+    taskfile: ./tasks/vbrief.yml
+    optional: true
+  prd:
+    taskfile: ./tasks/prd.yml
+    optional: true
+  reconcile:
+    taskfile: ./tasks/reconcile.yml
+    optional: true
+  issue:
+    taskfile: ./tasks/issue.yml
+    optional: true
 
 tasks:
   default:
@@ -47,6 +95,7 @@ tasks:
       - toolchain:check
       - verify:stubs
       - verify:links
+      - vbrief:validate
     cmds:
       - echo "All checks passed"
   test:

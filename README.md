@@ -1,4 +1,4 @@
-# Deft
+ Deft
 
 **One-shot, anti-slop**
 
@@ -17,6 +17,11 @@ Deft is a SKILL.md that makes AI coding significantly more effective by providin
 **Context-efficient:** Deft keeps AI context windows lean through RFC 2119-based notation (!, ~, ≉, ⊗) and lazy-loading—AI only reads the files relevant to the current task, not everything at once.
 
 **📍 Roadmap:** See [ROADMAP.md](./ROADMAP.md) for the development timeline, open issues, and planned work.
+
+> **📢 Cloned manually?** Tell your agent: "Read `deft/QUICK-START.md` and follow it." It creates your project's AGENTS.md and starts the setup flow automatically.
+
+> **🔄 Upgrading from a previous version?** Read [UPGRADING.md](./UPGRADING.md) before proceeding.  
+> **Agents:** ! Read [UPGRADING.md](./UPGRADING.md) on the first session after a framework update.
 
 > **⬇️ Get Deft:** Download the installer for your platform from [GitHub Releases](https://github.com/deftai/directive/releases), run it, and follow the prompts. See [Getting Started](#-getting-started) below.
 
@@ -55,7 +60,7 @@ Download the installer for your platform from [GitHub Releases](https://github.c
 
 The installer guides you through choosing a project directory, installs git if needed, clones deft, wires it into `AGENTS.md`, and creates your user config directory.
 
-**Manual clone (no installer):** If you clone deft directly via `git clone`, create an `AGENTS.md` in your project root using the full bootstrap template (see `agentsMDEntry` in `cmd/deft-install/setup.go` for the exact content with `deft/`-prefixed paths and first-session phase detection), then tell your agent `read AGENTS.md and follow it` to start the setup.
+**Manual clone (no installer):** If you clone deft directly via `git clone`, tell your agent: "Read `deft/QUICK-START.md` and follow it." It creates your project's AGENTS.md and starts the setup flow automatically.
 
 **Building from source (developers only):** requires Go 1.22+
 
@@ -63,18 +68,9 @@ The installer guides you through choosing a project directory, installs git if n
 go run ./cmd/deft-install/
 ```
 
-**Manual clone (CLI users):** if you already have git and prefer to skip the installer, clone deft directly into your project:
-
-```bash
-cd your-project
-git clone https://github.com/deftai/directive.git deft
-```
-
-Then create an `AGENTS.md` in your project root using the [install-generated template](cmd/deft-install/setup.go) (the `agentsMDEntry` constant), which contains the correct `deft/`-prefixed paths and full first-session bootstrap logic. Then tell your agent `read AGENTS.md and follow it` to kick off the setup.
-
 ### 2. Set Up Your Preferences
 
-Deft offers two setup paths that produce the same output (USER.md + PROJECT.md) but adapt to different users:
+Deft offers two setup paths that produce the same output (`USER.md` + `vbrief/PROJECT-DEFINITION.vbrief.json`) but adapt to different users:
 
 **Agent-driven** (recommended for most users) — Tell your agent `read AGENTS.md and follow it` to start the Deft setup flow. The agent will ask how technical you are and adapt accordingly:
 - *Technical*: asks about languages, strategy, coverage, meta rules, and custom rules
@@ -84,7 +80,7 @@ Deft offers two setup paths that produce the same output (USER.md + PROJECT.md) 
 **CLI** (for technical users) — If you're running commands in a terminal, you're technical. The CLI treats you as a power user and asks all configuration questions directly — no skill-level gate.
 
 ```bash
-deft/run bootstrap       # Interactive setup for user.md and project.md
+deft/run bootstrap       # Interactive setup for USER.md and PROJECT-DEFINITION.vbrief.json
 ```
 
 **User config location:**
@@ -92,13 +88,15 @@ deft/run bootstrap       # Interactive setup for user.md and project.md
 - Windows: `%APPDATA%\deft\USER.md`
 - Override: set `DEFT_USER_PATH` environment variable
 
-### 3. Generate Specification
+### 3. Generate a Scope vBRIEF
 
-`deft/run bootstrap` will guide you through creating a `SPECIFICATION.md`, or create one anytime:
+`deft/run bootstrap` can chain into the scope-vBRIEF interview, or create one anytime:
 
 ```bash
-deft/run spec            # AI-assisted specification interview
+deft/run spec            # AI-assisted interview -> vbrief/proposed/YYYY-MM-DD-<slug>.vbrief.json
 ```
+
+The interview writes a **scope vBRIEF** to `vbrief/proposed/` as `YYYY-MM-DD-<slug>.vbrief.json`. `vbrief/*.vbrief.json` files are the source of truth; `.md` files (`PRD.md`, `SPECIFICATION.md`, `ROADMAP.md`) are rendered views generated on demand via `task *:render`. Direct edits to the rendered `.md` files are overwritten on the next render -- edit the underlying `.vbrief.json` instead.
 
 Other commands:
 
@@ -106,15 +104,20 @@ Other commands:
 deft/run reset           # Reset config files
 deft/run validate        # Check deft configuration
 deft/run doctor          # Check system dependencies
+deft/run upgrade         # Record the current framework version after updating deft
 ```
 
 ### 4. Build With AI
 
-Ask your AI to build the product/project from `SPECIFICATION.md` and away you go:
+Ask your AI to build the product/project from your scope vBRIEFs and away you go:
 
 ```
-Read SPECIFICATION.md and implement the project following deft/main.md standards.
+Read vbrief/PROJECT-DEFINITION.vbrief.json and the scope vBRIEFs in
+vbrief/active/ (or vbrief/pending/ if none are active yet) and implement
+the project following deft/main.md standards.
 ```
+
+> **Brownfield adoption:** Adding Deft to an existing project with pre-v0.20 `SPECIFICATION.md` / `PROJECT.md`? See [docs/BROWNFIELD.md](./docs/BROWNFIELD.md) for the migration path (`task migrate:vbrief`) and what to expect.
 
 ## 🎸 From Vibe to Virtuoso
 
@@ -138,6 +141,53 @@ Read SPECIFICATION.md and implement the project following deft/main.md standards
 - It's growing unwieldy, you're repeating yourself, or you want consistent quality across projects? Deft pays off.
 
 Same instrument, different mastery.
+
+## ⚙️ Platform Requirements
+
+**GitHub** is the primary supported SCM platform. Skills that interact with issues and PRs (`deft-directive-sync`, `deft-directive-swarm`, `deft-directive-review-cycle`, `deft-directive-refinement`) require the [GitHub CLI (`gh`)](https://cli.github.com/) to be installed and authenticated. Core framework features (setup, build, rendering, validation) work independently of any SCM platform.
+
+The migration script (`task migrate:vbrief`) defaults origin provenance to `github-issue` type. Non-GitHub users should manually adjust `references[].type` in generated vBRIEFs after migration.
+
+## 📦 Document Generation & vBRIEF Tooling
+
+Deft provides deterministic `task` commands for rendering, migrating, and validating documents:
+
+| Command | Description | When to use |
+|---------|-------------|-------------|
+| `task spec:render` | Regenerate `SPECIFICATION.md` from `specification.vbrief.json` | After editing the spec vBRIEF |
+| `task prd:render` | Export `plan.narratives` from `specification.vbrief.json` to a read-only `PRD.md` for stakeholder review | On demand, when a stakeholder wants a PRD-style export |
+| `task roadmap:render` | Regenerate `ROADMAP.md` from `vbrief/pending/` scope vBRIEFs | After promoting/demoting scopes |
+| `task project:render` | Regenerate `PROJECT-DEFINITION.vbrief.json` items registry | After scope lifecycle changes |
+| `task migrate:vbrief` | Migrate existing projects to vBRIEF lifecycle folder structure | One-time cutover from pre-v0.20 model |
+| `task issue:ingest -- <N>` | Ingest a single GitHub issue as a scope vBRIEF in `vbrief/proposed/` (deduplicates via existing references) | After filing a new issue you plan to work on |
+| `task issue:ingest -- --all [--label L] [--status S] [--dry-run]` | Bulk-ingest all open issues into scope vBRIEFs | Post-refactor / post-release cleanup, or when reducing the `reconcile` unlinked backlog |
+| `task vbrief:validate` | Validate vBRIEF schema, filenames, folder/status consistency | Pre-commit (runs as part of `task check`) |
+
+See [commands.md](./commands.md) for the full change lifecycle and the [Command Lifecycle: `run` vs `task`](./commands.md#command-lifecycle-run-vs-task) section there for detailed usage.
+
+### Ingesting GitHub issues
+
+Post-v0.20, new GitHub issues become scope vBRIEFs via `task issue:ingest`:
+
+```bash
+# Single issue -- writes vbrief/proposed/YYYY-MM-DD-<N>-<slug>.vbrief.json
+task issue:ingest -- 123
+
+# Bulk ingest all open issues carrying the `bug` label, dry-run first
+task issue:ingest -- --all --label bug --dry-run
+task issue:ingest -- --all --label bug
+```
+
+The script deduplicates against existing `references[type=github-issue]` entries in `vbrief/`, writes to the lifecycle folder selected by `--status proposed|pending|active` (default: `proposed`), and exits with `1` if the issue already has a scope vBRIEF. Use `--dry-run` in bulk mode to preview without writing files.
+
+### Command Lifecycle: `run` vs `task`
+
+Deft uses two complementary command surfaces:
+
+- **`run` commands** (`deft/run bootstrap`, `deft/run spec`, `deft/run validate`) handle **interactive creation** — bootstrapping user/project config, conducting spec interviews, validating configuration. These are the entry points for humans starting new work.
+- **`task` commands** (`task spec:render`, `task roadmap:render`, `task migrate:vbrief`, etc.) handle **scripted rendering, migration, and validation** — deterministic operations that transform vBRIEF source files into readable artifacts or enforce structural rules.
+
+This split is intentional: `run` commands are conversational and agent-friendly; `task` commands are deterministic and CI-friendly. For the full document lifecycle, start with `run` to create, then use `task` to render and validate. See [commands.md](./commands.md) for cross-references.
 
 ## 🎯 What is Deft?
 
@@ -169,11 +219,11 @@ flowchart TD
     subgraph precedence ["Rule Precedence (top = highest)"]
         direction TB
         U["👤 USER.md<br/><i>Personal preferences</i>"]
-        P["📁 PROJECT.md<br/><i>Project-specific rules</i>"]
+        P["📁 PROJECT-DEFINITION.vbrief.json<br/><i>Project identity + rules</i>"]
         L["🐍 python.md / go.md / etc.<br/><i>Language standards</i>"]
         T["🔧 taskfile.md<br/><i>Tool guidelines</i>"]
         M["🤖 main.md<br/><i>General AI behavior</i>"]
-        S["📋 specification.md<br/><i>Project requirements</i>"]
+        S["📋 vbrief/specification.vbrief.json<br/><i>Project requirements</i>"]
     end
 
     U --> P
@@ -198,7 +248,7 @@ deft/
 ├── CHANGELOG.md           # Release history
 ├── CONTRIBUTING.md        # Contributor bootstrap guide
 ├── LICENSE.md             # MIT License
-├── PROJECT.md             # Project-level configuration
+├── PROJECT.md             # Project-level configuration (deprecated -- see PROJECT-DEFINITION.vbrief.json)
 ├── REFERENCES.md          # Lazy-loading reference system
 ├── ROADMAP.md             # Development timeline
 ├── SKILL.md               # Entry point for AI agents
@@ -249,6 +299,7 @@ deft/
 │
 ├── docs/                  # Documentation & articles
 │   ├── ai-coding-trust-paradox.md
+│   ├── BROWNFIELD.md       # Adding Deft to an existing project (brownfield adoption)
 │   └── claude-code-integration.md
 │
 ├── history/               # Plan archives and change logs
@@ -293,12 +344,14 @@ deft/
 │   └── github.md          # GitHub workflows
 │
 ├── skills/                # Agent skills (SKILL.md format)
-│   ├── deft-build/        # Build/implement skill
-│   ├── deft-pre-pr/       # Iterative pre-PR quality loop (RWLDL)
-│   ├── deft-review-cycle/ # Greptile bot review cycle
-│   ├── deft-roadmap-refresh/ # Issue triage and roadmap refresh
-│   ├── deft-setup/        # Interactive setup skill
-│   └── deft-swarm/        # Parallel agent orchestration
+│   ├── deft-directive-build/        # Build/implement skill
+│   ├── deft-directive-interview/    # Deterministic structured Q&A interview
+│   ├── deft-directive-pre-pr/       # Iterative pre-PR quality loop (RWLDL)
+│   ├── deft-directive-refinement/   # Conversational backlog refinement
+│   ├── deft-directive-review-cycle/ # Greptile bot review cycle
+│   ├── deft-directive-setup/        # Interactive setup skill
+│   ├── deft-directive-swarm/        # Parallel agent orchestration
+│   └── deft-directive-sync/         # Session-start framework sync
 │
 ├── specs/                 # Per-feature specifications
 │   ├── testbed/           # QA testbed Phase 1 spec
@@ -334,8 +387,14 @@ deft/
 │   ├── taskfile.md        # Task automation
 │   └── telemetry.md       # Observability
 │
-├── vbrief/                # vBRIEF session format
-│   ├── vbrief.md          # Specification
+├── vbrief/                # vBRIEF document model
+│   ├── vbrief.md          # Canonical vBRIEF usage reference
+│   ├── PROJECT-DEFINITION.vbrief.json  # Project identity gestalt
+│   ├── proposed/           # Scope vBRIEFs: ideas, not committed to
+│   ├── pending/            # Scope vBRIEFs: accepted backlog
+│   ├── active/             # Scope vBRIEFs: in progress
+│   ├── completed/          # Scope vBRIEFs: done
+│   ├── cancelled/          # Scope vBRIEFs: rejected/abandoned
 │   └── schemas/           # JSON schemas
 │
 └── verification/          # Agent work verification
@@ -351,8 +410,8 @@ deft/
 **SKILL.md** - Entry point for AI agent skill loading  
 **coding/coding.md** - Software development standards  
 **coding/testing.md** - Testing standards  
-**PROJECT.md** - Project-specific configuration (project root)  
-**USER.md** - Your personal preferences (highest precedence) — `~/.config/deft/USER.md` (Unix/macOS) or `%APPDATA%\deft\USER.md` (Windows)
+**vbrief/PROJECT-DEFINITION.vbrief.json** - Project identity gestalt (replaces PROJECT.md)  
+**USER.md** - Your personal preferences (highest precedence) -- `~/.config/deft/USER.md` (Unix/macOS) or `%APPDATA%\deft\USER.md` (Windows)
 
 ### 🐍 Languages
 **languages/** contains standards for 20+ languages including:  
@@ -408,8 +467,10 @@ Plus: delphi, visual-basic, vhdl, 6502-DASM
 **resilience/context-pruning.md** - Fresh context per task, eliminating context rot
 
 ### 📋 vBRIEF
-**vbrief/vbrief.md** - Session format specification  
-**vbrief/schemas/** - JSON validation schemas
+**vbrief/vbrief.md** - Canonical vBRIEF usage reference (file taxonomy, lifecycle folders, scope vBRIEFs)  
+**vbrief/schemas/** - JSON validation schemas  
+**vbrief/PROJECT-DEFINITION.vbrief.json** - Project identity gestalt  
+**vbrief/{proposed,pending,active,completed,cancelled}/** - Scope vBRIEF lifecycle folders
 
 ### 📜 Contracts
 **contracts/hierarchy.md** - Dual-hierarchy framework (durability axis + generative axis)  
@@ -419,13 +480,18 @@ Plus: delphi, visual-basic, vhdl, 6502-DASM
 **deployments/** - Deployment guides for 9 platforms:  
 agentuity, aws, azure, cloudflare, cloud-gov, fly-io, google, netlify, vercel
 
+### 📖 Glossary
+**glossary.md** - Canonical v0.20 vocabulary (Scope vBRIEF, lifecycle folder, canonical narrative keys, rendered export, source of truth, ...) -- one page under 150 lines.
+
 ### 🤖 Skills
-**skills/deft-build/** - Build/implement skill  
-**skills/deft-pre-pr/** - Iterative pre-PR quality loop (Read-Write-Lint-Diff-Loop) -- run before pushing a branch for PR creation  
-**skills/deft-review-cycle/** - Greptile bot reviewer response workflow (fetch findings, batch fix, exit on clean)  
-**skills/deft-roadmap-refresh/** - Issue triage and phased roadmap maintenance  
-**skills/deft-setup/** - Interactive setup wizard skill  
-**skills/deft-swarm/** - Parallel local agent orchestration (worktrees, prompts, monitoring, merge)
+**skills/deft-directive-build/** - Build/implement skill
+**skills/deft-directive-interview/** - Deterministic structured Q&A interview skill  
+**skills/deft-directive-pre-pr/** - Iterative pre-PR quality loop (Read-Write-Lint-Diff-Loop) -- run before pushing a branch for PR creation  
+**skills/deft-directive-refinement/** - Conversational backlog refinement (ingest, evaluate, promote/demote, prioritize)  
+**skills/deft-directive-review-cycle/** - Greptile bot reviewer response workflow (fetch findings, batch fix, exit on clean)  
+**skills/deft-directive-setup/** - Interactive setup wizard skill  
+**skills/deft-directive-swarm/** - Parallel local agent orchestration (worktrees, prompts, monitoring, merge)  
+**skills/deft-directive-sync/** - Session-start framework sync (submodule update, project validation)
 
 ### 📝 Templates
 **templates/make-spec.md** - Specification generation  
@@ -444,11 +510,11 @@ agentuity, aws, azure, cloudflare, cloud-gov, fly-io, google, netlify, vercel
 Rules cascade with precedence:
 
 1. **USER.md** (highest) - your personal overrides (`~/.config/deft/USER.md` on Unix/macOS, `%APPDATA%\deft\USER.md` on Windows)
-2. **project.md** - project-specific rules
+2. **vbrief/PROJECT-DEFINITION.vbrief.json** - project-specific rules and identity gestalt
 3. **Language files** (python.md, go.md) - language standards
 4. **Tool files** (taskfile.md) - tool guidelines
 5. **main.md** - general AI behavior
-6. **specification.md** (lowest) - requirements
+6. **vbrief/specification.vbrief.json + scope vBRIEFs** (lowest) - requirements (rendered to SPECIFICATION.md via `task spec:render`)
 
 ### Continuous Improvement
 
@@ -569,7 +635,7 @@ flowchart LR
     subgraph sdd ["Spec-Driven Development"]
         I["💡 Idea<br/><i>Initial concept</i>"]
         Q["❓ Interview<br/><i>AI asks questions</i>"]
-        S["📋 SPECIFICATION.md<br/><i>Complete plan</i>"]
+        S["📋 vbrief/specification.vbrief.json<br/><i>Complete plan (source of truth)</i>"]
         D["👥 Development<br/><i>Parallel agents</i>"]
     end
 
@@ -603,11 +669,13 @@ flowchart LR
 
    Each question includes numbered options and an "other" choice for custom responses.
 
-3. **Generate SPECIFICATION.md**: Once ambiguity is minimized, the AI produces a comprehensive spec with:
+3. **Generate a scope vBRIEF** (and optionally `vbrief/specification.vbrief.json` via the Full path): Once ambiguity is minimized, the AI produces a comprehensive vBRIEF with:
    - Clear phases, subphases, and tasks
    - Dependency mappings (what blocks what)
    - Parallel work opportunities
    - No code—just the complete plan
+
+   `.md` exports (`SPECIFICATION.md`, `PRD.md`) are generated views via `task spec:render` / `task prd:render`; the `.vbrief.json` files remain authoritative.
 
 4. **Multi-Agent Development**: The spec enables multiple AI coding agents to work in parallel on independent tasks
 
@@ -645,12 +713,12 @@ flowchart TB
         NP2 --> NP3["AI reads taskfile.md"]
         NP3 --> NP4["Setup: pytest, ruff, black, mypy"]
         NP4 --> NP5["Configure: ≥85% coverage"]
-        NP5 --> NP6["You customize: project.md"]
+        NP5 --> NP6["You customize: vbrief/PROJECT-DEFINITION.vbrief.json"]
     end
     
     subgraph ExistingGo ["📂 Existing Go Project"]
         direction TB
-        EG1["AI reads user.md"] --> EG2["AI reads project.md"]
+        EG1["AI reads USER.md"] --> EG2["AI reads vbrief/PROJECT-DEFINITION.vbrief.json"]
         EG2 --> EG3["AI reads go.md"]
         EG3 --> EG4["AI runs task check"]
         EG4 --> EG5["AI makes changes"]
@@ -685,7 +753,7 @@ sequenceDiagram
 1. AI reads: `main.md` → `python.md` → `taskfile.md`
 2. AI sets up: pytest, ruff, black, mypy, Taskfile
 3. AI configures: ≥85% coverage, PEP standards
-4. You customize: `project.md` with project specifics
+4. You customize: `vbrief/PROJECT-DEFINITION.vbrief.json` with project specifics
 
 ### Working on an Existing Go Project
 
@@ -696,7 +764,7 @@ sequenceDiagram
     participant Code
 
     AI->>Files: Read USER.md (your overrides)
-    AI->>Files: Read PROJECT.md
+    AI->>Files: Read vbrief/PROJECT-DEFINITION.vbrief.json
     AI->>Files: Read go.md
     AI->>Files: Read main.md
     AI->>Code: Run task check
@@ -704,7 +772,7 @@ sequenceDiagram
     Note over AI,Code: Respects your USER.md preferences
 ```
 
-1. AI reads: `USER.md` → `PROJECT.md` → `go.md` → `main.md`
+1. AI reads: `USER.md` → `vbrief/PROJECT-DEFINITION.vbrief.json` → `go.md` → `main.md`
 2. AI follows: go.dev/doc/comment, Testify patterns
 3. AI runs: `task check` before suggesting changes
 4. AI respects: your USER.md overrides
@@ -832,9 +900,12 @@ Manual runs skip the release job automatically (guarded by `if: startsWith(githu
 
 When you use Deft in a consumer project, these are the key locations for user-generated artifacts:
 
-- **`./vbrief/`** -- vBRIEF plan and spec JSON files (`plan.vbrief.json`, `specification.vbrief.json`, etc.)
-- **`SPECIFICATION.md`** -- rendered specification (generated from `vbrief/specification.vbrief.json`)
-- **`PROJECT.md`** -- project-level configuration and overrides (project root)
+- **`./vbrief/`** -- vBRIEF document root
+  - `PROJECT-DEFINITION.vbrief.json` -- project identity gestalt (replaces PROJECT.md)
+  - `plan.vbrief.json` -- session-level tactical plan; carries `planRef` to scope vBRIEFs
+  - `continue.vbrief.json` -- interruption checkpoint (ephemeral)
+  - `specification.vbrief.json` -- project spec source of truth
+  - `proposed/`, `pending/`, `active/`, `completed/`, `cancelled/` -- scope vBRIEF lifecycle folders (individual units of work as `YYYY-MM-DD-slug.vbrief.json`)
 - **`USER.md`** -- personal preferences (`~/.config/deft/USER.md` on Unix/macOS, `%APPDATA%\deft\USER.md` on Windows)
 - **`./deft/`** -- installed framework files (cloned or installed by the installer)
 
