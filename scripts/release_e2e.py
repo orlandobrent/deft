@@ -352,8 +352,11 @@ def push_mirror(clone_dir: Path) -> tuple[bool, str]:
 def dispatch_task_release(
     clone_dir: Path, version: str, repo: str
 ) -> tuple[bool, str]:
-    """Invoke ``task release -- <version> --repo <repo> --skip-ci --skip-build --allow-vbrief-drift``
-    inside the clone (#720, #728, post-#754 harness fix).
+    """Invoke ``task release`` inside the clone with skip flags and the
+    vBRIEF-drift override (#720, #728, post-#754 harness fix).
+
+    The full dispatched argv is
+    ``task release -- <version> --repo <repo> --skip-ci --skip-build --allow-vbrief-drift``.
 
     Skipping CI + build keeps the rehearsal wall-clock manageable; both
     are covered by the unit-test suite. The 10-step pipeline still
