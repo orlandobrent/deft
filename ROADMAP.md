@@ -22,7 +22,6 @@ Quick doc/content fixes that don't require code changes.
 - **#114** -- Document all global Warp rules used for deft development; migrate project-scope rules to `AGENTS.md`/`CONVENTIONS.md`; inventory remaining global-only rules in `CONTRIBUTING.md`
 - **#127** -- Improved support for Deft in existing repositories -- bootstrap should detect existing code and offer brownfield/map analysis path instead of greenfield-only questionnaire (related to #103; CLI integration in Phase 4 with #53)
 - **#136** -- Warp doesn't load deft's AGENTS.md by default
-- **#151** -- [Playtest Feedback] First-time non-technical user session report (19 issues + 4 strategic recommendations) -- umbrella issue; content/wording fixes here, strategic recommendations (cost interview, co-pilot, tiered UX, IP risk flagging) deferred to Phase 5 (xrefs #77, #84, #89, #136)
 - **#194** -- User-facing best practices guide (`docs/best-practices.md`) -- Directive contract hierarchy usage, Warp swarming patterns, and user-oriented skill documentation; in-repo successor to premature PDF guide (#112); depends on #147 and #188 for stable content (xrefs #112, #84, #114)
 - **#258** -- Inventory Warp Drive global rules used for deft development and document in `CONTRIBUTING.md` under a Warp-specific section (spinoff of #114; blocked on #89 positioning resolution; with #136)
 - **#82** -- Replacement strategies need accept-or-scrap exit when plan artifacts already exist (design: artifact awareness for chaining gate)
@@ -54,7 +53,6 @@ Larger feature work -- only after issues are resolved and content is stable.
 
 - **#100** -- [Compliance] Evidence collection automation hooks
 - **#12** -- Deft Bootstrap CLI with TUI (Typer + Textual, strategy-aware feature branching, agent config generation)
-- **#140** -- Automatically check for updates to cloned repos in a project -- detect stale cloned dependencies, notify user; part of future `deft doctor`/`deft update` (new CLI tooling)
 - **#233** -- More Determinism (remaining): Phase 0 spec scaffolding, task doctor, build:verify, change:archive, task ci:local, task release
 - **#46** -- Provide a way for users to update meta MD files (SOUL, MORALS, CODE-FIELD, USER, etc.)
 - **#52** -- Install into `.deft/` (hidden directory) instead of `deft/`
@@ -164,13 +162,16 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#137** -- README: move startup instructions higher, clarify installer location -- `[completed]`
 - **#138** -- Branching requirement too prescriptive -- context-aware solo-project qualifier -- `[completed]`
 - **#139** -- Agent skips vbrief source step -- ⊗ rule added to main.md and deft-build SKILL.md -- `[completed]`
+- **#140** -- Automatically check for updates to cloned repos in a project -- detect stale cloned dependencies, notify user; part of future `deft doctor`/`deft update` (new CLI tooling) -- `[completed]`
 - **#142** -- AGENTS.md onboarding gate blocks headless/cloud agents -- headless bypass added -- `[completed]`
 - **#144** -- vBRIEF wrong narrative type (object) + wrong child key (`items` vs `subItems`) -- fixed in agent guidance + spec_validate.py (with #126) -- `[completed]`
 - **#145** -- deft-review-cycle Greptile issue comment as primary review signal -- `[completed]`
 - **#146** -- skills/deft-sync/SKILL.md -- session-start framework sync: pre-flight, submodule update, vBRIEF validation, AGENTS.md freshness, new skills listing -- `[completed]`
 - **#147** -- Skills undiscoverable -- keyword->skill routing table added to AGENTS.md, 3 missing skills added to README -- `[completed]`
+- **#151** -- [Playtest Feedback] First-time non-technical user session report (19 issues + 4 strategic recommendations) -- umbrella issue; content/wording fixes here, strategic recommendations (cost interview, co-pilot, tiered UX, IP risk flagging) deferred to Phase 5 (xrefs #77, #84, #89, #136) -- `[completed]`
 - **#159** -- meta/philosophy.md -- deterministic > probabilistic design principle: definition, rationale, examples, Phase 5 scope note -- `[completed]`
 - **#160** -- Consider TypeScript instead of Python for `run` CLI -- architectural decision for CLI overhaul; decide before #11 and #12 (xrefs #118) -- `[completed]`
+- **#163** -- Enforce USER.md gate in CLI path -- parity with agentic (skills) path -- `[completed]`
 - **#166** -- Greptile Review status check blocks merge -- .greptile/config.json added with triggerOnUpdates, deft-review-cycle pre-flight check -- `[completed]`
 - **#167** -- PR merge hygiene: squash-merge issue-close verification -- PR template, deft-review-cycle Post-Merge Verification, AGENTS.md convention, meta/lessons.md root cause -- `[completed]`
 - **#168** -- deft-roadmap-refresh: ! rule confirming analysis comment post to user with issue number and link -- `[completed]`
@@ -321,7 +322,13 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#723** -- release: task build uses the actual release version (#723) -- `[completed]`
 - **#724** -- release: post-create verify-isDraft within 5s gate (#724) -- `[completed]`
 - **#725** -- Replace HEAD~1 reset + force-push with resolved-SHA forward-revert + normal push in scripts/release_rollback.py -- `[completed]`
+- **#704** -- README cleanup pass: factual errors, contradictions, and post-v0.20 staleness -- `[completed]`
 - **#727** -- Codify orchestrator role-separation + canonical poller-prompt template (per [AXIOM]) -- `[completed]`
 - **#731** -- release.py uses --notes-file for gh release create; fixes Windows ERROR_FILENAME_EXCED_RANGE blocking v0.21.0 (#731) -- `[completed]`
+- **#733** -- fix(.github/workflows/release.yml): release job auto-flips draft to public, bypassing #716 / Phase 5 user-only authority gate -- `[completed]`
+- **#734** -- feat(scripts,skills): vBRIEF-lifecycle reconciliation -- gate at task release Phase 1 + --apply-lifecycle-fixes on reconcile_issues.py -- `[completed]`
+- **#737** -- feat(scripts,tasks,skills): pre-PR closing-keyword negation-context lint to prevent Layer 0 false-positive auto-closes -- `[completed]`
+- **#741** -- fix(scripts/release.py): bump VERSION literal in run during release flow -- `[completed]`
 - **#730** -- Release CHANGELOG promotion accepts --summary blockquote (per [AXIOM] deterministic tier) -- `[completed]`
+- **#754** -- fix(scripts/reconcile_issues.py, scripts/release.py): vBRIEF-lifecycle-sync gate false-positives on repos with >200 open issues -- `[completed]`
 
