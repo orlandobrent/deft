@@ -2,11 +2,11 @@
   "vBRIEFInfo": {
     "version": "0.6",
     "description": "Scope vBRIEF ingested from GitHub issue #754 (release-blocker).",
-    "updated": "2026-04-30T02:16:05Z"
+    "updated": "2026-04-30T13:58:20Z"
   },
   "plan": {
     "title": "fix(scripts/reconcile_issues.py, scripts/release.py): vBRIEF-lifecycle-sync gate false-positives on repos with >200 open issues",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Description": "vBRIEF-lifecycle-sync gate false-positives on repos with >200 open issues (200-issue pagination cap, no fail-closed on truncation).",
       "Overview": "The `task release` Phase 1 vBRIEF-lifecycle-sync gate (`scripts/release.py::check_vbrief_lifecycle_sync`) and the underlying `scripts/reconcile_issues.py::fetch_open_issues` cap their open-issue fetch at 200 (`ISSUE_FETCH_LIMIT = 200`). Repos with >200 open issues silently treat tail issues as closed -- producing false-positive 'closed-issue vBRIEF not in completed/' flags that block the release pipeline. Discovered during the v0.22.0 cut session (2026-04-30) when master had 225 open issues and the e2e harness Step 3 reported 32 mismatches, all of which were OPEN on inspection. Blocks v0.22.0 and every subsequent release until fixed.",
@@ -96,6 +96,6 @@
         "title": "Issue #720: e2e harness deepening (surfaced this defect during Decision A pre-release validation)"
       }
     ],
-    "updated": "2026-04-30T02:16:05Z"
+    "updated": "2026-04-30T13:58:20Z"
   }
 }
