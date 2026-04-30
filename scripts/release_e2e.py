@@ -352,8 +352,8 @@ def push_mirror(clone_dir: Path) -> tuple[bool, str]:
 def dispatch_task_release(
     clone_dir: Path, version: str, repo: str
 ) -> tuple[bool, str]:
-    """Invoke ``task release -- <version> --repo <repo> --skip-ci --skip-build``
-    inside the clone (#720, #728).
+    """Invoke ``task release -- <version> --repo <repo> --skip-ci --skip-build --allow-vbrief-drift``
+    inside the clone (#720, #728, post-#754 harness fix).
 
     Skipping CI + build keeps the rehearsal wall-clock manageable; both
     are covered by the unit-test suite. The 10-step pipeline still
@@ -372,6 +372,17 @@ def dispatch_task_release(
     instead of the temp clone. Pinning the env var to ``clone_dir``
     eliminates that ambient-state hazard regardless of the operator's
     shell setup.
+
+    Post-#754 harness fix: ``--allow-vbrief-drift`` is passed because
+    the temp rehearsal repo is auto-created empty (zero issues) and
+    the inverted-lookup vBRIEF-lifecycle-sync gate (#754) classifies
+    every referenced issue number as NOT_FOUND -> Section (c) mismatch
+    against an empty target. The gate has no meaningful signal in the
+    rehearsal context, so the explicit-acknowledgment escape hatch is
+    the correct surface to bypass it. The production cut path (against
+    the real repo with real issues) does NOT pass this flag and remains
+    fully gated. Without this flag, every ``task release:e2e`` invocation
+    since #734 landed has failed at the inner Step 3 lifecycle gate.
     """
     if shutil.which("task") is None:
         return False, "task binary not found on PATH"
@@ -381,6 +392,7 @@ def dispatch_task_release(
         "--repo", repo,
         "--skip-ci",
         "--skip-build",
+        "--allow-vbrief-drift",
     ]
     env = os.environ.copy()
     env["DEFT_PROJECT_ROOT"] = str(clone_dir)

@@ -341,6 +341,35 @@ class TestDispatchTaskRelease:
         assert "0.0.1" in captured["cmd"]
         assert "deftai/temp-x" in captured["cmd"]
 
+    def test_argv_carries_allow_vbrief_drift(self, monkeypatch, tmp_path):
+        """Post-#754 harness fix: e2e rehearsal MUST pass --allow-vbrief-drift.
+
+        The temp rehearsal repo is auto-created empty (zero issues), so the
+        inverted-lookup vBRIEF-lifecycle-sync gate (#754) classifies every
+        referenced issue number as NOT_FOUND -> Section (c) mismatch and the
+        inner pipeline fails at Step 3. The escape hatch is the correct
+        surface to bypass the gate in the rehearsal context. The production
+        cut path against a real repo does NOT pass this flag and remains
+        fully gated.
+        """
+        monkeypatch.setattr(release_e2e.shutil, "which", lambda _: "/usr/bin/task")
+        captured = {}
+
+        def fake_run(cmd, **kwargs):
+            captured["cmd"] = cmd
+            return SimpleNamespace(stdout="", stderr="", returncode=0)
+
+        monkeypatch.setattr(subprocess, "run", fake_run)
+        ok, _ = release_e2e.dispatch_task_release(
+            tmp_path, "0.0.1", "deftai/temp-x"
+        )
+        assert ok is True
+        assert "--allow-vbrief-drift" in captured["cmd"], (
+            "e2e rehearsal MUST pass --allow-vbrief-drift to skip the "
+            "vBRIEF-lifecycle-sync gate against an empty temp repo (#754 "
+            "harness fix)"
+        )
+
     def test_pins_deft_project_root_to_clone_dir(self, monkeypatch, tmp_path):
         """#728 cycle 2 P1: subprocess env MUST pin DEFT_PROJECT_ROOT to
         ``clone_dir``. Without this, an operator with the variable
