@@ -19,6 +19,8 @@ Urgent fixes to land ahead of broader roadmap work -- adoption blockers and bugs
 - **#746** -- feat(setup,skills,policy): no-feature-branch opt-out — interview disclosure, skill-level guard, and reversible reconfiguration
 - **#747** -- feat(scripts,tasks,hooks): detection-bound branch gate — verify:branch + git hooks reading PROJECT-DEFINITION policy field
 - **#756** -- fix(scripts/reconcile_issues.py): apply_lifecycle_fixes does not dedupe vBRIEFs that reference multiple closed issues (spurious file-missing failures, misleading exit 1)
+- **#767** -- feat(framework,skills): add Discuss + Back as canonical numbered options in all deterministic-mode questions
+- **#768** -- Universal upgrade gate: stale-AGENTS.md consumers silently follow obsolete instructions
 
 ## Phase 2
 

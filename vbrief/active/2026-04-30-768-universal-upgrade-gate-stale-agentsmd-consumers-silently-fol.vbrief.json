@@ -1,0 +1,75 @@
+{
+  "vBRIEFInfo": {
+    "version": "0.6",
+    "description": "Scope vBRIEF ingested from GitHub issue #768"
+  },
+  "plan": {
+    "title": "Universal upgrade gate: stale-AGENTS.md consumers silently follow obsolete instructions",
+    "status": "running",
+    "narratives": {
+      "Description": "Universal upgrade gate: stale-AGENTS.md consumers silently follow obsolete instructions",
+      "Origin": "Ingested from https://github.com/deftai/directive/issues/768",
+      "Labels": "adoption-blocker",
+      "Problem": "Consumers installed at any pre-current version can run agent sessions that read a stale ./AGENTS.md and silently follow obsolete instructions, with no deterministic upgrade detection firing. The Timmy session reproduced this: v0.5-installed consumer with deft/ bumped to v0.22, agent reads stale AGENTS.md, executes pre-v0.20 phase logic, never notices the framework jump. Existing gates only fire on CLI invocation (#410), sync-skill trigger phrases, or paths the agent does not take. Structural gap: there is no upgrade-path-agnostic anchor on the read-AGENTS.md-and-follow-it path that every consumer ever installed traverses.",
+      "Acceptance": "Three coordinated changes: (1) NEW cmd_gate in run (read-only state-vector probe) emitting 'OK v<current>' or 'NEEDS-UPGRADE recorded=<recorded|unknown> current=<current> precutover=<csv|empty>' with --json variant; reuses _read_version_marker, _detect_pre_cutover_legacy, _running_inside_deft_repo, dynamic VERSION (#741); no marker writes / no migrations / no commits. (2) Universal '<!-- DEFT-PREAMBLE-V1 -->' preamble at line 1 of deft/main.md AND every redirect stub at historical AGENTS.md target paths (skills/deft-setup/SKILL.md, skills/deft-build/SKILL.md, SKILL.md, plus any path enumerated by 'git --no-pager log --all -- cmd/deft-install/setup.go'). Preamble instructs agent to run 'python3 deft/run gate' before any other instruction; on non-zero, read deft/UPGRADING.md, find section whose 'Applies when' matches the state vector, execute verbatim, honor 'Restart required' directives. (3) UPGRADING.md retrofit: every '## From <prev> -> <new>' section gains four-field micro-format header (Applies when / Safe to auto-run / Restart required / Commands). Tests: tests/cli/test_cmd_gate.py covers all four states (OK + 3 NEEDS-UPGRADE variants); tests/content/test_upgrading_sections.py asserts every section has all four fields; tests/content/test_main_md_preamble.py asserts marker present at line 1 of every required file. Manual repro: v0.5-state fixture bumped to current, agent reads ./AGENTS.md, runs gate, gets NEEDS-UPGRADE recorded=0.5.0, reads UPGRADING.md, executes matching section, halts with start-fresh-session message. CHANGELOG entry under Added.",
+      "OutOfScope": "Bumping pyproject.toml's stale 'version = 0.5.0' field (release pipeline already uses dynamic resolution per #741; vestigial; separate chore). Adding any agent-platform-specific bootstrap rule (gate is platform-agnostic by design). Any submodule post-update hook (user-machine-specific, not framework concern).",
+      "Files": "NEW cmd_gate function in run/run.py (read-only state-vector probe + --json output); main.md (line 1 preamble injection); skills/deft-setup/SKILL.md, skills/deft-build/SKILL.md, SKILL.md (legacy redirect-stub preamble injection -- audit historical agentsMDEntry paths via git log on cmd/deft-install/setup.go to enumerate ALL stub paths); UPGRADING.md (four-field micro-format retrofit on every '## From X -> Y' section); NEW tests/cli/test_cmd_gate.py; NEW tests/content/test_upgrading_sections.py; NEW tests/content/test_main_md_preamble.py; CHANGELOG.md (append)."
+    },
+    "items": [
+      {
+        "title": "Audit historical AGENTS.md target paths via 'git --no-pager log --all -- cmd/deft-install/setup.go' to enumerate ALL stub paths needing the preamble",
+        "status": "pending"
+      },
+      {
+        "title": "NEW cmd_gate in run/run.py: read-only state-vector probe; reuses _read_version_marker, _detect_pre_cutover_legacy, _running_inside_deft_repo, dynamic VERSION; --json variant; exit 0 OK, non-zero NEEDS-UPGRADE",
+        "status": "pending"
+      },
+      {
+        "title": "Inject '<!-- DEFT-PREAMBLE-V1 -->' at line 1 of deft/main.md with the gate-then-UPGRADING-then-respect-restart instructions",
+        "status": "pending"
+      },
+      {
+        "title": "Inject same preamble at line 1 of every legacy redirect stub enumerated by the audit (skills/deft-setup/SKILL.md, skills/deft-build/SKILL.md, SKILL.md, plus any other historical path)",
+        "status": "pending"
+      },
+      {
+        "title": "Retrofit UPGRADING.md: every '## From X -> Y' section gains four-field micro-format header (Applies when / Safe to auto-run / Restart required / Commands)",
+        "status": "pending"
+      },
+      {
+        "title": "NEW tests/cli/test_cmd_gate.py: covers OK state + 3 NEEDS-UPGRADE variants (marker drift only, precutover artifacts present, unknown recorded); pin output format and exit codes",
+        "status": "pending"
+      },
+      {
+        "title": "NEW tests/content/test_upgrading_sections.py: assert every '## From X -> Y' section has all four fields; CI fails on future regression",
+        "status": "pending"
+      },
+      {
+        "title": "NEW tests/content/test_main_md_preamble.py: assert preamble marker present at line 1 of every required file",
+        "status": "pending"
+      },
+      {
+        "title": "Manual repro evidence: v0.5-state fixture bumped to current; agent reads AGENTS.md; runs gate; gets NEEDS-UPGRADE; reads UPGRADING.md; executes matching section; halts with start-fresh message",
+        "status": "pending"
+      },
+      {
+        "title": "CHANGELOG.md [Unreleased] entry under Added referencing #768",
+        "status": "pending"
+      }
+    ],
+    "references": [
+      {
+        "uri": "https://github.com/deftai/directive/issues/768",
+        "type": "x-vbrief/github-issue",
+        "title": "Issue #768: Universal upgrade gate: stale-AGENTS.md consumers silently follow obsolete instructions"
+      }
+    ],
+    "metadata": {
+      "x-migrator": {
+        "Phase": "Phase 1 -- Fix Now",
+        "PhaseDescription": "Urgent fixes to land ahead of broader roadmap work -- adoption blockers and bugs that block consumer adoption or successful first-session UX."
+      }
+    },
+    "updated": "2026-04-30T21:48:27Z"
+  }
+}
