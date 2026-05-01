@@ -5,7 +5,7 @@
   },
   "plan": {
     "title": "release-core: keep pyproject version truthful and define semver -> PEP 440 normalization",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Description": "release-core: keep pyproject version truthful and define semver -> PEP 440 normalization",
       "Origin": "Ingested from https://github.com/deftai/directive/issues/771",
@@ -67,6 +67,6 @@
         "PhaseOverride": "GitHub label says Phase 4; absorbed into Phase 1 per swarm planning 2026-04-30 to land alongside related release-core work"
       }
     },
-    "updated": "2026-04-30T22:52:57Z"
+    "updated": "2026-05-01T02:02:52Z"
   }
 }

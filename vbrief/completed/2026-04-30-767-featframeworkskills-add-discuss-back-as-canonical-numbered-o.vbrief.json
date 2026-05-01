@@ -5,7 +5,7 @@
   },
   "plan": {
     "title": "feat(framework,skills): add Discuss + Back as canonical numbered options in all deterministic-mode questions",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Description": "feat(framework,skills): add Discuss + Back as canonical numbered options in all deterministic-mode questions",
       "Origin": "Ingested from https://github.com/deftai/directive/issues/767",
@@ -79,6 +79,6 @@
         "PhaseDescription": "Urgent fixes to land ahead of broader roadmap work -- adoption blockers and bugs that block consumer adoption or successful first-session UX."
       }
     },
-    "updated": "2026-04-30T21:48:26Z"
+    "updated": "2026-05-01T02:02:52Z"
   }
 }

@@ -5,7 +5,7 @@
   },
   "plan": {
     "title": "fix(scripts/reconcile_issues.py): apply_lifecycle_fixes does not dedupe vBRIEFs that reference multiple closed issues (spurious file-missing failures, misleading exit 1)",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Description": "fix(scripts/reconcile_issues.py): apply_lifecycle_fixes does not dedupe vBRIEFs that reference multiple closed issues (spurious file-missing failures, misleading exit 1)",
       "Origin": "Ingested from https://github.com/deftai/directive/issues/756",
@@ -46,6 +46,6 @@
         "PhaseDescription": "Urgent fixes to land ahead of broader roadmap work -- adoption blockers and bugs that block consumer adoption or successful first-session UX."
       }
     },
-    "updated": "2026-04-30T21:48:26Z"
+    "updated": "2026-05-01T02:02:52Z"
   }
 }

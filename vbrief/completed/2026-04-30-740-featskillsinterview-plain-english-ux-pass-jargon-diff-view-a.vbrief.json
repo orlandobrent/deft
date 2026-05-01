@@ -5,7 +5,7 @@
   },
   "plan": {
     "title": "feat(skills,interview): plain-English UX pass — jargon, diff view, approval actions, button labels",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Description": "feat(skills,interview): plain-English UX pass -- jargon, diff view, approval actions, button labels",
       "Origin": "Ingested from https://github.com/deftai/directive/issues/740",
@@ -62,6 +62,6 @@
         "PhaseDescription": "Urgent fixes to land ahead of broader roadmap work -- adoption blockers and bugs that block consumer adoption or successful first-session UX."
       }
     },
-    "updated": "2026-04-30T21:48:26Z"
+    "updated": "2026-05-01T02:02:51Z"
   }
 }

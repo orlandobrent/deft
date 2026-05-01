@@ -5,7 +5,7 @@
   },
   "plan": {
     "title": "feat(setup,skills,policy): no-feature-branch opt-out — interview disclosure, skill-level guard, and reversible reconfiguration",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Description": "feat(setup,skills,policy): no-feature-branch opt-out -- interview disclosure, skill-level guard, and reversible reconfiguration",
       "Origin": "Ingested from https://github.com/deftai/directive/issues/746",
@@ -70,6 +70,6 @@
         "PhaseDescription": "Urgent fixes to land ahead of broader roadmap work -- adoption blockers and bugs that block consumer adoption or successful first-session UX."
       }
     },
-    "updated": "2026-04-30T21:48:26Z"
+    "updated": "2026-05-01T02:02:51Z"
   }
 }

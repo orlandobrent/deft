@@ -5,7 +5,7 @@
   },
   "plan": {
     "title": "feat(scripts,tasks,hooks): detection-bound branch gate — verify:branch + git hooks reading PROJECT-DEFINITION policy field",
-    "status": "running",
+    "status": "completed",
     "narratives": {
       "Description": "feat(scripts,tasks,hooks): detection-bound branch gate -- verify:branch + git hooks reading PROJECT-DEFINITION policy field",
       "Origin": "Ingested from https://github.com/deftai/directive/issues/747",
@@ -66,6 +66,6 @@
         "PhaseDescription": "Urgent fixes to land ahead of broader roadmap work -- adoption blockers and bugs that block consumer adoption or successful first-session UX."
       }
     },
-    "updated": "2026-04-30T21:48:26Z"
+    "updated": "2026-05-01T02:02:52Z"
   }
 }
