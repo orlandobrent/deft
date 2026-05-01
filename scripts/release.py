@@ -84,6 +84,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from _stdio_utf8 import reconfigure_stdio  # noqa: E402
+from resolve_version import (  # noqa: E402
+    NonPublishableVersionError,
+    to_pep440,
+)
 
 reconfigure_stdio()
 
@@ -778,13 +782,88 @@ def run_build(project_root: Path, version: str | None = None) -> tuple[bool, str
     return True, f"task build ran clean{suffix}"
 
 
+# ---- Step 5 -- pyproject.toml [project].version sync (#771) ----------------
+
+# Single ``version = "X.Y.Z"`` line under the ``[project]`` section. We do
+# NOT use ``tomllib`` to write because it is read-only in stdlib, and we do
+# NOT bring in a TOML writer dep just to flip one literal -- the regex
+# below targets the canonical Keep-a-pyproject ``[project]`` block shape
+# (the same shape ``uv init`` / PEP 621 examples emit) and rewrites only
+# the FIRST ``version = "..."`` line that follows the ``[project]`` table
+# header. Other ``version`` keys (e.g. inside ``[tool.poetry]`` / vendored
+# tool configs) are left untouched.
+_PYPROJECT_VERSION_LINE_RE = re.compile(r'version\s*=\s*"[^"]*"')
+
+
+def update_pyproject_version(text: str, version: str) -> str:
+    """Rewrite ``[project].version`` in pyproject.toml content (#771).
+
+    Pure function: takes the full file content + the resolved release
+    version (PEP 440-normalized; the caller is responsible for the
+    normalization, see ``scripts.resolve_version.to_pep440``) and
+    returns the new content. Operates on the FIRST ``version = "..."``
+    line under the ``[project]`` section; sub-tables (e.g.
+    ``[tool.poetry]`` ``version``) are intentionally untouched.
+
+    Idempotent: if the line is already at the requested version, the
+    return value equals ``text`` byte-for-byte.
+
+    Raises ``ValueError`` when the input has no ``[project]`` section or
+    the section has no ``version`` key -- the release pipeline treats
+    this as a config error so misconfigured projects do not silently
+    skip the sync.
+    """
+    if not isinstance(text, str):
+        raise ValueError(f"text must be a string, got {type(text).__name__}")
+    if not isinstance(version, str) or not version.strip():
+        raise ValueError("version must be a non-empty string")
+
+    lines = text.splitlines(keepends=True)
+    in_project_section = False
+    for idx, line in enumerate(lines):
+        stripped = line.strip()
+        # Comment / blank lines do not change section state.
+        if not stripped or stripped.startswith("#"):
+            continue
+        # Detect a TOML table header. Match exactly ``[project]`` (not
+        # ``[project.scripts]`` etc.) -- those subtables can carry their
+        # own ``version`` keys we MUST NOT clobber.
+        if stripped.startswith("[") and stripped.endswith("]"):
+            in_project_section = stripped == "[project]"
+            continue
+        if in_project_section and _PYPROJECT_VERSION_LINE_RE.match(stripped):
+            new_line = _PYPROJECT_VERSION_LINE_RE.sub(
+                f'version = "{version}"', line, count=1
+            )
+            if new_line == line:
+                return text
+            lines[idx] = new_line
+            return "".join(lines)
+    raise ValueError(
+        "pyproject.toml has no [project] section with a version key"
+    )
+
+
 # ---- Step 7/8 -- commit + tag + push ---------------------------------------
 
 
 # Files written by the release pipeline (steps 4 + 5) that MUST be committed
 # before tagging so the annotated tag and GitHub release point at the
 # CHANGELOG-promoted / ROADMAP-refreshed commit (#74 Greptile P1).
-_RELEASE_ARTIFACTS = ("CHANGELOG.md", "ROADMAP.md")
+#
+# ``pyproject.toml`` joins the set in #771 because Step 5 now also syncs
+# ``[project].version`` from the resolved release version (PEP 440
+# normalized via ``scripts.resolve_version.to_pep440``). The helper
+# below stages it conditionally on existence so projects without a
+# pyproject (the synthetic test fixtures) keep working unchanged.
+#
+# ``uv.lock`` joins the set in #774 (Greptile P1) because Step 5 now
+# also runs ``uv lock`` to regenerate the lockfile after the pyproject
+# version write -- without staging it the released tag would record a
+# pyproject at the new version and a uv.lock still pinning the old
+# version, causing every subsequent ``uv lock --check`` (and any
+# downstream ``uv sync --frozen`` consumer) to fail post-pipeline.
+_RELEASE_ARTIFACTS = ("CHANGELOG.md", "ROADMAP.md", "pyproject.toml", "uv.lock")
 
 
 def _release_commit_subject(version: str) -> str:
@@ -1165,6 +1244,125 @@ def verify_release_draft(
     return True, f"inconclusive ({last_state}); verify gate skipped"
 
 
+# ---- Step 5 -- uv.lock regeneration (#774) ---------------------------------
+
+
+def run_uv_lock(project_root: Path) -> tuple[bool, str]:
+    """Regenerate ``uv.lock`` after the pyproject ``[project].version`` sync.
+
+    The release pipeline rewrites ``[project].version`` in pyproject.toml
+    in Step 5 (#771). Without a matching ``uv lock`` invocation, the
+    lockfile would still record the OLD version while pyproject records
+    the NEW one -- producing a release commit + annotated tag where
+    ``uv lock --check`` (and any ``uv sync --frozen`` consumer) fails
+    post-pipeline. Greptile P1 from #774 surfaced this gap.
+
+    Contract:
+      - No pyproject.toml present -- clean skip (no lockfile to keep in
+        sync with a missing root metadata file).
+      - ``uv`` binary not on PATH -- clean skip with a non-fatal warning;
+        the pipeline cannot regenerate a lockfile without the tool, but
+        the pyproject sync itself already landed and a downstream
+        operator can run ``uv lock`` manually before pushing the tag.
+      - ``uv lock`` non-zero exit -- terminal failure; the operator must
+        resolve the lock conflict before the release can ship.
+      - Happy path -- returns ``(True, "uv.lock regenerated")``; the
+        commit step then stages uv.lock alongside the other release
+        artifacts (#774 _RELEASE_ARTIFACTS).
+    """
+    if not (project_root / "pyproject.toml").is_file():
+        return True, "no pyproject.toml; skipping uv lock"
+    uv_path = shutil.which("uv")
+    if uv_path is None:
+        # Best-effort: surface a warning but do not fail. The pyproject
+        # sync already succeeded; an operator running the release on a
+        # host without uv can regenerate the lockfile manually.
+        print(
+            "WARNING: uv binary not on PATH; skipping uv.lock regeneration "
+            "(see #774). Run `uv lock` manually before pushing the release tag.",
+            file=sys.stderr,
+        )
+        return True, "uv binary not on PATH; skipping uv lock"
+    try:
+        result = subprocess.run(
+            [uv_path, "lock"],
+            cwd=str(project_root),
+            capture_output=True,
+            text=True,
+            timeout=300,
+            check=False,
+        )
+    except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
+        return False, f"uv lock failed: {exc}"
+    if result.returncode != 0:
+        stderr = (result.stderr or "").strip()
+        return False, f"uv lock failed (exit {result.returncode}): {stderr}"
+    return True, "uv.lock regenerated"
+
+
+# ---- Step 5 -- pyproject sync helper (#771) --------------------------------
+
+
+def _sync_pyproject_for_release(
+    pyproject_path: Path,
+    version: str,
+    *,
+    dry_run: bool,
+) -> tuple[str, str | None]:
+    """Compute the pyproject ``[project].version`` sync outcome (#771).
+
+    Returns ``(note, new_text)`` where ``note`` is a short operator-
+    readable status string the pipeline embeds in the Step 5 label, and
+    ``new_text`` is the rewritten file content to write (``None`` when
+    no write is required -- e.g. dry-run, missing pyproject, or
+    non-publishable version).
+
+    Outcomes:
+        - ``"pyproject [project].version -> 0.21.0"`` -- happy path
+        - ``"pyproject already at 0.21.0"`` -- idempotent no-op
+        - ``"no pyproject.toml; skipping sync"`` -- file absent
+        - ``"non-publishable tag <reason>; skipping pyproject sync"`` --
+          ``test.N`` and other ``NonPublishableVersionError`` cases per
+          ``scripts.resolve_version`` Phase B
+        - ``"FAIL (...)"`` -- terminal config error; pipeline halts
+
+    The release pipeline catches ``NonPublishableVersionError`` here and
+    treats it as a clean skip rather than a failure: a disposable test
+    tag (``v0.0.0-test.1`` from ``task release:e2e``) MUST never propagate
+    into ``[project].version`` even if the rest of the pipeline runs.
+    Generic ``ValueError`` (malformed ``[project]`` section, missing
+    version key) IS terminal -- the misconfiguration must be fixed before
+    a release can ship.
+    """
+    if not pyproject_path.is_file():
+        return "no pyproject.toml; skipping sync", None
+    try:
+        pep_version = to_pep440(version)
+    except NonPublishableVersionError as exc:
+        return (
+            f"non-publishable tag ({exc}); skipping pyproject sync",
+            None,
+        )
+    except ValueError as exc:
+        # Malformed input -- the pipeline already validated strict
+        # X.Y.Z via ``_validate_version``, so this branch is
+        # defensive: if to_pep440's contract widens we surface the
+        # parse error rather than silently skip.
+        return f"FAIL (cannot normalize version to PEP 440: {exc})", None
+
+    original = pyproject_path.read_text(encoding="utf-8")
+    try:
+        new_text = update_pyproject_version(original, pep_version)
+    except ValueError as exc:
+        return f"FAIL (pyproject.toml: {exc})", None
+
+    if new_text == original:
+        return f"pyproject already at {pep_version}", None
+    if dry_run:
+        return f"pyproject [project].version -> {pep_version}", None
+    return f"pyproject [project].version -> {pep_version}", new_text
+
+
 # ---- Pipeline orchestration ------------------------------------------------
 
 
@@ -1300,17 +1498,53 @@ def run_pipeline(config: ReleaseConfig) -> int:
         summary_note = f' summary: "{truncated}{truncation_suffix}"'
     else:
         summary_note = " no summary"
+    # #771: also sync pyproject.toml [project].version from the resolved
+    # release version (PEP 440 normalized via
+    # ``scripts.resolve_version.to_pep440``). Disposable / test-only tags
+    # (``test.N``) raise ``NonPublishableVersionError`` and the sync is
+    # explicitly skipped so PyPI / consumer-visible metadata is not
+    # polluted with throwaway versions. The pyproject sync is bundled
+    # into Step 5 (rather than a new step) so the existing pipeline-
+    # step labels (``[5/12]`` ... ``[12/12]``) keep their identifiers
+    # for backward-compatible test assertions; the operator-readable
+    # status string surfaces the pyproject-side outcome inline.
+    pyproject_path = project_root / "pyproject.toml"
+    pyproject_note, promoted_pyproject = _sync_pyproject_for_release(
+        pyproject_path, version, dry_run=config.dry_run
+    )
+    if pyproject_note.startswith("FAIL"):
+        _emit(5, label, pyproject_note)
+        return EXIT_CONFIG_ERROR
+
     if config.dry_run:
         _emit(
             5,
             label,
             f"DRYRUN (would rewrite {changelog_path.name}: "
             f"## [Unreleased] -> ## [{version}] - {today}; new compare link added;"
-            f"{summary_note})",
+            f"{summary_note}; {pyproject_note}; "
+            f"would run `uv lock` to refresh uv.lock to {version})",
         )
     else:
         changelog_path.write_text(promoted_changelog, encoding="utf-8")
-        _emit(5, label, f"OK (## [{version}] - {today};{summary_note})")
+        uv_lock_note = "uv.lock unchanged (pyproject not modified)"
+        if promoted_pyproject is not None:
+            pyproject_path.write_text(promoted_pyproject, encoding="utf-8")
+            # #774: pyproject [project].version was rewritten -- regenerate
+            # uv.lock so the lockfile records the same version. Without
+            # this every future ``task release`` produces a release
+            # commit + tag where pyproject and uv.lock disagree and
+            # downstream ``uv lock --check`` fails.
+            uv_ok, uv_lock_note = run_uv_lock(project_root)
+            if not uv_ok:
+                _emit(5, label, f"FAIL ({uv_lock_note})")
+                return EXIT_VIOLATION
+        _emit(
+            5,
+            label,
+            f"OK (## [{version}] - {today};{summary_note}; "
+            f"{pyproject_note}; {uv_lock_note})",
+        )
 
     # Step 6: ROADMAP refresh.
     label = "ROADMAP refresh (task roadmap:render)"
