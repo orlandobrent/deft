@@ -324,6 +324,14 @@ All PRs meet ALL of:
    - `task check` passed on the branch
    - CHANGELOG.md entry present under `[Unreleased]`
    - Explicit user approval received for this merge cascade
+
+   ! **Programmatic gate:** Before each `gh pr merge` call, the monitor MUST run `task pr:merge-ready -- <N>` (script: `scripts/pr_merge_readiness.py`) and abort the cascade on non-zero exit. The Taskfile target parses the Greptile rolling-summary comment **body** (confidence, P0 / P1 badge counts, errored sentinel, HEAD-SHA freshness) -- not the GitHub CheckRun status. The CheckRun goes green when Greptile finishes its review pass, irrespective of findings; relying on it alone is the SUCCESS-with-findings blind spot that started the PR #652 incident merge cascade against `Confidence: 3/5 + 1×P1 + 2×P2`.
+
+   ! **Atomic gate (freshness window):** The monitor MUST invoke `task pr:merge-ready -- <N>` and `gh pr merge <N>` in the same shell call (e.g. `task pr:merge-ready -- <N> && gh pr merge <N> --squash --delete-branch --admin`) so no time elapses between verdict and merge. A readiness check more than ~60 seconds stale is a Mode-1 false-positive risk: in the elapsed window an unrelated commit may land on master, auto-rebase trigger a fresh Greptile pass, and the new pass surface a P1 the cached verdict did not see. Re-invoking the gate is cheap (single `gh api` call); the shell-`&&` chain makes the freshness window structurally enforceable rather than prose-trust.
+
+   ⊗ Merge on the basis of a SUCCESS Greptile CheckRun alone. The CheckRun signals review **completion**, not review **approval**. Parse the comment body (confidence + P0/P1 count) via `task pr:merge-ready -- <N>` before merging.
+
+   ⊗ Run `task pr:merge-ready -- <N>` upstream of `gh pr merge <N>` (e.g. as a separate batched check during cascade prep, then later run `gh pr merge` after intervening rebase / sub-agent dispatch / user discussion). Stale verdicts risk Mode-1 false positives -- always chain readiness and merge in the same shell call.
 3. ! Wait for explicit user approval (`yes`, `confirmed`, `approve`) before proceeding to Phase 6 merge cascade
 4. ! If the user requests changes (e.g. different version bump, defer a PR), adjust and re-present
 
@@ -598,3 +606,4 @@ CONSTRAINTS:
 - ⊗ Omit override-merged PRs from the Phase 6 Step 5 Slack release announcement -- any merge that used the Greptile-service-errored override path MUST be called out with its one-line rationale so downstream readers can trace the documented override trail (#526)
 - ⊗ Run `gh pr merge` on a PR that has any protected (umbrella / staying-OPEN) issue listed in `gh pr view <N> --json closingIssuesReferences` -- the link is persistent in GitHub's database from a prior PR body revision (or sidebar attachment) and survives body edits, commit-message edits, and explicit `--subject` / `--body-file` overrides; manually unlink via the PR's Development sidebar panel before merging (Layer 3, #701)
 - ⊗ Skip the post-merge protected-issue reopen sweep for any squash merge that referenced an umbrella / staying-OPEN issue -- defense in depth catches Layer 3 false-positives the pre-merge inspection missed (#701)
+- ⊗ Merge on the basis of a SUCCESS Greptile CheckRun alone -- the CheckRun signals review **completion**, not review **approval** (PR #652 incident; symmetric blind spot to the NEUTRAL CheckRun #526 case). Always run `task pr:merge-ready -- <N>` before `gh pr merge` to parse the comment body for confidence + P0 / P1 findings
