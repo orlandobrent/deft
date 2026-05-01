@@ -41,8 +41,6 @@ Quick doc/content fixes that don't require code changes.
 
 - **#53** -- deft-install should bootstrap the current directory by default
 - **#77** -- Allow users to change technical rating (1/2/3) when starting a new project
-- **#622** -- feat(skills): communication bridge filter for deft-directive-review-cycle (intent-aware finding triage)
-- **#623** -- feat(context): name and encode Context Rot as a first-class concept with mitigations
 - **#761** -- docs: reframe install paths around webinstaller + npm/pip; demote Go binary to legacy
 
 ## Phase 4
@@ -328,6 +326,8 @@ Larger feature work -- only after issues are resolved and content is stable.
 - Single entry point Go installer -- `[completed]`
 - v0.6.0 CHANGELOG entry -- `[completed]`
 - v0.6.0 content (PRs #16–20) -- `[completed]`
+- **#622** -- feat(skills): communication bridge filter for deft-directive-review-cycle (intent-aware finding triage) -- `[completed]`
+- **#623** -- feat(context): name and encode Context Rot as a first-class concept with mitigations -- `[completed]`
 - **#636** -- installer: Go installer must read templates/agents-entry.md instead of hardcoded agentsMDEntry const (follow-up to #358 Option 3) -- `[completed]`
 - **#638** -- refinement: batch roadmap/project renders during multi-item triage instead of rerendering after every promotion -- `[completed]`
 - **#639** -- issue:ingest emits legacy v0.5 scope vBRIEFs and non-canonical references instead of canonical v0.6 -- `[completed]`
@@ -346,6 +346,19 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#737** -- feat(scripts,tasks,skills): pre-PR closing-keyword negation-context lint to prevent Layer 0 false-positive auto-closes -- `[completed]`
 - **#741** -- fix(scripts/release.py): bump VERSION literal in run during release flow -- `[completed]`
 - **#730** -- Release CHANGELOG promotion accepts --summary blockquote (per [AXIOM] deterministic tier) -- `[completed]`
+- **#564** -- review-cycle: add stall detection rubric, escalate to user after threshold -- `[completed]`
+- **#565** -- spec-validate: v0.6 envelope message + wire VALID_VBRIEF_VERSIONS into check (P2 cleanup) -- `[completed]`
+- **#573** -- prd:render: task -- --force silently no-ops because go-task cache layer wins before script --force reaches the code -- `[completed]`
+- **#736** -- fix(tasks/core.yml): task build cross-platform artifact parity defect (Windows zip lacks excludes; vestigial-vs-internal purpose unclear) -- `[completed]`
+- **#738** -- feat(skills,interview): IP/legal risk flagging during research/interview phase for projects built on third-party IP -- `[completed]`
+- **#739** -- feat(skills,build): pre-build cost & budget transparency phase between SPECIFICATION approval and build kickoff -- `[completed]`
+- **#740** -- feat(skills,interview): plain-English UX pass — jargon, diff view, approval actions, button labels -- `[completed]`
+- **#746** -- feat(setup,skills,policy): no-feature-branch opt-out — interview disclosure, skill-level guard, and reversible reconfiguration -- `[completed]`
+- **#747** -- feat(scripts,tasks,hooks): detection-bound branch gate — verify:branch + git hooks reading PROJECT-DEFINITION policy field -- `[completed]`
 - **#754** -- fix(scripts/reconcile_issues.py, scripts/release.py): vBRIEF-lifecycle-sync gate false-positives on repos with >200 open issues -- `[completed]`
+- **#756** -- fix(scripts/reconcile_issues.py): apply_lifecycle_fixes does not dedupe vBRIEFs that reference multiple closed issues (spurious file-missing failures, misleading exit 1) -- `[completed]`
 - **#764** -- fix(scripts/reconcile_issues.py): bump ISSUE_FETCH_LIMIT 200 -> 1000 to clear truncation warning on 232-issue corpus -- `[completed]`
+- **#767** -- feat(framework,skills): add Discuss + Back as canonical numbered options in all deterministic-mode questions -- `[completed]`
+- **#768** -- Universal upgrade gate: stale-AGENTS.md consumers silently follow obsolete instructions -- `[completed]`
+- **#771** -- release-core: keep pyproject version truthful and define semver -> PEP 440 normalization -- `[completed]`
 
