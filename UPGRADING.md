@@ -8,6 +8,49 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 ---
 
+## Migration to triage v1
+
+- **Applies when:** any project on deft v0.24.0 or later that wants to opt in to the pre-ingest triage workflow (#845). Triage v1 is **purely additive** -- existing skills (`deft-directive-refinement`, `deft-directive-swarm`, `deft-directive-build`, etc.) keep working byte-identically when the triage surfaces are absent. Detection: run `task triage:bootstrap` and observe whether `.deft-cache/` exists at the project root. If not, you have not opted in yet.
+- **Safe to auto-run:** Yes. `task triage:bootstrap` is idempotent and reversible -- a second run is a no-op, and the entire opt-in can be undone by deleting `.deft-cache/` and removing the `.deft-cache/` line from `.gitignore`. The bootstrap performs five steps: (1) populate the local issue cache for all open upstream issues; (2) backfill `vbrief/.eval/candidates.jsonl` with `accepted` audit entries for items already in `vbrief/proposed/`, `vbrief/pending/`, or `vbrief/active/` (preserves audit trail; intentionally skips `vbrief/cancelled/` to avoid reanimating rejected items); (3) add `.deft-cache/` to `.gitignore` if absent; (4) install `gitcrawl` if missing (skipped if already on PATH); (5) print a recap of the actions taken.
+- **Restart required:** No. Triage v1 is a new opt-in surface; existing agent sessions continue to work without any awareness of the cache. Future sessions will see the new `task triage:*` targets in `task --list` once the parent `Taskfile.yml` `includes:` block resolves the four fragment files.
+- **Commands:**
+  - `task triage:bootstrap` (one-time install, ~5 min for ~200 open issues -- mostly the cache populate step). The `triage:bootstrap` colon-form is wired as a top-level alias by Story 6 and works immediately after this PR merges.
+  - The remaining commands ship as **namespaced** targets via the parent Taskfile `includes:` block. Use the `<namespace>:<task>` form against the include key:
+    - `task triage-cache:cache` / `task triage-cache:show <N>` (Story 1)
+    - `task triage-actions:accept <N>` / `task triage-actions:reject <N> -- --reason <r>` / `task triage-actions:defer <N>` / `task triage-actions:needs-ac <N>` / `task triage-actions:status <N>` / `task triage-actions:history <N>` (Story 3)
+    - `task triage-bulk:bulk-accept` / `task triage-bulk:bulk-reject` / `task triage-bulk:refresh-active` etc. with `--label` / `--author` / `--age-days` filters (Story 4)
+  - The shorthand `task triage:cache` / `task triage:accept <N>` / etc. forms are intentionally NOT wired in Story 6 because go-task v3 cannot share an `includes:` namespace key across multiple files; consolidating top-level aliases into a single `triage:*` surface is tracked as a follow-up cleanup PR after the four-fragment cascade has fully landed and the inner task names are stable on master. Use the namespaced forms above until that follow-up ships.
+
+### What changes for consumers
+
+- **Additive nature.** Nothing existing breaks. The refinement skill's Phase 0 (Story 5) auto-skips when the cache is empty, so a consumer who never runs `task triage:bootstrap` sees the same v0.24.0 refinement experience.
+- **Opt-in path is fast.** `task triage:bootstrap` finishes in ~5 minutes for a ~200-issue corpus. Larger corpora scale linearly with `gh issue list` throughput. The bootstrap is interruptible -- a Ctrl-C mid-populate leaves `.deft-cache/` in a partial state that the next run completes idempotently.
+- **Gitignore default.** `.deft-cache/` is gitignored by default. The bootstrap step (3) ensures the line is present. See [docs/privacy-nfr.md](./docs/privacy-nfr.md) for the privacy contract that motivates the default.
+- **Opt-in commit-cache contract.** Consumers who want to commit the cache for shared-cache scenarios MUST manually edit `.gitignore` to comment out the `.deft-cache/` line. Deft tooling will not perform this edit automatically -- the manual step is the deliberate-action gate. See `NFR-2` in [docs/privacy-nfr.md](./docs/privacy-nfr.md).
+- **Quarantine on the cache write path.** Cached issue bodies are passed through `quarantine_body` (Story 1) before being written to `.deft-cache/issues/<owner>-<repo>/<N>.md`. Headings whose text matches imperative tokens (`STEP`, `TASK:`, `IMPORTANT:`, etc.) are wrapped in fenced code blocks with the `quarantined` info string so downstream LLM consumers can treat the enclosed bytes as untrusted user input. See [docs/quarantine-spec.md](./docs/quarantine-spec.md) for the full algorithm + escape-hatch overrides.
+- **Private-repo body content.** Bodies from private repos are stored verbatim on the local filesystem under `.deft-cache/`. The framework never transmits cache contents externally. Operators in regulated environments should review NFR-3, NFR-4, NFR-5 in `docs/privacy-nfr.md`.
+
+### Rollback
+
+The entire triage v1 opt-in is reversible:
+
+```bash
+rm -rf .deft-cache/
+# remove the `.deft-cache/` line from .gitignore
+rm -rf vbrief/.eval/candidates.jsonl
+```
+
+This returns the project to its pre-bootstrap state. Existing scope vBRIEFs in `vbrief/proposed/` / `vbrief/pending/` / `vbrief/active/` are untouched -- the audit log only tracks decisions, not the vBRIEFs themselves.
+
+### References
+
+- [`docs/quarantine-spec.md`](./docs/quarantine-spec.md) -- formal spec for the #583 injection-quarantine algorithm consumed by Story 1's cache writer.
+- [`docs/privacy-nfr.md`](./docs/privacy-nfr.md) -- privacy contract for `.deft-cache/` (gitignore default, opt-in commit path, private-repo body treatment).
+- [#845](https://github.com/deftai/directive/issues/845) -- pre-ingest triage workflow umbrella.
+- [#583](https://github.com/deftai/directive/issues/583) -- original injection-quarantine specification.
+
+---
+
 ## From pre-#768 AGENTS.md → managed-section AGENTS.md
 
 - **Applies when:** `./AGENTS.md` exists at your project root AND does **not** contain the `<!-- deft:managed-section v1 -->` and `<!-- /deft:managed-section -->` sentinel markers. This is the canonical pre-#768 state -- the file pre-dates the Deft-managed-section contract added in v0.20.0 (#768) -- and is reported as `agents-md=missing` by `deft/run gate`. (Distinct from `agents-md=absent`, which means no `AGENTS.md` exists at all.)
