@@ -372,4 +372,11 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#796** -- Review-cycle dual-source fetch can miss late-arriving bot reviews -- `[completed]`
 - **#800** -- swarm SKILL: prohibit `git checkout` in a worktree another agent owns (post-merge cleanup overreach) -- `[completed]`
 - **#814** -- scripts/preflight_branch.py crashes with UnicodeEncodeError on Windows (cp1252) -- blocks every commit -- `[completed]`
+- **#845** -- feat(triage,cache,refinement): pre-ingest triage workflow with sidecar issue cache -- `[completed]`
+- **#845** -- feat(scripts,tasks): triage action commands (accept/reject/defer/needs-ac/mark-duplicate/status/reset/history) -- `[completed]`
+- **#845** -- feat(scripts,tasks,docs): triage bootstrap + UPGRADING.md + parent Taskfile wiring + quarantine spec + privacy NFR -- `[completed]`
+- **#845** -- feat(scripts,tasks): triage bulk ops + pre-swarm freshness gate -- `[completed]`
+- **#845** -- feat(scripts,tasks): triage cache infra + #583 quarantine on cache path -- `[completed]`
+- **#845** -- feat(scripts,vbrief/schemas): triage candidates.jsonl audit log + JSON schema -- `[completed]`
+- **#845** -- feat(skills): extend deft-directive-refinement with Phase 0 (cache + triage) -- `[completed]`
 
