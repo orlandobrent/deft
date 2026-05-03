@@ -8,7 +8,7 @@
   "plan": {
     "id": "845-story-2-triage-candidates-audit-log",
     "title": "feat(scripts,vbrief/schemas): triage candidates.jsonl audit log + JSON schema",
-    "status": "running",
+    "status": "completed",
     "planRef": "#845",
     "narratives": {
       "Problem": "Triage decisions need a reversible audit trail. Without it, `task triage:reset <N>` and `task triage:history <N>` (Story 3) cannot be implemented. Sidecar JSONL chosen over vBRIEF schema extension to decouple from ADR-001 outcome.",
@@ -47,7 +47,7 @@
     ],
     "metadata": {
       "x-tracking": {
-        "epic_vbrief": "proposed/2026-05-03-845-pre-ingest-triage-workflow-epic.vbrief.json",
+        "epic_vbrief": "completed/2026-05-03-845-pre-ingest-triage-workflow-epic.vbrief.json",
         "parent_issue": "#845",
         "agent": "A2",
         "wave": 1,
@@ -76,10 +76,11 @@
         "title": "Issue #845 (parent epic)"
       },
       {
-        "uri": "proposed/2026-05-03-845-pre-ingest-triage-workflow-epic.vbrief.json",
+        "uri": "completed/2026-05-03-845-pre-ingest-triage-workflow-epic.vbrief.json",
         "type": "x-vbrief/related-plan",
         "title": "Epic vBRIEF for #845 (related-plan; planRef captures parent semantic)"
       }
-    ]
+    ],
+    "updated": "2026-05-03T20:47:56Z"
   }
 }

@@ -8,7 +8,7 @@
   "plan": {
     "id": "845-story-4-triage-bulk-and-freshness",
     "title": "feat(scripts,tasks): triage bulk ops + pre-swarm freshness gate",
-    "status": "running",
+    "status": "completed",
     "planRef": "#845",
     "narratives": {
       "Problem": "Per-issue triage is too slow for ~200-issue corpora. Need bulk ops with filter flags. Separately, swarm Phase 0 currently reads `vbrief/active/` without reconciling against upstream — drift can sneak in. Need a pre-swarm freshness gate.",
@@ -47,11 +47,13 @@
     ],
     "metadata": {
       "x-tracking": {
-        "epic_vbrief": "proposed/2026-05-03-845-pre-ingest-triage-workflow-epic.vbrief.json",
+        "epic_vbrief": "completed/2026-05-03-845-pre-ingest-triage-workflow-epic.vbrief.json",
         "parent_issue": "#845",
         "agent": "A4",
         "wave": 3,
-        "depends_on_stories": ["Story 3 (actions)"],
+        "depends_on_stories": [
+          "Story 3 (actions)"
+        ],
         "files_owned": [
           "scripts/triage_bulk.py",
           "scripts/triage_refresh.py",
@@ -82,10 +84,11 @@
         "title": "Issue #868: lock-comment protocol (consumes this story's freshness primitive)"
       },
       {
-        "uri": "proposed/2026-05-03-845-pre-ingest-triage-workflow-epic.vbrief.json",
+        "uri": "completed/2026-05-03-845-pre-ingest-triage-workflow-epic.vbrief.json",
         "type": "x-vbrief/related-plan",
         "title": "Epic vBRIEF for #845 (related-plan; planRef captures parent semantic)"
       }
-    ]
+    ],
+    "updated": "2026-05-03T20:47:54Z"
   }
 }
