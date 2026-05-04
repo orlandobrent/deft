@@ -19,6 +19,20 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 ! This skill requires **GitHub** as the SCM platform and the **GitHub CLI (`gh`)** to be installed and authenticated. Issue fetching, PR creation, and post-merge verification all depend on `gh`.
 
+## Branch-Protection Policy Guard
+
+! Before any state mutation (creating worktrees, dispatching sub-agents, opening PRs), run the skill-level branch-policy guard documented in `scripts/policy.py` / `scripts/preflight_branch.py` (#746 / #747). Halt with the actionable disclosure message when the project's `plan.policy.allowDirectCommitsToMaster` is unresolvable AND `DEFT_ALLOW_DEFAULT_BRANCH_COMMIT` is unset:
+
+```
+uv run python scripts/preflight_branch.py --project-root . --quiet || exit 1
+```
+
+or invoke `task verify:branch`. The swarm skill creates branches per agent so the guard is mostly informational here, but a malformed PROJECT-DEFINITION (missing `plan.policy` block AND no legacy narrative) is a fail-closed signal worth surfacing before the swarm spawns N agents.
+
+## Deterministic Questions Contract
+
+! Every numbered-menu prompt rendered in this skill (Phase 0 Step 0/5 source/approval gates, Phase 1 Step 3 file-overlap audit gate, Phase 5->6 ready-to-merge gate) MUST follow [`../../contracts/deterministic-questions.md`](../../contracts/deterministic-questions.md): the final two numbered options MUST be `Discuss` and `Back`, in that order. The Discuss-pause semantic is documented verbatim there -- on `Discuss` selection the agent MUST halt the in-progress sequence immediately, prompt `What would you like to discuss?`, and resume only on an explicit user signal. Implicit resumption is forbidden.
+
 ## When to Use
 
 - User says "run agents", "parallel agents", "swarm", or "launch N agents on stories"
@@ -69,10 +83,12 @@ Ask the user: **"Are work items already in `vbrief/active/` as vBRIEFs, or shoul
 ### Step 1: Read Project State
 
 - ! Scan `vbrief/active/` for all story-level vBRIEFs (files matching `*.vbrief.json`)
+- ! For each candidate vBRIEF, MUST run `task vbrief:preflight -- <path>` (the structural intent gate, #810; wraps `scripts/preflight_implementation.py` so the same invocation works whether deft is the project root or installed as a `deft/` subdirectory) to validate eligibility before any allocation work. Skip any vBRIEF that exits non-zero -- the helper's stderr message is the actionable redirect (`task vbrief:activate <path>`). Surface the exit message in the Phase 0 Step 4 analysis so the user can route the lifecycle move; do NOT attempt to allocate, dispatch, or implement against a vBRIEF that fails the preflight.
 - ! Read each vBRIEF's `plan.title`, `plan.status`, `plan.items`, `references`, and `planRef` (for epic linkage)
 - ! Read `vbrief/PROJECT-DEFINITION.vbrief.json` for project-wide context (narratives, scope registry)
 - ! Cross-reference: every candidate vBRIEF should have acceptance criteria in its `plan.items`
 - ! Determine the base branch: ask the user which branch to target for worktree creation, PR targets, and rebase cascade (default: `master`). Record this as the **configured base branch** for all subsequent phases.
+- ⊗ Spawn an implementation agent (via `start_agent`, `oz agent run`, Warp tab dispatch, or any other path) for a vBRIEF that has not passed `task vbrief:preflight` (which wraps `scripts/preflight_implementation.py`) -- the gate is the only authorization signal; affirmative continuation phrases and workflow-shape vocabulary are NOT (#810).
 
 ### Step 2: Surface Blockers
 
@@ -95,6 +111,7 @@ Ask the user: **"Are work items already in `vbrief/active/` as vBRIEFs, or shoul
 ! Present a summary to the user containing:
 
 - **Candidate vBRIEFs**: story-level vBRIEFs eligible for assignment (with titles, statuses, and origin references)
+- **Preflight rejections (#810)**: any vBRIEFs that failed `task vbrief:preflight` (wraps `scripts/preflight_implementation.py`) in Step 1 -- include the file path AND the helper's exit message verbatim so the user can route the appropriate `task vbrief:activate <path>` move. These vBRIEFs MUST NOT be allocated until they pass the preflight on a re-run.
 - **Blockers found**: blocked vBRIEFs, unresolved dependencies, items requiring design decisions
 - **Incomplete vBRIEFs**: stories with missing or empty acceptance criteria
 - **Allocation plan**: which agent gets which vBRIEF(s), with reasoning for batching decisions
@@ -310,6 +327,14 @@ All PRs meet ALL of:
    - `task check` passed on the branch
    - CHANGELOG.md entry present under `[Unreleased]`
    - Explicit user approval received for this merge cascade
+
+   ! **Programmatic gate:** Before each `gh pr merge` call, the monitor MUST run `task pr:merge-ready -- <N>` (script: `scripts/pr_merge_readiness.py`) and abort the cascade on non-zero exit. The Taskfile target parses the Greptile rolling-summary comment **body** (confidence, P0 / P1 badge counts, errored sentinel, HEAD-SHA freshness) -- not the GitHub CheckRun status. The CheckRun goes green when Greptile finishes its review pass, irrespective of findings; relying on it alone is the SUCCESS-with-findings blind spot that started the PR #652 incident merge cascade against `Confidence: 3/5 + 1×P1 + 2×P2`.
+
+   ! **Atomic gate (freshness window):** The monitor MUST invoke `task pr:merge-ready -- <N>` and `gh pr merge <N>` in the same shell call (e.g. `task pr:merge-ready -- <N> && gh pr merge <N> --squash --delete-branch --admin`) so no time elapses between verdict and merge. A readiness check more than ~60 seconds stale is a Mode-1 false-positive risk: in the elapsed window an unrelated commit may land on master, auto-rebase trigger a fresh Greptile pass, and the new pass surface a P1 the cached verdict did not see. Re-invoking the gate is cheap (single `gh api` call); the shell-`&&` chain makes the freshness window structurally enforceable rather than prose-trust.
+
+   ⊗ Merge on the basis of a SUCCESS Greptile CheckRun alone. The CheckRun signals review **completion**, not review **approval**. Parse the comment body (confidence + P0/P1 count) via `task pr:merge-ready -- <N>` before merging.
+
+   ⊗ Run `task pr:merge-ready -- <N>` upstream of `gh pr merge <N>` (e.g. as a separate batched check during cascade prep, then later run `gh pr merge` after intervening rebase / sub-agent dispatch / user discussion). Stale verdicts risk Mode-1 false positives -- always chain readiness and merge in the same shell call.
 3. ! Wait for explicit user approval (`yes`, `confirmed`, `approve`) before proceeding to Phase 6 merge cascade
 4. ! If the user requests changes (e.g. different version bump, defer a PR), adjust and re-present
 
@@ -317,11 +342,43 @@ All PRs meet ALL of:
 
 ## Phase 6 — Close
 
+### Sub-Agent Role Separation (#727)
+
+! **Post-PR sub-agents are review-cycle agents (#727):** Sub-agents addressing review findings, waiting for re-review, and iterating to clean MUST embody `skills/deft-directive-review-cycle/SKILL.md` end-to-end as a single coherent role. Do NOT split the review-cycle into separate "poll" and "fix" agents -- pollers that spawn separate fix agents create cross-agent state-handoff hazards and double the chance of an agent exiting at the wrong lifecycle boundary.
+
+! **Post-PR monitoring runs in a fresh sub-agent (#727):** Post-PR monitoring (Greptile, CI checks, downloadCount drift, lifecycle events, etc.) MUST be done by spawning a fresh short-lived sub-agent via `start_agent`. The parent yields with no tool calls and waits for the sub-agent's messages -- this preserves conversation steerability so the user can interrupt or redirect while the watch is pending. The only Warp runtime surface with a true async callback channel is `start_agent` + messaging; every Taskfile / shell-sleep / `time.sleep` / synchronous tool-call alternative blocks the parent's turn for the duration of the watch.
+
+! **Canonical poller template (#727):** When delegating to a poller / review-cycle sub-agent, MUST use the canonical poller-prompt template at `templates/swarm-greptile-poller-prompt.md` with placeholders (`{pr_number}`, `{repo}`, `{poll_interval_seconds}`, `{poll_cap_minutes}`, `{parent_agent_id}`) filled in. Do NOT hand-author per-watch prompts -- the template encodes parsing fixes (markdown-link `Last reviewed commit:` regex, badge-based / negation-aware P0/P1 detection) that hand-authored variants have repeatedly missed (Agent D, post-#721 swarm; #727 comment 2).
+
+! **Destructive commands run alone (#727):** Sub-agent prompts MUST instruct the agent to run destructive commands (`rm`, `Remove-Item`, `del`, `git clean`, etc.) in their OWN shell call, never chained with non-destructive commands. Chaining poisons Warp's `is_risky` classification on the entire pipeline and forces manual approval on every otherwise-safe operation -- a multi-commit branch hits the user N times per agent.
+
+! **Commit-message temp file is leave-alone (#727):** When using the canonical PowerShell UTF-8-safe commit-message pattern (`create_file <tmp>` -> `git commit -F <tmp>`), MUST NOT clean up the temp file in the same shell call. Leave it orphaned -- worktree teardown or `git clean -fd` reclaims it. The two-step value (separate cleanup) is not worth the per-commit approval prompt the chained `rm` triggers.
+
+⊗ Run a poll loop in the parent's own turn (via `task`, shell sleep, `time.sleep`, or any synchronous tool call). The conversation must remain user-steerable while watches are pending.
+
+⊗ Bundle "watch for Greptile" / "monitor CI" instructions into an implementation agent's `start_agent` prompt -- implementation agents exit at PR-open via the `succeeded` lifecycle, so any post-exit monitoring instruction is unreachable.
+
+⊗ Spawn a "pure poller" sub-agent for a PR that has likely findings. Pure pollers are appropriate ONLY when no fixes are expected (CI watch on known-good HEAD, post-merge state checks, lifecycle observers). Default for post-PR work is review-cycle, NOT poller.
+
+⊗ Chain `rm` (or any destructive command) with `git commit` / `git push` / any non-destructive command in a single shell pipeline.
+
 ### Step 1: Merge
 
 ! **Per-PR sub-agent identity gate:** Before acting on any PR (merge, force-push, status check), query the specific sub-agent responsible for that PR for live status. Do not infer a PR's status from a different agent's tab, from message timing, or from the absence of recent commits. If the responsible agent is unreachable, verify PR state directly via `gh pr view <number>` and `gh pr checks <number>` before proceeding.
 
 ! **Idempotent pre-check pattern:** Before each action in the merge cascade, verify the current PR/branch state to ensure the action is still needed and safe to execute. Check: is this PR already merged (`gh pr view <number> --json state --jq .state`)? Is this branch already rebased onto the latest master? Has this issue already been closed? This makes recovery re-runs safe — a crash mid-cascade can resume from any point without duplicate actions or errors.
+
+! **Pre-merge protected-issue link inspection (Layer 3, #701):** Before any `gh pr merge` call where a referenced issue MUST remain OPEN (umbrella, anchor, follow-up tracker), inspect GitHub's persistent linked-issue list:
+
+```bash
+gh pr view <N> --repo <owner/repo> --json closingIssuesReferences --jq '.closingIssuesReferences[].number'
+```
+
+The optional `task pr:check-protected-issues -- <pr-number> --protected <N1,N2,...>` Taskfile target (`tasks/pr.yml`) wraps this inspection and exits non-zero if any protected issue is GitHub-side linked.
+
+! **Layer 0 (prevention) cross-reference (#737):** before reaching this Layer 3 recovery surface, the operator should already have run `task pr:check-closing-keywords -- --pr <N>` per `skills/deft-directive-pre-pr/SKILL.md` Phase 4 (Diff). Layer 0 scans the PR body + every commit message for closing-keyword tokens in negation / quotation / example / code-block contexts and refuses to push when findings surface; Layer 3 (this rule) is the persistent-link recovery for cases where Layer 0 was bypassed OR the link was attached via the Development sidebar. The two layers complement each other -- Layer 0 prevents the false-positive from being authored, Layer 3 catches the durable-link case Layer 0 cannot see.
+
+If any protected (umbrella / staying-OPEN) issue number appears in the output, the link is persistent in GitHub's database from a prior PR body revision (or a manual sidebar attachment) and survives subsequent body edits; on squash merge, GitHub will close the issue regardless of the current PR body, commit messages, or explicit `--subject` / `--body-file` overrides. The merger MUST manually unlink via the PR's Development sidebar panel (web UI -> PR -> right-side Development section -> X next to the linked issue) before merging. The `gh` CLI does not expose a direct unlink mutation; the GraphQL surface (`disconnectPullRequestFromIssue` and friends) shifts over time -- the web UI is the reliable path. See `meta/lessons.md` `## GitHub Closing-Keyword False-Positive Layer 3` for the incident history (PR #700 closed #233; PR #401 closed #642).
 
 ! **Merge authority:** Monitor proposes merge order and executes merges; user approves before the first merge. Do not merge without explicit user approval.
 
@@ -369,6 +426,19 @@ Retry ONCE via an `@greptileai review` comment with a 10-minute cap. If the retr
 - ! Use descriptive squash subject: `type(scope): description (#issues)`
 - ! After each merge, rebase remaining PRs onto the updated configured base branch before merging the next
 
+! **Post-merge protected-issue reopen sweep (Layer 3, #701):** After every squash-merge of a PR that referenced any umbrella / staying-OPEN issue (`Refs #N` with N a protected issue), verify each protected issue's post-merge state and reopen on regression:
+
+```bash
+for n in <protected-issue-numbers>; do
+  state=$(gh issue view "$n" --json state --jq .state)
+  if [ "$state" != "OPEN" ]; then
+    gh issue reopen "$n" --comment "Reopened: closing-keyword Layer 3 false-positive on squash merge of PR #<N>; issue is umbrella for ongoing work. See #701."
+  fi
+done
+```
+
+This is defense in depth -- run it even when the pre-merge inspection above passed, because a sidebar-attached link not visible to a body scan, or a missed protected issue in the protected-issue list, can still slip through. The reopen comment MUST cite #701 and the PR that triggered the false-positive so future operators tracing the closed-then-reopened churn can find the root cause.
+
 ### Step 2: Close Issues and Update Origins
 
 - ! Close resolved issues with a comment referencing the PR
@@ -380,7 +450,10 @@ Retry ONCE via an `@greptileai review` comment with a 10-minute cap. If the retr
 
 ### Step 3: Update Master
 
-- ! Pull merged changes: `git pull origin <configured-base-branch>`
+- ! Pull merged changes: `git pull origin <configured-base-branch>` from the merger's OWN worktree only.
+- ⊗ Run `git checkout` (any branch) in a worktree the merging agent does not own. Post-merge `git pull origin <base-branch>` semantics MUST be performed via `git fetch origin <base-branch>` from the merger's own worktree, OR by leaving the master update entirely to the human operator. NEVER touch HEAD of a sibling worktree another agent is using.
+- ! After a successful squash merge, the merger MAY remove its own worktree via `git worktree remove <path>` and delete the now-orphaned local feature branch via `git branch -D <branch>`. The merger MUST NOT alter any other worktree's HEAD or branch state.
+- ! **Worktree-boundary discipline (#800, companion to #727):** the `⊗` rule above extends the same boundary discipline as the `### Sub-Agent Role Separation (#727)` companion rules earlier in Phase 6 -- #727 codifies sub-agent spawn shape; #800 codifies worktree HEAD operations. Recurrence record: PR #797 merge session (2026-05-01) -- Agent B (the merger) ran `cd C:\repos\Deft\directive; git checkout master --quiet` against Agent A's sibling worktree after merging its own PR; HEAD detached on Agent A's branch and was retroactively restored. No work was lost (Agent A had pushed) but recovery was incident-driven, not preventative.
 
 ### Step 4: Clean Up
 
@@ -537,3 +610,7 @@ CONSTRAINTS:
 - ⊗ Loop the monitor indefinitely on the Greptile-service-errored state or time out silently at the poll cap -- detect the "Greptile encountered an error" comment body, retry once via `@greptileai review` with a 10-minute cap, and on second error escalate to the user with the three-way choice (wait / empty retrigger commit / documented override) per Phase 6 Step 1 (#526)
 - ⊗ Merge a rebased PR on the basis of the NEUTRAL CheckRun alone when the Greptile comment body is the error sentinel -- the service-side failure is indistinguishable from a clean pass at the CheckRun level, and any merge taken must be recorded as a documented override in the merge commit body (#526)
 - ⊗ Omit override-merged PRs from the Phase 6 Step 5 Slack release announcement -- any merge that used the Greptile-service-errored override path MUST be called out with its one-line rationale so downstream readers can trace the documented override trail (#526)
+- ⊗ Run `gh pr merge` on a PR that has any protected (umbrella / staying-OPEN) issue listed in `gh pr view <N> --json closingIssuesReferences` -- the link is persistent in GitHub's database from a prior PR body revision (or sidebar attachment) and survives body edits, commit-message edits, and explicit `--subject` / `--body-file` overrides; manually unlink via the PR's Development sidebar panel before merging (Layer 3, #701)
+- ⊗ Skip the post-merge protected-issue reopen sweep for any squash merge that referenced an umbrella / staying-OPEN issue -- defense in depth catches Layer 3 false-positives the pre-merge inspection missed (#701)
+- ⊗ Merge on the basis of a SUCCESS Greptile CheckRun alone -- the CheckRun signals review **completion**, not review **approval** (PR #652 incident; symmetric blind spot to the NEUTRAL CheckRun #526 case). Always run `task pr:merge-ready -- <N>` before `gh pr merge` to parse the comment body for confidence + P0 / P1 findings
+- ⊗ Run `git checkout` (any branch) -- including the brief `cd <other-worktree>; git checkout master --quiet` shape -- in a worktree the merging agent does not own during Phase 6 Step 3 (Update Master) or Step 4 (Clean Up). Post-merge state-update semantics MUST be performed via `git fetch origin <base-branch>` from the merger's OWN worktree, never by switching HEAD on a sibling worktree another agent is actively using. Recurrence record: PR #797 merge session (2026-05-01); companion to the Sub-Agent Role Separation rules (#727) -- this anti-pattern extends the same boundary discipline from sub-agent spawn shape to worktree HEAD operations (#800)

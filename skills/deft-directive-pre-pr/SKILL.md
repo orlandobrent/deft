@@ -16,6 +16,20 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 > **Formerly `deft-rwldl`** -- renamed to clearly communicate the skill's purpose (iterative pre-PR quality loop).
 
+## Branch-Protection Policy Guard
+
+! Before entering Phase 1 (Read), run the skill-level branch-policy guard documented in `scripts/policy.py` / `scripts/preflight_branch.py` (#746 / #747). Halt before any state mutation (the Phase 2 Write phase, the Phase 3 Lint phase that may touch files) when the policy is unresolvable AND no env-var bypass is active:
+
+```
+uv run python scripts/preflight_branch.py --project-root . --quiet || exit 1
+```
+
+or invoke `task verify:branch`. Pre-PR is the last gate before push, so a stale / unresolvable policy here is the highest-leverage place to catch the bug before it reaches the bot reviewer.
+
+## Deterministic Questions Contract
+
+! Every numbered-menu prompt rendered in this skill (per-finding decision menus in Phase 4 Diff, the Phase 5 Loop restart-vs-exit gate) MUST follow [`../../contracts/deterministic-questions.md`](../../contracts/deterministic-questions.md): the final two numbered options MUST be `Discuss` and `Back`, in that order. The Discuss-pause semantic is documented verbatim there -- implicit resumption is forbidden.
+
 ## When to Use
 
 - ! Before pushing a branch for PR creation
@@ -76,6 +90,7 @@ git --no-pager diff master
 - ! Check for scope creep -- changes that go beyond the spec task acceptance criteria
 - ! Verify no debug code, TODO comments, or temporary scaffolding remains
 - ! Confirm no unintended whitespace-only changes or formatting drift
+- ! **Run `task pr:check-closing-keywords -- --pr <N>` (or pass `--body-file` / `--commits-file` for offline checking) before opening the PR; refuse to push if findings (#737)**. The lint scans both the PR body AND every commit message for closing-keyword tokens (`close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved`) followed by `#\d+` in negation / quotation / example / code-block contexts. The recurrence record is the Layer 1 / Layer 2 / Layer 3 stack: #167 (post-merge close-verify), #697 / #698 (negation-context substring match), #401 / #700 (persistent `closingIssuesReferences` link), #735 (squash body containing `DOES NOT CLOSE #734` auto-closed #734). When the lint surfaces a known-safe occurrence (e.g. test fixtures that legitimately exercise the trigger token), pass `--allow-known-false-positives <issue-numbers>` to suppress -- DO NOT silently delete the lint invocation
 - ~ Verify the diff tells a coherent story -- a reviewer reading it top-to-bottom should understand the change
 
 ### Phase 5 -- Loop
@@ -103,3 +118,4 @@ After exiting:
 - ⊗ Make out-of-scope fixes during Write -- this introduces scope creep that Diff will flag, forcing another iteration
 - ⊗ Ignore the iteration count -- more than 3 iterations usually indicates oscillating fixes or an unclear spec task
 - ⊗ Add a prohibition (`!` or `⊗`) without scanning the same file for conflicting softer-strength rules (`~`, `≉`) that reference the same term
+- ⊗ Skip `task pr:check-closing-keywords` (#737) before pushing a PR. The negation-context substring match is the Layer 0 (prevention) gate that prevents the recurring auto-close of umbrella / staying-OPEN issues observed in #697 (closed #642), #401 (closed #642), #700 (closed #233), and #735 (closed #734) -- each incident required manual reopen and downstream cleanup. The lint's three-state exit (0 clean / 1 hits found / 2 config error) MUST be treated as a hard refusal: rewrite the PR body / commit messages until clean, OR pass `--allow-known-false-positives` ONLY for legitimately-quoted occurrences (test fixtures, documentation that discusses the trigger token literally). See `skills/deft-directive-swarm/SKILL.md` Phase 6 Step 1 for the corresponding Layer 3 (recovery) `pr:check-protected-issues` rule (#701)

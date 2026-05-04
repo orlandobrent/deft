@@ -19,6 +19,17 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 - User says "build this", "implement the spec", or "start building"
 - Resuming a partially-built project that has story vBRIEFs in `vbrief/active/`
 
+## Step 0 -- Implementation Preflight (#810)
+
+- ! Before any code-writing tool call -- the first scaffold edit, the first `task` invocation that mutates files, or any `start_agent` dispatch that will implement scope -- MUST run `task vbrief:preflight -- <path>` (the structural intent gate; wraps `scripts/preflight_implementation.py` so the same invocation works whether deft is the project root or installed as a `deft/` subdirectory).
+
+The gate exits 0 only when the candidate vBRIEF lives in `vbrief/active/` AND `plan.status == "running"`. Any other state (pending/, proposed/, completed/, active/-with-non-running-status, malformed JSON, missing keys) exits 1 with an actionable redirect to `task vbrief:activate <path>`.
+
+- ! A non-zero exit MUST halt the skill. Surface the helper's stderr message verbatim to the user; do NOT proceed to USER.md Gate, File Reading, or any later phase.
+- ! The ONLY supported way to satisfy this gate is `task vbrief:activate <path>` (idempotent; flips `plan.status` pending/approved -> running, atomically moves the vBRIEF to `vbrief/active/`, stamps `vBRIEFInfo.updated`). Manual lifecycle moves bypass the activation contract -- use the task.
+- ⊗ Infer implementation intent from lifecycle vocabulary ("do the full PR process", "start the work", "poller agents"), branching language, or workflow shape. Workflow-shape vocabulary is NOT authorization to spawn an implementation agent (#810 surfacing event).
+- ⊗ Skip this preflight because the user said "yes", "go", or "proceed" -- affirmative continuation phrases are NOT implementation authorization unless the prior turn explicitly proposed implementation. When intent is ambiguous, ask one targeted question before invoking the gate.
+
 ## Platform Detection
 
 ! Before resolving any config paths, detect the host OS from your environment context:
@@ -66,7 +77,48 @@ A project is **pre-cutover** if ANY of the following are true:
 
 - ! If USER.md is not found: inform the user and redirect to `deft-directive-setup`
   Phase 1 before continuing -- do not proceed without user preferences
-- ! Once USER.md exists, continue with File Reading below
+- ! Once USER.md exists, continue with the Cost Phase Gate below
+
+## Cost Phase Gate (#739)
+
+! Before proceeding to File Reading, verify the project has gone through the
+pre-build cost & budget transparency phase from `skills/deft-directive-cost/SKILL.md`.
+This closes the adoption-blocker surfaced by issue #739 (refs #151 umbrella) where
+users finished the spec flow and stopped at build because deft offered no cost
+signal.
+
+### Detection
+
+- ! Check for `COST-ESTIMATE.md` in the project root.
+- ! Check that the file contains a recorded decision (the **Decision recorded**
+  block populated with one of: `build`, `rescope`, `no-build`, `skip`).
+- ! For `skip`, `rescope`, or `no-build` decisions: the **Reason** field MUST be
+  populated (one or two sentences in plain language). A skip with no reason
+  recorded is treated the same as no decision.
+
+### Action
+
+- ! If `COST-ESTIMATE.md` is missing OR the **Decision recorded** block is
+  unpopulated OR a `skip`/`rescope`/`no-build` decision has no reason recorded:
+  stop immediately and redirect the user:
+
+  > "This project has not gone through the pre-build cost & budget transparency
+  > phase. Run `skills/deft-directive-cost/SKILL.md` to produce a plain-English
+  > `COST-ESTIMATE.md`, then re-run the build skill once the user has chosen
+  > build / rescope / no-build / skip(+reason)."
+
+- ! On a `build` or `skip` decision: continue with File Reading below.
+- ! On a `rescope` decision: stop and redirect the user back to spec edits
+  (chain to `skills/deft-directive-refinement/SKILL.md` to pull spec scope
+  back, or the interview), then re-run `skills/deft-directive-cost/SKILL.md`
+  before re-attempting build.
+- ! On a `no-build` decision: stop and exit; do NOT proceed to File Reading.
+  The user has explicitly stopped the project at the cost phase.
+- ⊗ Proceed to File Reading or any subsequent phase when `COST-ESTIMATE.md` is
+  missing, when the decision is unpopulated, or when a skip / rescope / no-build
+  decision has no reason recorded.
+- ⊗ Treat a `rescope` or `no-build` decision as if it were a `build` -- the
+  build skill MUST honor the recorded decision.
 
 ## File Reading
 
@@ -212,6 +264,8 @@ feat(phase-2): add REST API endpoints with integration tests
 - ⊗ Move to next phase before current passes checks
 - ⊗ Make commits without running `task check`
 - ⊗ Proceed without USER.md -- always run the USER.md Gate first
+- ⊗ Spawn an implementation agent or invoke a code-writing tool against a vBRIEF that has not passed `task vbrief:preflight` (which wraps `scripts/preflight_implementation.py`) -- always run the Step 0 Implementation Preflight (#810) first; satisfy via `task vbrief:activate <path>`
+- ⊗ Proceed without `COST-ESTIMATE.md` and a recorded build / rescope / no-build / skip(+reason) decision -- always run the Cost Phase Gate (#739) first
 - ⊗ Proceed with implementation when the build or test toolchain is unavailable -- always run the Toolchain Gate (Step 2) first
 - ⊗ Proceed to next task or phase without tests passing -- testing is a hard gate, not a cleanup step
 - ⊗ Skip the Change Lifecycle Gate because the user said "proceed" -- broad approval does not satisfy the confirmation gate

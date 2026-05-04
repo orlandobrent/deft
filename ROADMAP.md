@@ -7,11 +7,18 @@
 
 ## Phase 2
 
+Near-up structural priority -- post-cutover stabilization, structural unblockers (items gating many others), and cross-cutting items whose effect spans multiple skills, strategies, or files.
+
 - **#624** -- feat(swarm): encode writes-single-threaded principle and named manager-child anti-patterns in deft-swarm
+- **#627** -- feat(strategies): add strategies/delegate.md -- controlled delegation framework for agent-driven implementation
 - **#628** -- chore(sync): complete Phase 6c LegacyArtifacts review for v0.20.0 self-migration (120 sections deferred)
 - **#629** -- chore(conventions): document migration-artifact exclusion pattern for consumer content-linting tests
 - **#630** -- migrator: auto-invoke render tasks at end of task migrate:vbrief
-- **#642** -- tracking: framework maintainability, rule ownership, and determinism codification (PR #401)
+- **#635** -- Events: behavioral wiring (3 items: session interrupt/resume pair, plan:approved, legacy:detected)
+- **#635** -- Events: detection-bound wiring (5 events with existing detectors)
+- **#635** -- Rule Ownership Map: data file + lint enforcement (replaces REFERENCES.md prose section)
+- **#481** -- feat(patterns): add patterns/ directory and patterns/llm-app.md for LLM application standards
+- **#762** -- feat(vbrief): centralize phase taxonomy in PROJECT-DEFINITION.vbrief.json; renderer reads from there
 
 ## Phase 3 -- Documentation & Content Fixes
 
@@ -19,15 +26,14 @@ Quick doc/content fixes that don't require code changes.
 
 ### Content & Doc Fixes
 
-- **#103** -- Standalone brownfield/map analysis without requiring interview (allow `/deft:run:map` as independent entry point)
 - **#112** -- External “Deft Directive” PDF is premature -- describes post-Phase-1-3 state; defer distribution or add known-issues caveat; incorporate as `docs/getting-started.md` after Phases 1–3 ship
 - **#114** -- Document all global Warp rules used for deft development; migrate project-scope rules to `AGENTS.md`/`CONVENTIONS.md`; inventory remaining global-only rules in `CONTRIBUTING.md`
 - **#127** -- Improved support for Deft in existing repositories -- bootstrap should detect existing code and offer brownfield/map analysis path instead of greenfield-only questionnaire (related to #103; CLI integration in Phase 4 with #53)
 - **#136** -- Warp doesn't load deft's AGENTS.md by default
-- **#151** -- [Playtest Feedback] First-time non-technical user session report (19 issues + 4 strategic recommendations) -- umbrella issue; content/wording fixes here, strategic recommendations (cost interview, co-pilot, tiered UX, IP risk flagging) deferred to Phase 5 (xrefs #77, #84, #89, #136)
 - **#194** -- User-facing best practices guide (`docs/best-practices.md`) -- Directive contract hierarchy usage, Warp swarming patterns, and user-oriented skill documentation; in-repo successor to premature PDF guide (#112); depends on #147 and #188 for stable content (xrefs #112, #84, #114)
 - **#258** -- Inventory Warp Drive global rules used for deft development and document in `CONTRIBUTING.md` under a Warp-specific section (spinoff of #114; blocked on #89 positioning resolution; with #136)
 - **#82** -- Replacement strategies need accept-or-scrap exit when plan artifacts already exist (design: artifact awareness for chaining gate)
+- **#757** -- Update `strategies/interview.md` to probe language/tool choices through the contract lens -- when user picks a language, prompt to consider habit vs. suitability (#84 Phase 2)
 
 ### Philosophy & Positioning
 
@@ -35,13 +41,14 @@ Quick doc/content fixes that don't require code changes.
 
 - **#53** -- deft-install should bootstrap the current directory by default
 - **#77** -- Allow users to change technical rating (1/2/3) when starting a new project
+- **#761** -- docs: reframe install paths around webinstaller + npm/pip; demote Go binary to legacy
 
 ## Phase 4
 
 - **#128** -- CI vBRIEF schema sync check: fetch upstream `vbrief-core.schema.json` from `deftai/vBRIEF`, diff against vendored copy, fail on divergence (depends on #57)
-- **#163** -- Enforce USER.md gate in CLI path -- parity with agentic (skills) path
 - **#228** -- Bring run CLI into test coverage measurement -- refactor run/run.py to separate pure logic from terminal I/O, add unit tests, remove pyproject.toml omit entries (confirm #160 disposition before implementing)
-- **#74** -- Automate release process
+- **#759** -- Low-end LLM compatibility testing
+- **#760** -- Upgrade GitHub Actions to Node.js 24
 
 ## Phase 5 -- Package Distribution & Install UX
 
@@ -58,7 +65,7 @@ Larger feature work -- only after issues are resolved and content is stable.
 
 - **#100** -- [Compliance] Evidence collection automation hooks
 - **#12** -- Deft Bootstrap CLI with TUI (Typer + Textual, strategy-aware feature branching, agent config generation)
-- **#140** -- Automatically check for updates to cloned repos in a project -- detect stale cloned dependencies, notify user; part of future `deft doctor`/`deft update` (new CLI tooling)
+- **#233** -- More Determinism (remaining): Phase 0 spec scaffolding, task doctor, build:verify, change:archive, task ci:local, task release
 - **#46** -- Provide a way for users to update meta MD files (SOUL, MORALS, CODE-FIELD, USER, etc.)
 - **#52** -- Install into `.deft/` (hidden directory) instead of `deft/`
 - **#55** -- Register Deft commands as native agent slash commands (Claude Code, Copilot, Gemini, etc.) -- also absorbs slash-command registration scope from #54
@@ -68,6 +75,7 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#9** -- Issue tracking system integration (GitHub Issues, Jira, Asana -- optional, via MCP)
 - **#95** -- Compliance-aligned constitution templates + readiness scanners (SOC 2, ISO 27001, HIPAA, HiTrust); sub-issues #96–#100 cover config schema, control mapping registry, scoring, evidence gap analysis, and automation hooks
 - **#96** -- [Compliance] Config schema + compliance-aware constitution templates
+- **#758** -- **#84 Phase 3** -- Deft as teacher: teach strategy, lessons evolution
 
 ## Completed
 
@@ -147,11 +155,13 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#572** -- unify AUTO-GENERATED banner contract across migrate:vbrief stubs, spec:render, prd:render, roadmap:render -- `[completed]`
 - **#10** -- AGENTS.md setup improvement in docs -- `[completed]`
 - **#102** -- Codify Mermaid gist-rendering best practices -- RFC2119 MUST/SHOULD rules + box/end pattern in `languages/mermaid.md`, regression tests added -- `[completed]`
+- **#103** -- Standalone brownfield/map analysis without requiring interview (allow `/deft:run:map` as independent entry point) -- `[completed]`
 - **#104** -- Add Holzmann Power of 10 rules as opt-in coding standard (`coding/holzmann.md`) -- `[completed]`
 - **#105** -- Add build output validation directive for custom build scripts (`coding/build-output.md`, `coding/testing.md` Build Output Tests, `meta/lessons.md` incident entry) -- `[completed]`
 - **#106** -- Add toolchain/environment validation gate (coding/toolchain.md, deft-build Step 2, strategies/interview.md Acceptance Gate, meta/lessons.md incident entry) -- `[completed]`
 - **#107** -- Remove language defaults from USER.md -- `[completed]`
 - **#108** -- Ask deployment platform before language -- `[completed]`
+- **#115** -- Strengthen spec validation gate: add CI freshness check detecting stale `SPECIFICATION.md` (schema checks landed in PR #130 -- `spec_validate.py` now enforces vBRIEF v0.5 structure, status enum, legacy key detection) -- `[completed]`
 - **#116** -- Installer now creates all 6 skill thin pointers (deft-review-cycle, deft-roadmap-refresh, deft-swarm were missing) -- consistent ./deft/ paths, 3 new path consistency tests -- `[completed]`
 - **#117** -- Interview command loops in CLI -- `cmd_project` no longer re-runs questionnaire after `cmd_install` chains through `cmd_spec` -- `[completed]`
 - **#118** -- CLI code quality sweep -- `[completed]`
@@ -165,12 +175,16 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#137** -- README: move startup instructions higher, clarify installer location -- `[completed]`
 - **#138** -- Branching requirement too prescriptive -- context-aware solo-project qualifier -- `[completed]`
 - **#139** -- Agent skips vbrief source step -- ⊗ rule added to main.md and deft-build SKILL.md -- `[completed]`
+- **#140** -- Automatically check for updates to cloned repos in a project -- detect stale cloned dependencies, notify user; part of future `deft doctor`/`deft update` (new CLI tooling) -- `[completed]`
 - **#142** -- AGENTS.md onboarding gate blocks headless/cloud agents -- headless bypass added -- `[completed]`
 - **#144** -- vBRIEF wrong narrative type (object) + wrong child key (`items` vs `subItems`) -- fixed in agent guidance + spec_validate.py (with #126) -- `[completed]`
 - **#145** -- deft-review-cycle Greptile issue comment as primary review signal -- `[completed]`
 - **#146** -- skills/deft-sync/SKILL.md -- session-start framework sync: pre-flight, submodule update, vBRIEF validation, AGENTS.md freshness, new skills listing -- `[completed]`
 - **#147** -- Skills undiscoverable -- keyword->skill routing table added to AGENTS.md, 3 missing skills added to README -- `[completed]`
+- **#151** -- [Playtest Feedback] First-time non-technical user session report (19 issues + 4 strategic recommendations) -- umbrella issue; content/wording fixes here, strategic recommendations (cost interview, co-pilot, tiered UX, IP risk flagging) deferred to Phase 5 (xrefs #77, #84, #89, #136) -- `[completed]`
 - **#159** -- meta/philosophy.md -- deterministic > probabilistic design principle: definition, rationale, examples, Phase 5 scope note -- `[completed]`
+- **#160** -- Consider TypeScript instead of Python for `run` CLI -- architectural decision for CLI overhaul; decide before #11 and #12 (xrefs #118) -- `[completed]`
+- **#163** -- Enforce USER.md gate in CLI path -- parity with agentic (skills) path -- `[completed]`
 - **#166** -- Greptile Review status check blocks merge -- .greptile/config.json added with triggerOnUpdates, deft-review-cycle pre-flight check -- `[completed]`
 - **#167** -- PR merge hygiene: squash-merge issue-close verification -- PR template, deft-review-cycle Post-Merge Verification, AGENTS.md convention, meta/lessons.md root cause -- `[completed]`
 - **#168** -- deft-roadmap-refresh: ! rule confirming analysis comment post to user with issue number and link -- `[completed]`
@@ -262,6 +276,7 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#323** -- Story N: PROJECT-DEFINITION regeneration tool (task project:render) -- `[completed]`
 - **#324** -- Story O: Scope lifecycle task commands (task scope:*) -- `[completed]`
 - **#328** -- docs(deft-review-cycle): add Select-String fallback for oversized gh pr view output -- `[completed]`
+- **#33** -- When using Docker, smoke tests and e2e tests should validate Docker (docker:up, /healthz) -- `[completed]`
 - **#331** -- Story P: Ancillary doc updates for vBRIEF-centric model -- `[completed]`
 - **#332** -- Story Q: Go installer rewrite for deft-directive-* namespace -- `[completed]`
 - **#333** -- Story R: Validation tooling for vBRIEF-centric model -- `[completed]`
@@ -292,6 +307,7 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#7** -- Double prompting for languages during bootstrap -- `[completed]`
 - **#71** -- CHANGELOG catch-up -- `[completed]`
 - **#72** -- vBRIEF files still invalid on master -- five-component generation chain fix (CONVENTIONS.md root cause, validator, renderer, data migration, templates, 7 new tests, minimal CI) -- `[completed]`
+- **#74** -- Automate release process -- `[completed]`
 - **#79** -- deft-setup inference boundary guards -- `[completed]`
 - **#8** -- Don't commit until questionnaires finished -- `[completed]`
 - **#80** -- deft-setup project name fallback -- `[completed]`
@@ -310,4 +326,57 @@ Larger feature work -- only after issues are resolved and content is stable.
 - Single entry point Go installer -- `[completed]`
 - v0.6.0 CHANGELOG entry -- `[completed]`
 - v0.6.0 content (PRs #16–20) -- `[completed]`
+- **#622** -- feat(skills): communication bridge filter for deft-directive-review-cycle (intent-aware finding triage) -- `[completed]`
+- **#623** -- feat(context): name and encode Context Rot as a first-class concept with mitigations -- `[completed]`
+- **#636** -- installer: Go installer must read templates/agents-entry.md instead of hardcoded agentsMDEntry const (follow-up to #358 Option 3) -- `[completed]`
+- **#638** -- refinement: batch roadmap/project renders during multi-item triage instead of rerendering after every promotion -- `[completed]`
+- **#639** -- issue:ingest emits legacy v0.5 scope vBRIEFs and non-canonical references instead of canonical v0.6 -- `[completed]`
+- **#641** -- roadmap:render should sort Phase X sections numerically instead of preserving incidental file order -- `[completed]`
+- **#642** -- PR #401 trim tracker (hygiene merge anchor) -- `[completed]`
+- **#720** -- Deepen release_e2e rehearsal to a full task release + rollback mirror against an auto-created+destroyed temp repo -- `[completed]`
+- **#721** -- Resolve gh absolute path before subprocess.run in release scripts (Windows PATHEXT fix) -- `[completed]`
+- **#723** -- release: task build uses the actual release version (#723) -- `[completed]`
+- **#724** -- release: post-create verify-isDraft within 5s gate (#724) -- `[completed]`
+- **#725** -- Replace HEAD~1 reset + force-push with resolved-SHA forward-revert + normal push in scripts/release_rollback.py -- `[completed]`
+- **#704** -- README cleanup pass: factual errors, contradictions, and post-v0.20 staleness -- `[completed]`
+- **#727** -- Codify orchestrator role-separation + canonical poller-prompt template (per [AXIOM]) -- `[completed]`
+- **#731** -- release.py uses --notes-file for gh release create; fixes Windows ERROR_FILENAME_EXCED_RANGE blocking v0.21.0 (#731) -- `[completed]`
+- **#733** -- fix(.github/workflows/release.yml): release job auto-flips draft to public, bypassing #716 / Phase 5 user-only authority gate -- `[completed]`
+- **#734** -- feat(scripts,skills): vBRIEF-lifecycle reconciliation -- gate at task release Phase 1 + --apply-lifecycle-fixes on reconcile_issues.py -- `[completed]`
+- **#737** -- feat(scripts,tasks,skills): pre-PR closing-keyword negation-context lint to prevent Layer 0 false-positive auto-closes -- `[completed]`
+- **#741** -- fix(scripts/release.py): bump VERSION literal in run during release flow -- `[completed]`
+- **#730** -- Release CHANGELOG promotion accepts --summary blockquote (per [AXIOM] deterministic tier) -- `[completed]`
+- **#564** -- review-cycle: add stall detection rubric, escalate to user after threshold -- `[completed]`
+- **#565** -- spec-validate: v0.6 envelope message + wire VALID_VBRIEF_VERSIONS into check (P2 cleanup) -- `[completed]`
+- **#573** -- prd:render: task -- --force silently no-ops because go-task cache layer wins before script --force reaches the code -- `[completed]`
+- **#736** -- fix(tasks/core.yml): task build cross-platform artifact parity defect (Windows zip lacks excludes; vestigial-vs-internal purpose unclear) -- `[completed]`
+- **#738** -- feat(skills,interview): IP/legal risk flagging during research/interview phase for projects built on third-party IP -- `[completed]`
+- **#739** -- feat(skills,build): pre-build cost & budget transparency phase between SPECIFICATION approval and build kickoff -- `[completed]`
+- **#740** -- feat(skills,interview): plain-English UX pass — jargon, diff view, approval actions, button labels -- `[completed]`
+- **#746** -- feat(setup,skills,policy): no-feature-branch opt-out — interview disclosure, skill-level guard, and reversible reconfiguration -- `[completed]`
+- **#747** -- feat(scripts,tasks,hooks): detection-bound branch gate — verify:branch + git hooks reading PROJECT-DEFINITION policy field -- `[completed]`
+- **#754** -- fix(scripts/reconcile_issues.py, scripts/release.py): vBRIEF-lifecycle-sync gate false-positives on repos with >200 open issues -- `[completed]`
+- **#756** -- fix(scripts/reconcile_issues.py): apply_lifecycle_fixes does not dedupe vBRIEFs that reference multiple closed issues (spurious file-missing failures, misleading exit 1) -- `[completed]`
+- **#764** -- fix(scripts/reconcile_issues.py): bump ISSUE_FETCH_LIMIT 200 -> 1000 to clear truncation warning on 232-issue corpus -- `[completed]`
+- **#767** -- feat(framework,skills): add Discuss + Back as canonical numbered options in all deterministic-mode questions -- `[completed]`
+- **#768** -- Universal upgrade gate: stale-AGENTS.md consumers silently follow obsolete instructions -- `[completed]`
+- **#771** -- release-core: keep pyproject version truthful and define semver -> PEP 440 normalization -- `[completed]`
+- **#791** -- run.bat: resolve `run` against %~dp0 instead of CWD (Windows) -- `[completed]`
+- **#792** -- cmd_doctor: add uv check; replace pre-v0.20 expected_dirs with v0.20+ layout -- `[completed]`
+- **#793** -- Add task migrate:preflight; have migrate:vbrief self-invoke it -- `[completed]`
+- **#794** -- Document AGENTS.md managed-section legacy migration in UPGRADING.md -- `[completed]`
+- **#798** -- Detect PS 5.1 non-ASCII round-trip corruption in pre-commit + task check (deterministic tier per [AXIOM]) -- `[completed]`
+- **#801** -- Periodic remote-version probe: occasionally check upstream for new directive tags and prompt the user to update -- `[completed]`
+- **#810** -- Implementation-intent inference is non-deterministic: enforce action-verb gate via preflight + AGENTS.md anti-pattern -- `[completed]`
+- **#784** -- fix(scripts/release.py): pre-flight should verify release tag is available before state mutation -- `[completed]`
+- **#796** -- Review-cycle dual-source fetch can miss late-arriving bot reviews -- `[completed]`
+- **#800** -- swarm SKILL: prohibit `git checkout` in a worktree another agent owns (post-merge cleanup overreach) -- `[completed]`
+- **#814** -- scripts/preflight_branch.py crashes with UnicodeEncodeError on Windows (cp1252) -- blocks every commit -- `[completed]`
+- **#845** -- feat(triage,cache,refinement): pre-ingest triage workflow with sidecar issue cache -- `[completed]`
+- **#845** -- feat(scripts,tasks): triage action commands (accept/reject/defer/needs-ac/mark-duplicate/status/reset/history) -- `[completed]`
+- **#845** -- feat(scripts,tasks,docs): triage bootstrap + UPGRADING.md + parent Taskfile wiring + quarantine spec + privacy NFR -- `[completed]`
+- **#845** -- feat(scripts,tasks): triage bulk ops + pre-swarm freshness gate -- `[completed]`
+- **#845** -- feat(scripts,tasks): triage cache infra + #583 quarantine on cache path -- `[completed]`
+- **#845** -- feat(scripts,vbrief/schemas): triage candidates.jsonl audit log + JSON schema -- `[completed]`
+- **#845** -- feat(skills): extend deft-directive-refinement with Phase 0 (cache + triage) -- `[completed]`
 

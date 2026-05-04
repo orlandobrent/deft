@@ -2,7 +2,29 @@ version: '3'
 
 vars:
   PROJECT_NAME: deft
-  VERSION: 0.20.0
+  # VERSION is resolved dynamically (#723) so `task build` produces
+  # `dist/deft-{version}.{zip,tar.gz}` matching the in-flight release.
+  # Resolution priority (mirrors scripts/resolve_version.py):
+  #   1. $DEFT_RELEASE_VERSION env var (set by scripts/release.py:run_build
+  #      so `task release -- 0.21.0` builds dist/deft-0.21.0.zip).
+  #   2. `git describe --tags --abbrev=0` stripped of leading `v`.
+  #   3. `0.0.0-dev` fallback for fresh checkouts with no tags.
+  # The previous hard-coded literal (`VERSION: 0.20.0`) was the root cause
+  # of #723: every release after v0.20.0 produced a stale artifact name
+  # because nothing in the release pipeline updated the Taskfile literal.
+  # Inline POSIX sh (run by go-task's embedded mvdan/sh interpreter so the
+  # block is cross-platform on Windows / macOS / Linux without requiring
+  # uv/python at parse time -- the Python equivalent lives in
+  # scripts/resolve_version.py for Python callers + regression tests).
+  VERSION:
+    sh: |
+      if [ -n "$DEFT_RELEASE_VERSION" ]; then
+        printf '%s' "$DEFT_RELEASE_VERSION"
+      elif tag=$(git describe --tags --abbrev=0 2>/dev/null); then
+        printf '%s' "${tag#v}"
+      else
+        printf '0.0.0-dev'
+      fi
   # Each included sub-taskfile (tasks/*.yml) defines its own DEFT_ROOT as
   # `{{joinPath .TASKFILE_DIR ".."}}` so scripts can be dispatched via
   # `{{.DEFT_ROOT}}/scripts/...` on every platform (#566). `joinPath` is
@@ -77,6 +99,48 @@ includes:
   issue:
     taskfile: ./tasks/issue.yml
     optional: true
+  pr:
+    taskfile: ./tasks/pr.yml
+    optional: true
+  ci:
+    taskfile: ./tasks/ci.yml
+    optional: true
+  policy:
+    taskfile: ./tasks/policy.yml
+    optional: true
+  framework:
+    taskfile: ./tasks/framework.yml
+    optional: true
+  # Triage v1 fragment includes (#845 epic, Story 6 wiring).
+  #
+  # Four standalone fragments authored by stories A1, A3, A4, and A6
+  # respectively. Each is `optional: true` so the parent Taskfile parses
+  # cleanly during the rolling cascade -- earlier consumers of any single
+  # `task <namespace>:*` target still work even if a sibling fragment
+  # has not landed yet.
+  #
+  # Namespacing: go-task v3 prefixes inner task names with the include
+  # key (e.g. `triage-cache:cache` for inner task `cache` under key
+  # `triage-cache`). Two includes cannot share a single namespace key,
+  # so the four fragments use unique keys derived from the file basename.
+  # The user-facing `task triage:cache` / `task triage:bootstrap` /
+  # etc. forms are exposed via top-level alias tasks below.
+  #
+  # Cascade order (#845): A1 cache infra + #583 quarantine -> A2 audit
+  # log -> A3 actions -> A4 bulk + freshness -> A5 refinement Phase 0
+  # -> A6 bootstrap + this includes wiring + UPGRADING.md + docs (LAST).
+  triage-cache:
+    taskfile: ./tasks/triage-cache.yml
+    optional: true
+  triage-actions:
+    taskfile: ./tasks/triage-actions.yml
+    optional: true
+  triage-bulk:
+    taskfile: ./tasks/triage-bulk.yml
+    optional: true
+  triage-bootstrap:
+    taskfile: ./tasks/triage-bootstrap.yml
+    optional: true
 
 tasks:
   default:
@@ -95,6 +159,9 @@ tasks:
       - toolchain:check
       - verify:stubs
       - verify:links
+      - verify:rule-ownership
+      - verify:branch
+      - verify:encoding
       - vbrief:validate
     cmds:
       - echo "All checks passed"
@@ -138,3 +205,143 @@ tasks:
     desc: Show framework statistics (alias for core:stats)
     cmds:
       - task: core:stats
+
+  setup:
+    desc: "Idempotent local-dev setup: configure git hooks (#747). Sets core.hooksPath=.githooks so .githooks/pre-commit + .githooks/pre-push run."
+    dir: '{{.USER_WORKING_DIR}}'
+    cmds:
+      # Inline POSIX-sh under go-task's mvdan/sh interpreter -- cross-platform.
+      # `git config core.hooksPath .githooks` is itself idempotent, but we
+      # detect the no-op so the task prints a friendly message rather than
+      # silently re-asserting on every invocation.
+      - |
+        configured=$(git config --get core.hooksPath || true)
+        if [ "$configured" = ".githooks" ]; then
+          echo "✓ core.hooksPath already set to .githooks (no change)."
+        else
+          git config core.hooksPath .githooks
+          echo "✓ core.hooksPath set to .githooks (#747 branch gate active)."
+        fi
+      # #814: Detect a Python interpreter whose stdout defaults to a
+      # non-UTF-8 Windows code page (cp1252 / cp437). Informational only --
+      # the deft hook scripts themselves self-reconfigure to UTF-8 at
+      # main() entry, so this warning surfaces a fact about the user's
+      # environment, not a defect that blocks setup. We do NOT auto-set
+      # PYTHONIOENCODING because mutating the user's environment would
+      # surprise other tooling (out-of-scope per the issue body).
+      - |
+        python_bin="${DEFT_PYTHON:-}"
+        if [ -z "$python_bin" ]; then
+          if command -v python3 >/dev/null 2>&1; then
+            python_bin=python3
+          elif command -v python >/dev/null 2>&1; then
+            python_bin=python
+          fi
+        fi
+        if [ -n "$python_bin" ]; then
+          # NOTE: we explicitly unset PYTHONUTF8 / PYTHONIOENCODING in the
+          # subshell so the probe measures what Python would do under git's
+          # hook environment (which inherits the user's shell, NOT the
+          # Taskfile root env: block). Without the unset, the root-level
+          # `env: PYTHONUTF8: "1"` (#540) masks cp1252 here and the warning
+          # would never surface even when the user actually has the bug.
+          enc=$(unset PYTHONUTF8 PYTHONIOENCODING; "$python_bin" -c "import sys; print((sys.stdout.encoding or '').lower())" 2>/dev/null || true)
+          case "$enc" in
+            cp1252|cp437|charmap)
+              echo ""
+              echo "WARN: Detected Python stdout encoding '$enc' (Windows default). Deft hooks"
+              echo "print non-ASCII glyphs and may crash without UTF-8 stdout. Either:"
+              echo "  (a) set the user-environment variable PYTHONIOENCODING=utf-8 (one-time,"
+              echo "      via System Properties > Environment Variables), OR"
+              echo "  (b) add \$env:PYTHONIOENCODING='utf-8' to your PowerShell profile."
+              echo "The deft hook scripts also self-reconfigure as of #814, so this"
+              echo "warning is informational on current versions."
+              ;;
+          esac
+        fi
+
+  # Release pipeline tasks (#74 + #716 safety hardening, namespace flatten #718).
+  #
+  # Defined inline at the root Taskfile rather than via `includes: release: ./tasks/release.yml`
+  # because go-task concatenates the namespace key with each inner task name -- so an inner
+  # task named `release:` under namespace `release:` would install as `task release:release`,
+  # not `task release` (the documented invocation in skills/deft-directive-release/SKILL.md
+  # and CHANGELOG entries from #74/#716). See #718 for the full root-cause analysis.
+  #
+  # Sibling pattern: tasks/pr.yml uses inner task name `check-protected-issues` (no `pr:`
+  # repeat) so the include-namespace mechanism produces `pr:check-protected-issues`. The
+  # release pipeline cannot use that pattern because it needs BOTH a top-level `release`
+  # name AND `release:e2e` / `release:publish` / `release:rollback` sub-names.
+  #
+  # Per `conventions/task-caching.md` (#574): tasks that accept user-facing recovery flags
+  # via {{.CLI_ARGS}} (here: --dry-run / --skip-tag / --skip-release / --allow-dirty /
+  # --repo / --no-draft / --allow-low-downloads / --allow-data-loss / --force-strict-0 /
+  # --owner / --keep-repo) MUST NOT declare `sources:` / `generates:` -- the cached `cmds:`
+  # skip would silently discard the recovery flag.
+  #
+  # Path resolution uses `{{.TASKFILE_DIR}}/scripts/<script>.py` directly because these
+  # tasks live in the root Taskfile.yml where `{{.TASKFILE_DIR}}` already resolves to the
+  # deft/ root (no per-subfile DEFT_ROOT joinPath dance is needed -- see Taskfile.yml
+  # header comment for why `DEFT_ROOT` is intentionally absent at the root level).
+  #
+  # Companion scripts: scripts/release.py, scripts/release_publish.py,
+  #                    scripts/release_rollback.py, scripts/release_e2e.py
+  # Companion tests:   tests/cli/test_release.py,
+  #                    tests/cli/test_release_publish.py,
+  #                    tests/cli/test_release_rollback.py,
+  #                    tests/cli/test_release_e2e.py
+  # Refs #74, #233, #642, #635, #709, #710, #716, #718.
+  release:
+    desc: "Automate the v0.X.Y release flow (#74) -- task release -- <version> [--dry-run] [--skip-tag] [--skip-release] [--no-draft]"
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      PYTHONUTF8: "1"
+    cmds:
+      - uv run python "{{.TASKFILE_DIR}}/scripts/release.py" {{.CLI_ARGS}}
+
+  release:publish:
+    desc: "Flip a draft GitHub release to public (#716) -- task release:publish -- <version> [--dry-run] [--repo OWNER/REPO]"
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      PYTHONUTF8: "1"
+    cmds:
+      - uv run python "{{.TASKFILE_DIR}}/scripts/release_publish.py" {{.CLI_ARGS}}
+
+  release:rollback:
+    desc: "State-aware release unwind (#716) -- task release:rollback -- <version> [--dry-run] [--allow-low-downloads N] [--allow-data-loss] [--force-strict-0]"
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      PYTHONUTF8: "1"
+    cmds:
+      - uv run python "{{.TASKFILE_DIR}}/scripts/release_rollback.py" {{.CLI_ARGS}}
+
+  release:e2e:
+    desc: "End-to-end release rehearsal against an auto-created+destroyed temp repo (#716) -- task release:e2e [-- --dry-run] [--owner OWNER] [--keep-repo]"
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      PYTHONUTF8: "1"
+    cmds:
+      - uv run python "{{.TASKFILE_DIR}}/scripts/release_e2e.py" {{.CLI_ARGS}}
+
+  # ------------------------------------------------------------------
+  # Triage v1 user-facing alias tasks (#845).
+  #
+  # The four triage fragments are namespaced under their unique include
+  # keys (`triage-cache`, `triage-actions`, `triage-bulk`,
+  # `triage-bootstrap`). The aliases below provide the documented
+  # `task triage:<verb>` user-facing surface that vBRIEFs and UPGRADING.md
+  # describe. Each alias delegates to the underlying namespaced task and
+  # forwards `{{.CLI_ARGS}}` so flags (`--repo`, `--reason`, etc.) reach
+  # the script. Aliases are inline at the root Taskfile rather than in a
+  # separate fragment because they cross include namespaces and must
+  # exist regardless of which fragments are present (the underlying
+  # `task: <name>` reference is itself a no-op when the include is
+  # `optional: true` and absent, but tests pin the aliases so consumers
+  # see consistent help text).
+  # ------------------------------------------------------------------
+  triage:bootstrap:
+    desc: "Run the triage v1 idempotent installer (#845 Story 6)."
+    cmds:
+      - task: triage-bootstrap:bootstrap
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"

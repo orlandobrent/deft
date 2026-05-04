@@ -8,7 +8,109 @@ Legend (from RFC2119): !=MUST, ~=SHOULD, ≉=SHOULD NOT, ⊗=MUST NOT, ?=MAY.
 
 ---
 
+## Migration to triage v1
+
+- **Applies when:** any project on deft v0.24.0 or later that wants to opt in to the pre-ingest triage workflow (#845). Triage v1 is **purely additive** -- existing skills (`deft-directive-refinement`, `deft-directive-swarm`, `deft-directive-build`, etc.) keep working byte-identically when the triage surfaces are absent. Detection: run `task triage:bootstrap` and observe whether `.deft-cache/` exists at the project root. If not, you have not opted in yet.
+- **Safe to auto-run:** Yes. `task triage:bootstrap` is idempotent and reversible -- a second run is a no-op, and the entire opt-in can be undone by deleting `.deft-cache/` and removing the `.deft-cache/` line from `.gitignore`. The bootstrap performs five steps: (1) populate the local issue cache for all open upstream issues; (2) backfill `vbrief/.eval/candidates.jsonl` with `accepted` audit entries for items already in `vbrief/proposed/`, `vbrief/pending/`, or `vbrief/active/` (preserves audit trail; intentionally skips `vbrief/cancelled/` to avoid reanimating rejected items); (3) add `.deft-cache/` to `.gitignore` if absent; (4) install `gitcrawl` if missing (skipped if already on PATH); (5) print a recap of the actions taken.
+- **Restart required:** No. Triage v1 is a new opt-in surface; existing agent sessions continue to work without any awareness of the cache. Future sessions will see the new `task triage:*` targets in `task --list` once the parent `Taskfile.yml` `includes:` block resolves the four fragment files.
+- **Commands:**
+  - `task triage:bootstrap` (one-time install, ~5 min for ~200 open issues -- mostly the cache populate step). The `triage:bootstrap` colon-form is wired as a top-level alias by Story 6 and works immediately after this PR merges.
+  - The remaining commands ship as **namespaced** targets via the parent Taskfile `includes:` block. Use the `<namespace>:<task>` form against the include key:
+    - `task triage-cache:cache` / `task triage-cache:show <N>` (Story 1)
+    - `task triage-actions:accept <N>` / `task triage-actions:reject <N> -- --reason <r>` / `task triage-actions:defer <N>` / `task triage-actions:needs-ac <N>` / `task triage-actions:status <N>` / `task triage-actions:history <N>` (Story 3)
+    - `task triage-bulk:bulk-accept` / `task triage-bulk:bulk-reject` / `task triage-bulk:refresh-active` etc. with `--label` / `--author` / `--age-days` filters (Story 4)
+  - The shorthand `task triage:cache` / `task triage:accept <N>` / etc. forms are intentionally NOT wired in Story 6 because go-task v3 cannot share an `includes:` namespace key across multiple files; consolidating top-level aliases into a single `triage:*` surface is tracked as a follow-up cleanup PR after the four-fragment cascade has fully landed and the inner task names are stable on master. Use the namespaced forms above until that follow-up ships.
+
+### What changes for consumers
+
+- **Additive nature.** Nothing existing breaks. The refinement skill's Phase 0 (Story 5) auto-skips when the cache is empty, so a consumer who never runs `task triage:bootstrap` sees the same v0.24.0 refinement experience.
+- **Opt-in path is fast.** `task triage:bootstrap` finishes in ~5 minutes for a ~200-issue corpus. Larger corpora scale linearly with `gh issue list` throughput. The bootstrap is interruptible -- a Ctrl-C mid-populate leaves `.deft-cache/` in a partial state that the next run completes idempotently.
+- **Gitignore default.** `.deft-cache/` is gitignored by default. The bootstrap step (3) ensures the line is present. See [docs/privacy-nfr.md](./docs/privacy-nfr.md) for the privacy contract that motivates the default.
+- **Opt-in commit-cache contract.** Consumers who want to commit the cache for shared-cache scenarios MUST manually edit `.gitignore` to comment out the `.deft-cache/` line. Deft tooling will not perform this edit automatically -- the manual step is the deliberate-action gate. See `NFR-2` in [docs/privacy-nfr.md](./docs/privacy-nfr.md).
+- **Quarantine on the cache write path.** Cached issue bodies are passed through `quarantine_body` (Story 1) before being written to `.deft-cache/issues/<owner>-<repo>/<N>.md`. Headings whose text matches imperative tokens (`STEP`, `TASK:`, `IMPORTANT:`, etc.) are wrapped in fenced code blocks with the `quarantined` info string so downstream LLM consumers can treat the enclosed bytes as untrusted user input. See [docs/quarantine-spec.md](./docs/quarantine-spec.md) for the full algorithm + escape-hatch overrides.
+- **Private-repo body content.** Bodies from private repos are stored verbatim on the local filesystem under `.deft-cache/`. The framework never transmits cache contents externally. Operators in regulated environments should review NFR-3, NFR-4, NFR-5 in `docs/privacy-nfr.md`.
+
+### Rollback
+
+The entire triage v1 opt-in is reversible:
+
+```bash
+rm -rf .deft-cache/
+# remove the `.deft-cache/` line from .gitignore
+rm -rf vbrief/.eval/candidates.jsonl
+```
+
+This returns the project to its pre-bootstrap state. Existing scope vBRIEFs in `vbrief/proposed/` / `vbrief/pending/` / `vbrief/active/` are untouched -- the audit log only tracks decisions, not the vBRIEFs themselves.
+
+### References
+
+- [`docs/quarantine-spec.md`](./docs/quarantine-spec.md) -- formal spec for the #583 injection-quarantine algorithm consumed by Story 1's cache writer.
+- [`docs/privacy-nfr.md`](./docs/privacy-nfr.md) -- privacy contract for `.deft-cache/` (gitignore default, opt-in commit path, private-repo body treatment).
+- [#845](https://github.com/deftai/directive/issues/845) -- pre-ingest triage workflow umbrella.
+- [#583](https://github.com/deftai/directive/issues/583) -- original injection-quarantine specification.
+
+---
+
+## From pre-#768 AGENTS.md → managed-section AGENTS.md
+
+- **Applies when:** `./AGENTS.md` exists at your project root AND does **not** contain the `<!-- deft:managed-section v1 -->` and `<!-- /deft:managed-section -->` sentinel markers. This is the canonical pre-#768 state -- the file pre-dates the Deft-managed-section contract added in v0.20.0 (#768) -- and is reported as `agents-md=missing` by `deft/run gate`. (Distinct from `agents-md=absent`, which means no `AGENTS.md` exists at all.)
+- **Safe to auto-run:** Yes. `deft/run agents:refresh` performs a **one-time legacy migration**: your existing `AGENTS.md` content is preserved verbatim ABOVE the rendered managed-section block (separated by one blank line). The framework only ever owns the bytes between the two sentinel markers; content outside that bracketed region is never modified. Run `deft/run agents:refresh --dry-run` first to preview the planned change, or `deft/run agents:refresh --check` to interrogate the current state without writing.
+- **Restart required:** Yes -- after the managed section is appended, the agent's current session still holds the pre-#768 `AGENTS.md` in context. Start a new agent session so the refreshed `AGENTS.md` (Implementation Intent Gate, Branch Policy Disclosure, Pre-Cutover Check, etc.) is loaded from a clean context.
+- **Commands:**
+  - `python deft/run agents:refresh --dry-run` (preview; never writes)
+  - `python deft/run agents:refresh` (apply -- one-time append for state=`missing`, byte-replace for state=`stale`, no-op for state=`current`, fresh write for state=`absent`)
+  - `python deft/run upgrade` (records the framework version in `vbrief/.deft-version` AND chains into `agents:refresh` -- equivalent end state to running both above)
+
+### What `agents:refresh` does on a pre-#768 file
+
+The gate (`deft/run gate`) classifies every project's `AGENTS.md` into one of four states; pre-#768 files land in `missing`:
+
+- `current` -- markers present and bracketed bytes match the rendered template. No-op.
+- `stale` -- markers present but bracketed bytes have drifted from the rendered template. Byte-replace the bracketed region in place.
+- `missing` -- file exists but no markers (pre-#768 legacy file). **One-time append** of the rendered managed section, preserving existing content verbatim above the markers.
+- `absent` -- file does not exist. Create from the rendered template.
+
+### Long-term contract: sentinel-only rewrite
+
+After the one-time legacy migration, every subsequent `deft/run agents:refresh` against the same project follows a **sentinel-only-rewrite** contract: the framework reads only the bytes between `<!-- deft:managed-section v1 -->` and `<!-- /deft:managed-section -->`, replaces them in place when the rendered template drifts (`stale` state), and never touches content above or below those markers. Hand-authored notes, custom rules, project-specific gates, and any text that lived in your `AGENTS.md` before the one-time append survive every future framework upgrade verbatim.
+
+The contract is byte-stable by construction:
+
+- `agents:refresh --check` exits 0 only when the bracketed bytes match the rendered template byte-for-byte; this is the regression guard against silent drift.
+- The bracketed region is the SOLE byte sequence the framework owns. Edits inside the markers are not preserved across upgrades; edit the consumer-section above or below the markers instead.
+- The migration is idempotent: re-running `deft/run agents:refresh` against an already-migrated file is a no-op.
+
+### References
+
+- [`templates/agents-entry.md`](./templates/agents-entry.md) -- the canonical rendered managed-section template; this is the source of the bytes that `deft/run agents:refresh` writes between the sentinel markers.
+- [`QUICK-START.md`](./QUICK-START.md) Case G -- agent-prescriptive coverage of the same scenario for agents that read `QUICK-START.md` (rather than invoking `deft/run agents:refresh` directly).
+- [#768](https://github.com/deftai/directive/issues/768) -- the universal upgrade gate that introduced the managed-section markers and the `agents:refresh` reference implementation.
+
+---
+
 ## From any pre-v0.20 version → v0.20.0
+
+- **Applies when:** `deft/run gate` reports `precutover=SPECIFICATION.md,PROJECT.md` (or any subset thereof) AND/OR `agents-md=missing`. The presence of legacy `SPECIFICATION.md` / `PROJECT.md` without the `<!-- deft:deprecated-redirect -->` sentinel is the canonical pre-cutover signal.
+- **Safe to auto-run:** No -- `task migrate:vbrief` rewrites `SPECIFICATION.md` and `PROJECT.md` into deprecation-redirect stubs and creates lifecycle folders; the operator must review the dry-run output and acknowledge the rewrite. `--dry-run` is recommended on any non-trivial project before the live run.
+- **Restart required:** Yes -- the agent's current session still holds stale rules from the previous `AGENTS.md`. After cleanup commands complete, stop the session and start a fresh one so the rewritten `AGENTS.md` and v0.20 skills are loaded from a clean context.
+- **Commands:**
+  - `task migrate:vbrief --dry-run` (preview)
+  - `task migrate:vbrief` (apply)
+  - `deft/run upgrade` (writes `vbrief/.deft-version` AND now refreshes the AGENTS.md managed section in one step per #768)
+  - `deft/run agents:refresh` (idempotent; runs implicitly via `deft/run upgrade` -- only invoke directly if you skipped that step)
+  - `task roadmap:render` / `task project:render` / `task prd:render -- --force` (regenerate exports)
+  - `task check` (verify)
+
+### Remote probe (#801)
+
+- **Applies when:** the periodic remote-version probe (added in this section's source release) prints a `⚠ Upstream directive v<N> is available (you are on v<M>)` warn line below the existing recorded-vs-current banner, OR `task framework:check-updates` exits non-zero (status `BEHIND`).
+- **Safe to auto-run:** Yes for the probe itself (read-only `git ls-remote --tags --refs <upstream>`, never mutates project state, throttled 24h per tag, opt-out via `DEFT_NO_NETWORK=1`). The remediation -- pulling the upstream submodule -- is NOT auto-run; the operator decides when to update.
+- **Restart required:** No for the probe. Once you actually update the framework (refresh the `./deft` submodule), the standard "start a new agent session" rule from the recorded-vs-current upgrade flow applies.
+- **Commands:**
+  - `task framework:check-updates` (synchronous probe, exit 1 on BEHIND; pass `-- --force` to bypass the 24h throttle and `-- --json` for machine-parseable output)
+  - `git submodule update --remote --merge deft && git add deft && git commit -m "chore(deft): bump submodule"` (canonical update path -- mirrors `skills/deft-directive-sync/SKILL.md` Phase 2)
+  - `deft/run upgrade` (after the bump, to record the new framework version in `vbrief/.deft-version` and refresh the AGENTS.md managed section)
+  - `DEFT_NO_NETWORK=1 task <anything>` (CI / air-gapped opt-out: probe short-circuits before any subprocess call)
 
 **What changed:** Deft moved from a flat document model (`SPECIFICATION.md`, `PROJECT.md`, `ROADMAP.md` as authoritative) to a **vBRIEF-centric model** with lifecycle folders. All skills were renamed from `deft-*` to `deft-directive-*`.
 

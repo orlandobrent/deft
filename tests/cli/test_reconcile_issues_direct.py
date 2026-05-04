@@ -125,6 +125,24 @@ class TestFetchOpenIssues:
         assert result == payload
         assert "Warning" in capsys.readouterr().err
 
+    def test_issue_fetch_limit_floor(self):
+        """Regression guard (#764): ISSUE_FETCH_LIMIT must stay >=
+        DEFAULT_MAX_OPEN_ISSUES so `task issue:ingest --all` does not
+        silently truncate on repos with hundreds of open issues. The
+        deftai/directive repo crossed 200 open issues during the
+        2026-04-30 refinement cycle, which exposed that the prior 200
+        cap was lower than the documented `DEFAULT_MAX_OPEN_ISSUES`
+        ceiling. Pinning the floor to DEFAULT_MAX_OPEN_ISSUES couples
+        the two safety values so neither can drift below the other in
+        a future refactor.
+        """
+        assert (
+            reconcile.ISSUE_FETCH_LIMIT >= reconcile.DEFAULT_MAX_OPEN_ISSUES
+        ), (
+            "ISSUE_FETCH_LIMIT silently regressed below "
+            "DEFAULT_MAX_OPEN_ISSUES; bulk ingest will truncate."
+        )
+
 
 # ---------------------------------------------------------------------------
 # detect_repo
@@ -306,8 +324,10 @@ class TestMainCli:
     def test_fetch_failure_returns_1(self, tmp_path, monkeypatch):
         vbrief_dir = tmp_path / "vbrief"
         vbrief_dir.mkdir()
+        # #754: default path uses fetch_issue_states (inverted lookup).
         monkeypatch.setattr(
-            reconcile, "fetch_open_issues", lambda _r, cwd=None: None
+            reconcile, "fetch_issue_states",
+            lambda _r, _ids, cwd=None: None,
         )
         monkeypatch.setattr(
             sys, "argv",
@@ -323,9 +343,10 @@ class TestMainCli:
     def test_markdown_output(self, tmp_path, monkeypatch, capsys):
         vbrief_dir = tmp_path / "vbrief"
         vbrief_dir.mkdir()
+        # #754: empty vbrief dir -> empty issue set -> empty state map.
         monkeypatch.setattr(
-            reconcile, "fetch_open_issues",
-            lambda _r, cwd=None: [{"number": 1, "title": "T"}],
+            reconcile, "fetch_issue_states",
+            lambda _r, _ids, cwd=None: {},
         )
         monkeypatch.setattr(
             sys, "argv",
@@ -342,9 +363,11 @@ class TestMainCli:
     def test_json_output(self, tmp_path, monkeypatch, capsys):
         vbrief_dir = tmp_path / "vbrief"
         vbrief_dir.mkdir()
+        # #754: default path uses fetch_issue_states (inverted lookup);
+        # an empty vbrief tree yields an empty issue set / state map.
         monkeypatch.setattr(
-            reconcile, "fetch_open_issues",
-            lambda _r, cwd=None: [{"number": 1, "title": "T"}],
+            reconcile, "fetch_issue_states",
+            lambda _r, _ids, cwd=None: {},
         )
         monkeypatch.setattr(
             sys, "argv",
@@ -359,4 +382,7 @@ class TestMainCli:
         assert rc == 0
         out = capsys.readouterr().out
         parsed = json.loads(out)
-        assert parsed["summary"]["total_open_issues"] == 1
+        # Inverted-lookup summary shape (#754).
+        assert parsed["summary"]["linked_count"] == 0
+        assert parsed["summary"]["vbriefs_no_open_issue_count"] == 0
+        assert "unlinked" not in parsed
