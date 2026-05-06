@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+### Removed
+
+## [0.26.0] - 2026-05-06
+
+> Unified deft-cache + scanner v2 (#883 v1): triage rebound onto cache:*; on-disk layout migrated; triage:cache / triage:show removed (see UPGRADING.md).
+
 ### Breaking
 - **`task triage:cache` and `task triage:show` removed; on-disk cache layout migrated to `.deft-cache/<source>/<key>/{raw.json,content.md,meta.json}` (#883 v1)** -- hard cutover, no deprecation shims. The legacy flat-sidecar layout `.deft-cache/issues/<owner>-<repo>/<N>.{json,md}` is no longer read or written; consumers MUST delete the legacy tree and re-run `task cache:fetch-all` after upgrade. The 13 unchanged `triage:*` aliases (`accept` / `reject` / `defer` / `needs-ac` / `mark-duplicate` / `bulk-accept` / `bulk-reject` / `bulk-defer` / `bulk-needs-ac` / `status` / `reset` / `history` / `refresh-active` / `bootstrap`) are preserved verbatim. The `vbrief/.eval/candidates.jsonl` audit log is preserved across the migration. See `UPGRADING.md` `## From v0.25.x -> v0.26.0` for the operator recovery sequence and audit-log preservation invariants. Refs #883, #845, #915.
 
@@ -1208,7 +1220,8 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
-[Unreleased]: https://github.com/deftai/directive/compare/v0.25.2...HEAD
+[Unreleased]: https://github.com/deftai/directive/compare/v0.26.0...HEAD
+[0.26.0]: https://github.com/deftai/directive/compare/v0.25.2...v0.26.0
 [0.25.2]: https://github.com/deftai/directive/compare/v0.25.1...v0.25.2
 [0.25.1]: https://github.com/deftai/directive/compare/v0.25.0...v0.25.1
 [0.25.0]: https://github.com/deftai/directive/compare/v0.24.0...v0.25.0
