@@ -3,12 +3,12 @@
     "version": "0.6",
     "description": "Epic vBRIEF for #883 v1: minimum viable unified content cache + quarantine layer for triage v1 migration. Decomposes into 4 linear-dependency stories shipping as v0.26.0. Trimmed scope (1 source type, 5 cache commands, 3 scanner categories) explicit; full design surface deferred to v2.",
     "created": "2026-05-05T21:24:00Z",
-    "updated": "2026-05-05T21:24:00Z"
+    "updated": "2026-05-06T15:11:23Z"
   },
   "plan": {
     "id": "883-deft-cache-quarantine-v1",
     "title": "feat(cache,quarantine): unified content cache + quarantine layer (v1 / triage migration)",
-    "status": "pending",
+    "status": "completed",
     "planRef": "#883",
     "narratives": {
       "Problem": "Triage v1 (#845) shipped with a P0 cache-bypass + audit-log-poisoning bug (#915, fixed in v0.25.2) plus three companion bugs (#913, #914, #916). The root cause was a triage-specific cache implementation that drifted from its stated contract. Building on top of that ad-hoc design produces more drift; #883 establishes a single, content-agnostic cache and quarantine layer that triage v1 (and later #610 wiki-llm, URL ingestion, etc.) consume rather than reimplement.",
@@ -194,6 +194,6 @@
         "title": "PR #925 (merged): docs: import unsynced documentation -- landed visionik's design doc and 11 reference docs"
       }
     ],
-    "updated": "2026-05-05T23:27:50Z"
+    "updated": "2026-05-06T15:11:23Z"
   }
 }
