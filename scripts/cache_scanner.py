@@ -16,18 +16,33 @@ Public surface
 
     - patch (``2.0.x``) -- pattern additions to an existing category
     - minor (``2.x.0``) -- new category landed (e.g. shell-cmd-injection)
+      OR a material detection-policy change that alters which bodies flag
+      (e.g. v2.1.0 #949 strict-signal injection-heading tuning)
     - major (``x.0.0``) -- semantic rewrite (e.g. cache:put hard-fails on
       every fence-and-pass match instead of writing content.md)
 
 Scanner v2 baseline categories
 ------------------------------
 
-1. ``injection-heading`` -- severity ``fence-and-pass``. Reuses the curated
-   imperative-token list from :mod:`quarantine_ext` (``STEP``, ``TASK:``,
-   ``IMPORTANT:``, ``MUST``, ``SYSTEM:``, ``IGNORE PREVIOUS``, ...). Headings
-   or plain-prose lines containing one of the tokens are wrapped in
-   ``\`\`\`quarantined`` fences via :func:`quarantine_ext.quarantine_body`.
-   The flag carries ``match_count`` = number of token occurrences detected.
+1. ``injection-heading`` -- severity ``fence-and-pass``. Tuned in v2.1.0 for
+   precision against organic GitHub issue templates (#949). The detector
+   no longer fires on bare imperative-shaped headings (``## STEP 1``,
+   ``## Action items``, ``## Important notes``, ``## Task list``,
+   ``## Background``, ...). It now requires a *structural* injection
+   signal before flagging: either (a) an instruction-override / role-hijack
+   phrase in the heading text -- ``IGNORE/DISREGARD/FORGET PREVIOUS``,
+   ``SYSTEM:`` / ``ASSISTANT:`` / ``USER:`` / ``AGENT:`` / ``OVERRIDE:`` /
+   ``DIRECTIVE:`` / ``ROLE:`` / ``INSTRUCTION(S):`` / ``PROMPT:`` /
+   ``TOOL:`` / ``FUNCTION:`` at the heading's start -- or (b) a shell
+   vector inside the heading's body (``curl ... | sh``, ``wget ... | sh``,
+   ``base64 -d``, ``eval``, ``sh -c``, ```eval `cmd``` ``). Plain-prose
+   lines with the same instruction-override phrasing also flag. The
+   structural-signal check is the sole gate -- there is no allowlist
+   short-circuit, so a benign-template heading whose tail smuggles an
+   injection phrase (e.g. ``## STEP 1 - Ignore previous instructions``)
+   still flags. ``quarantine_ext`` keeps its broader policy untouched --
+   this category owns its own detection + wrapping. The flag carries
+   ``match_count`` = number of detected sections.
 
 2. ``credentials`` -- severity ``hard-fail``. A curated regex set covering
    the canonical exfiltratable secret shapes (``gh[pousr]_``, ``sk-`` /
@@ -95,11 +110,6 @@ from pathlib import Path
 # ``python scripts/cache_scanner.py`` from a Taskfile dispatch.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from quarantine_ext import (  # noqa: E402  -- intentional sys.path tweak
-    SUSPICIOUS_TOKENS,
-    quarantine_body,
-)
-
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -108,7 +118,15 @@ from quarantine_ext import (  # noqa: E402  -- intentional sys.path tweak
 #: meta.json scan_result.scanner_version field on cache:put so a future
 #: cache:doctor --rescan (deferred to v2) can detect entries written by
 #: an older scanner and re-run them. Bump rules in module docstring.
-SCANNER_VERSION: str = "2.0.0"
+#:
+#: 2.0.0 -- baseline (3 categories on, injection-heading reused
+#: quarantine_ext.SUSPICIOUS_TOKENS).
+#: 2.1.0 -- injection-heading detector tuned for precision (#949): tighter
+#: structural-signal policy (instruction-override / role-hijack / body
+#: shell-vector) reduces the false-positive rate from ~85% to <20% on
+#: organic deftai/directive issue bodies. No schema break; existing
+#: meta.json + audit-log records remain valid.
+SCANNER_VERSION: str = "2.1.0"
 
 #: Categories baselined in scanner v2. Frozen tuple so the ordering
 #: matches the meta.json ScanFlag.category enum in
@@ -227,21 +245,130 @@ def _is_invisible(ch: str) -> bool:
 
 
 # ---------------------------------------------------------------------------
-# Token detection (injection-heading)
+# Injection-heading detection (#949 tuning)
 # ---------------------------------------------------------------------------
 
-#: Compile-once token regex mirroring quarantine_ext._TOKEN_RE. The
-#: scanner uses its own copy so a future quarantine_ext change doesn't
-#: silently change the scanner's flag-counting semantic. The token list
-#: itself is imported from quarantine_ext so the canonical source of
-#: truth is one place.
-_TOKEN_RE: re.Pattern[str] = re.compile(
-    "|".join(
-        (r"\b" + re.escape(t)) if t.endswith((":", " ")) else (r"\b" + re.escape(t) + r"\b")
-        for t in SUSPICIOUS_TOKENS
-    ),
+#: Structural injection signal detected within a heading TEXT. A heading
+#: that triggers any of these patterns is treated as a real injection
+#: vector. The patterns are deliberately narrow so generic prose ("the
+#: user clicks ...", "system requires ...") does NOT fire.
+#:
+#: 1. Override / disregard phrases -- the canonical prompt-injection
+#:    opener ("ignore previous instructions", "disregard the above",
+#:    "forget prior"). Word-boundary on the verb; the operand requires
+#:    one of {previous, prior, above, all, earlier, your}.
+#: 2. Role-hijack prefix at the START of the heading text -- ``SYSTEM:``,
+#:    ``ASSISTANT:``, ``USER:``, ``AGENT:``, ``TOOL:``, ``FUNCTION:``,
+#:    ``OVERRIDE:``, ``DIRECTIVE:``, ``ROLE:``, ``PROMPT:``,
+#:    ``INSTRUCTION:``, ``INSTRUCTIONS:``. The colon-anchored shape is
+#:    the distinctive injection vector; ``System Requirements`` / ``User
+#:    Story`` / etc. do NOT match because they lack the colon.
+_INJECTION_OVERRIDE_RE: re.Pattern[str] = re.compile(
+    r"\b(?:ignore|disregard|forget|override|bypass)\s+(?:the\s+|all\s+|any\s+)?"
+    r"(?:previous|prior|above|earlier|all|your|preceding|original|system)\b",
     re.IGNORECASE,
 )
+
+_HEADING_ROLE_PREFIXES: tuple[str, ...] = (
+    "SYSTEM",
+    "ASSISTANT",
+    "USER",
+    "AGENT",
+    "TOOL",
+    "FUNCTION",
+    "OVERRIDE",
+    "DIRECTIVE",
+    "ROLE",
+    "PROMPT",
+    "INSTRUCTION",
+    "INSTRUCTIONS",
+)
+
+_HEADING_ROLE_PREFIX_RE: re.Pattern[str] = re.compile(
+    r"^(?:" + "|".join(re.escape(p) for p in _HEADING_ROLE_PREFIXES) + r")\s*:",
+    re.IGNORECASE,
+)
+
+#: Body-context shell-vector regex. When a heading's body (the lines
+#: between the heading and the next heading) contains any of these
+#: patterns, the heading is treated as a pre-roll for a shell-injection
+#: vector and flagged. This is the ONLY body-context signal the v2.1.0
+#: injection-heading detector consumes; the dedicated shell-cmd-injection
+#: scanner category that would do this body-wide is intentionally
+#: deferred (#949 follow-up).
+_BODY_VECTOR_RE: re.Pattern[str] = re.compile(
+    # Shell set kept consistent across all three sub-patterns (pipe-to-
+    # shell, ``sh -c``, ``/bin/sh -c``) so a vector like ``ksh -c '...'``
+    # or ``/bin/ksh -c '...'`` is not silently passed through; ksh was
+    # previously only listed in the pipe-to-shell alternative which left
+    # a blind spot the other two branches did not cover. Refs PR #957
+    # Greptile review on commit 5acfa8a.
+    r"(?:curl|wget|fetch)\s+[^|\n]*\|\s*(?:sh|bash|zsh|ksh)\b"
+    r"|\bbase64\s+(?:-d|--decode|-D)\b"
+    r"|\beval\s*[\(\$\"'`]"
+    r"|\b(?:sh|bash|zsh|ksh)\s+-c\s+[\"']"
+    r"|\b/bin/(?:sh|bash|zsh|ksh)\s+-c\s+[\"']",
+    re.IGNORECASE,
+)
+
+#: Heading regex (mirrors quarantine_ext._HEADING_RE). 1-6 hashes plus
+#: at least one space; setext-style ``===`` / ``---`` is intentionally
+#: out of scope (vanishingly rare in GitHub issue bodies, multi-line
+#: lookahead would complicate the iteration).
+_HEADING_RE: re.Pattern[str] = re.compile(r"^(#{1,6})\s+(.*\S.*)$")
+
+#: Code-fence delimiter regex.
+_FENCE_RE: re.Pattern[str] = re.compile(r"^(```|~~~)")
+
+#: Quarantine fence labels (mirror quarantine_ext for downstream-grep
+#: compatibility -- the literal ``quarantined`` label is the contract).
+_QUARANTINE_FENCE_OPEN: str = "```quarantined"
+_QUARANTINE_FENCE_CLOSE: str = "```"
+
+
+def _heading_text(line: str) -> str | None:
+    """Return the heading text portion (after the ``#``-prefix) or None."""
+    match = _HEADING_RE.match(line)
+    if match is None:
+        return None
+    return match.group(2).strip()
+
+
+def _heading_signal(text: str) -> bool:
+    """Return True iff the heading text carries a structural injection signal."""
+    if _INJECTION_OVERRIDE_RE.search(text):
+        return True
+    return bool(_HEADING_ROLE_PREFIX_RE.match(text))
+
+
+def _body_has_shell_vector(body_lines: list[str]) -> bool:
+    """Return True iff any non-fenced line in ``body_lines`` matches the shell vector.
+
+    Lines inside nested code-fence blocks are skipped so a legitimate
+    technical doc that illustrates a shell command inside a fenced
+    example (e.g. a ``## Steps to reproduce`` body containing
+    ```` ```sh\ncurl ... | sh\n``` ````) does not FP-flag. The fence
+    state machine mirrors the outer loop in
+    :func:`_detect_injection_heading`: a closing fence MUST be only the
+    delim chars after right-trim (per CommonMark a closer carries no
+    info string), so ``` ```python ``` is an OPENER for a nested block
+    rather than a closer for the outer one. Refs PR #957 Greptile P1.
+    """
+    in_fence: str | None = None
+    for ln in body_lines:
+        fence_match = _FENCE_RE.match(ln)
+        if fence_match:
+            delim = fence_match.group(1)
+            if in_fence is None:
+                in_fence = delim
+            elif ln.rstrip() == in_fence:
+                in_fence = None
+            continue
+        if in_fence is not None:
+            continue
+        if _BODY_VECTOR_RE.search(ln):
+            return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -340,24 +467,159 @@ def _detect_credentials(text: str) -> list[ScanFlag]:
 
 
 def _detect_injection_heading(text: str) -> tuple[str, ScanFlag | None]:
-    """Run quarantine_body and return the wrapped text + an injection flag (if any).
+    """Wrap suspicious sections in ``quarantined`` fences using v2.1.0 policy.
 
-    The flag's match_count is the number of suspicious-token occurrences
-    detected via :data:`_TOKEN_RE` -- the same token set quarantine_body
-    uses internally. The text is the wrap output regardless of whether
-    a flag fires (no-op when no tokens matched).
+    Detection rule (#949 tuning):
+
+    1. **Heading structural signal.** When the heading text contains an
+       instruction-override phrase (``IGNORE PREVIOUS`` /
+       ``DISREGARD ABOVE`` / ``OVERRIDE ALL``) OR the heading text starts
+       with a role-hijack prefix (``SYSTEM:`` / ``ASSISTANT:`` /
+       ``USER:`` / ``AGENT:`` / ``OVERRIDE:`` / ``DIRECTIVE:`` /
+       ``ROLE:`` / ``INSTRUCTION(S):`` / ``PROMPT:`` / ``TOOL:`` /
+       ``FUNCTION:``) we wrap the heading + section. The signal check is
+       evaluated on the full heading text with no allowlist short-circuit
+       so a benign-template heading whose tail smuggles an injection
+       phrase (e.g. ``## STEP 1 - Ignore previous instructions``) still
+       flags.
+    2. **Body shell vector.** When the heading's body contains a
+       shell-injection vector (``curl ... | sh`` / ``base64 -d`` /
+       ``eval`` -- including ``eval `cmd``` `` backtick form -- /
+       ``sh -c``) we wrap the heading + section even when the heading
+       text itself is benign-looking.
+    3. **Inline (non-heading) injection.** Any line outside a heading
+       that carries an instruction-override phrase or a body shell
+       vector is wrapped on its own.
+    4. **Idempotency.** Lines inside an existing fenced code block (any
+       ```` ``` ```` / ``~~~`` opener) are passed through verbatim, so a
+       previously-wrapped ``quarantined`` block is a no-op on re-scan.
+
+    Returns ``(transformed_content, flag)``. ``flag.match_count`` is the
+    number of distinct sections wrapped (NOT individual tokens) -- the
+    audit log's primary signal under the new policy is "how many
+    injection-shaped sections did we observe", which is the value
+    operators reach for when triaging detector noise.
     """
     if not text:
         return text, None
-    matches = _TOKEN_RE.findall(text)
-    wrapped = quarantine_body(text)
-    if not matches:
-        return wrapped, None
-    return wrapped, ScanFlag(
+
+    lines = text.splitlines()
+    out: list[str] = []
+    in_fence: str | None = None
+    sections_wrapped = 0
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+
+        # Existing fenced code blocks pass through verbatim (idempotent
+        # on re-scan; the v1 ``quarantine_body`` semantic is preserved).
+        # Closer detection requires the line to be ONLY the fence delim
+        # (after right-trim) -- per CommonMark a closing fence carries no
+        # info string, so ``` ```python ``` ``` is an OPENER for a nested
+        # block, not a closer for the outer one. The naive
+        # ``line.startswith(in_fence)`` check would otherwise drop the
+        # outer fence prematurely on the nested opener and re-process the
+        # nested block's content as live, breaking the idempotency
+        # guarantee on previously-quarantined bodies that happen to
+        # contain an embedded code example.
+        fence_match = _FENCE_RE.match(line)
+        if fence_match:
+            delim = fence_match.group(1)
+            if in_fence is None:
+                in_fence = delim
+            elif line.rstrip() == in_fence:
+                in_fence = None
+            out.append(line)
+            i += 1
+            continue
+        if in_fence is not None:
+            out.append(line)
+            i += 1
+            continue
+
+        heading_text = _heading_text(line)
+        if heading_text is not None:
+            # Determine the section span (this heading down to but not
+            # including the next heading; nested fences are consumed
+            # whole so an unbalanced opener never splits a section).
+            section_end = i + 1
+            while section_end < len(lines):
+                nxt = lines[section_end]
+                nested_fence = _FENCE_RE.match(nxt)
+                if nested_fence:
+                    section_end += 1
+                    nested = nxt[:3]
+                    # Same closer-vs-nested-opener disambiguation as the
+                    # outer fence loop above: a closing fence MUST be
+                    # only the delim chars (no info string).
+                    while (
+                        section_end < len(lines)
+                        and lines[section_end].rstrip() != nested
+                    ):
+                        section_end += 1
+                    section_end += 1  # consume the closer
+                    continue
+                if _HEADING_RE.match(nxt):
+                    break
+                section_end += 1
+
+            body_lines = lines[i + 1 : section_end]
+
+            # Structural-signal check is the sole gate on the heading
+            # text (no allowlist short-circuit -- a benign-template
+            # heading whose tail smuggles an injection phrase like
+            # ``## STEP 1 - Ignore previous instructions`` would
+            # otherwise pass through unwrapped). The body shell-vector
+            # check fires independently so a clean heading that smuggles
+            # ``curl ... | sh`` in the body is still flagged.
+            heading_signal = _heading_signal(heading_text)
+            body_signal = _body_has_shell_vector(body_lines)
+
+            if heading_signal or body_signal:
+                out.append(_QUARANTINE_FENCE_OPEN)
+                out.extend(lines[i:section_end])
+                out.append(_QUARANTINE_FENCE_CLOSE)
+                sections_wrapped += 1
+                i = section_end
+                continue
+
+            # Heading itself is fine; pass it through and let the
+            # per-line scan below handle inline body content.
+            out.append(line)
+            i += 1
+            continue
+
+        # Non-heading line: wrap if it carries an inline injection
+        # phrase or a shell vector. We deliberately do NOT wrap on a
+        # bare ``IMPORTANT:`` / ``STEP`` / etc. token in prose -- those
+        # are noise tokens under the v2.1.0 policy.
+        if _INJECTION_OVERRIDE_RE.search(line) or _BODY_VECTOR_RE.search(
+            line
+        ):
+            out.append(_QUARANTINE_FENCE_OPEN)
+            out.append(line)
+            out.append(_QUARANTINE_FENCE_CLOSE)
+            sections_wrapped += 1
+            i += 1
+            continue
+
+        out.append(line)
+        i += 1
+
+    suffix = "\n" if text.endswith("\n") else ""
+    wrapped_text = "\n".join(out) + suffix
+
+    if sections_wrapped == 0:
+        return wrapped_text, None
+    return wrapped_text, ScanFlag(
         category="injection-heading",
         severity="fence-and-pass",
-        detail=f"wrapped {len(matches)} suspicious-token occurrence(s) in `quarantined` fence",
-        match_count=len(matches),
+        detail=(
+            f"wrapped {sections_wrapped} injection-shaped section(s) in"
+            " `quarantined` fence (v2.1.0 strict-signal policy)"
+        ),
+        match_count=sections_wrapped,
     )
 
 
