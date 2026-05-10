@@ -12,6 +12,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 ### Fixed
+
+### Removed
+
+## [0.27.1] - 2026-05-10
+
+> v0.27.1: relocator self-bootstrap (#1015) + release_publish DRAFT-lookup fix (#1016) -- closes the v0.27.0 cohort follow-up pair under #992.
+
+### Added
+
+### Changed
+
+### Fixed
 - **fix(release_publish): paginated /releases list+filter for DRAFT lookup (#1016)**
 - **fix(relocator): self-bootstrap from in-place tree + F1/F2/F3 follow-ups (#992 cohort, closes #1015)**
 
@@ -1289,7 +1301,8 @@ If you have custom scripts or references to deft files, update these paths:
 - Explore new interface guidelines if building CLIs, APIs, or UIs
 - Review enhanced language standards for Python, Go, TypeScript, and C++
 
-[Unreleased]: https://github.com/deftai/directive/compare/v0.27.0...HEAD
+[Unreleased]: https://github.com/deftai/directive/compare/v0.27.1...HEAD
+[0.27.1]: https://github.com/deftai/directive/compare/v0.27.0...v0.27.1
 [0.27.0]: https://github.com/deftai/directive/compare/v0.26.2...v0.27.0
 [0.26.2]: https://github.com/deftai/directive/compare/v0.26.1...v0.26.2
 [0.26.1]: https://github.com/deftai/directive/compare/v0.26.0...v0.26.1
