@@ -1,57 +1,46 @@
 #!/usr/bin/env python3
-"""triage_bootstrap.py -- idempotent 5-step triage v1 installer (#845 Story 6).
+"""triage_bootstrap.py -- idempotent triage v1 installer (#883 Story 3 rebind).
 
-Single-command opt-in for triage v1 (#845). Wires the consumer's project for
-the pre-ingest triage workflow without touching any existing vBRIEF, scope, or
-skill state. Designed to be re-runnable: every step is idempotent and a second
-invocation is a no-op.
+Single-command opt-in for triage v1. Wires the consumer's project for
+the pre-ingest triage workflow without touching any existing vBRIEF,
+scope, or skill state. Designed to be re-runnable: every step is
+idempotent and a second invocation is a no-op.
 
 Steps (in order):
 
-1. ``populate_cache`` -- populate ``.deft-cache/issues/<owner>-<repo>/`` for
-   every open upstream issue. Delegates to Story 1's
-   ``scripts.triage_cache.populate``. Gracefully degrades to a deferred-action
-   warning when Story 1 has not yet merged on the consumer's branch.
+1. ``populate_cache`` -- delegates to :func:`scripts.cache.cache_fetch_all`
+   with ``--source=github-issue`` to mirror upstream issues into
+   ``.deft-cache/github-issue/<owner>/<repo>/<N>/``. Gracefully degrades
+   to a deferred-action message when ``--repo`` is neither passed nor
+   inferable from ``git remote get-url origin`` and when the cache
+   module has not yet landed on the consumer's branch.
 
-2. ``backfill_audit_log`` -- write an ``accepted`` audit entry to
-   ``vbrief/.eval/candidates.jsonl`` for every scope vBRIEF currently in
-   ``vbrief/proposed/``, ``vbrief/pending/``, or ``vbrief/active/``. Skips
-   ``vbrief/cancelled/`` so rejected items are NOT reanimated. Skips
-   ``vbrief/completed/`` because completed work is not in the triage funnel.
-   Delegates to Story 2's ``scripts.candidates_log.append`` when present;
-   falls back to a self-contained JSONL append when Story 2 has not merged.
+2. ``backfill_audit_log`` -- writes one ``accept`` audit entry per
+   scope vBRIEF currently in ``vbrief/proposed/``, ``vbrief/pending/``,
+   or ``vbrief/active/``. Skips ``vbrief/cancelled/`` so rejected items
+   are NOT reanimated. Skips ``vbrief/completed/`` because completed
+   work is not in the triage funnel. Delegates to
+   :func:`scripts.candidates_log.append` when present; falls back to a
+   self-contained JSONL append when not.
 
-3. ``ensure_gitignore_entry`` -- append ``.deft-cache/`` to ``.gitignore``
-   when absent. Idempotent: the line is already present in this repo's
-   ``.gitignore`` (Story 1 may also add it), so this step is typically a
-   no-op.
+3. ``ensure_gitignore_entry`` -- append ``.deft-cache/`` to
+   ``.gitignore`` when absent.
 
-4. ``ensure_gitcrawl`` -- install ``gitcrawl`` via the project's documented
-   path (``pipx install gitcrawl`` if available, else a print-only diagnostic).
-   Skipped entirely when ``gitcrawl`` is already on PATH.
-
-5. ``recap`` -- print a summary of the actions taken and the canonical next
-   commands (``task triage:show <N>``, ``task triage:cache``, etc.). The
-   recap is rendered by :meth:`BootstrapResult.summary` and printed in
-   :func:`main` rather than dispatched as a separate ``StepOutcome``;
-   :func:`run_bootstrap` therefore appends four step outcomes (1-4) and
-   the recap closes the run via the printed summary.
+4. ``ensure_gitignore_eval_dir`` -- append ``vbrief/.eval/`` to
+   ``.gitignore`` when absent (#915 audit-log scratch directory).
 
 Exit codes (three-state, mirrors ``scripts/preflight_branch.py``):
 
 - ``0`` -- bootstrap completed (or all steps were no-ops on a re-run).
-- ``1`` -- bootstrap failed at a runtime step (e.g. ``gh issue list`` returned
-  non-zero, ``vbrief/`` missing, etc.). The error message names the failing
-  step.
-- ``2`` -- config error: ``--project-root`` doesn't exist or isn't a directory.
+- ``1`` -- bootstrap failed at a runtime step.
+- ``2`` -- config error: ``--project-root`` doesn't exist or isn't a
+  directory.
 
 Refs:
 
-- #845 (parent epic).
-- #583 (consumed by Story 1's quarantine; this bootstrap doesn't touch
-  quarantine directly).
+- #883 (parent epic for the unified cache rebind).
+- #845 (the pre-ingest triage workflow this script orchestrates).
 - ``docs/privacy-nfr.md`` -- privacy contract for ``.deft-cache/``.
-- ``docs/quarantine-spec.md`` -- companion algorithm spec.
 """
 
 from __future__ import annotations
@@ -59,74 +48,181 @@ from __future__ import annotations
 import argparse
 import contextlib
 import datetime as _dt
+import importlib
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
+import threading
+import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-# Make sibling ``scripts`` modules importable when the consumer invokes this
-# script via ``python scripts/triage_bootstrap.py`` from the project root.
+# Make sibling ``scripts`` modules importable when the consumer invokes
+# this script via ``python scripts/triage_bootstrap.py`` from the
+# project root.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-# UTF-8 self-reconfigure (mirrors #814 fix). The Windows cp1252 default would
-# crash on the ✓ / ⚠ glyphs we print in the recap.
+# UTF-8 self-reconfigure (mirrors #814 fix). The Windows cp1252 default
+# would crash on the ✓ / ⚠ glyphs we print in the recap.
 for _stream in (sys.stdout, sys.stderr):
     if hasattr(_stream, "reconfigure"):
         with contextlib.suppress(AttributeError, ValueError):
             _stream.reconfigure(encoding="utf-8", errors="replace")
 
 
-#: Canonical cache-directory name. The Story 1 cache writes to
-#: ``.deft-cache/issues/<owner>-<repo>/<N>.{json,md}``; the gitignore step
-#: protects the same root.
+#: Canonical cache-directory name. The unified cache writes to
+#: ``.deft-cache/github-issue/<owner>/<repo>/<N>/`` under #883 Story 2.
 CACHE_DIR_NAME = ".deft-cache"
 
-#: Canonical gitignore line. Trailing slash matches the convention in the
-#: existing ``.gitignore`` (e.g. ``dist/``, ``backup/``, ``.deft/``).
-GITIGNORE_LINE = ".deft-cache/"
-
-#: Canonical audit-log path relative to the project root. Story 2 writes
-#: append-only JSONL here; Story 6's bootstrap backfills ``accepted`` entries
-#: for items that have already been triaged into a lifecycle folder.
+#: Canonical audit-log path relative to the project root.
 AUDIT_LOG_RELPATH = Path("vbrief") / ".eval" / "candidates.jsonl"
 
-#: Lifecycle folders whose contents are backfilled with ``accepted`` entries.
-#: ``cancelled/`` is intentionally excluded so the bootstrap does not
-#: reanimate rejected items. ``completed/`` is excluded because completed
-#: work is no longer in the triage funnel; recording an ``accepted`` decision
-#: would imply the item is awaiting evaluation.
+#: Lifecycle folders whose contents are backfilled with ``accept``
+#: entries. ``cancelled/`` is excluded so rejected items are not
+#: reanimated; ``completed/`` is excluded because completed work is no
+#: longer in the triage funnel.
 BACKFILL_FOLDERS = ("proposed", "pending", "active")
 
-#: Canonical actor for the bootstrap-emitted backfill entries. The audit
-#: schema defined by Story 2 expects a string of the form ``agent:<name>`` or
-#: a user identity. ``agent:bootstrap`` is unambiguous.
+#: Canonical actor for bootstrap-emitted backfill entries.
 BOOTSTRAP_ACTOR = "agent:bootstrap"
+
+#: Cache source consumed by triage v1 (only github-issue is supported).
+_CACHE_SOURCE: str = "github-issue"
+
+#: Default wall-clock cap (seconds) on the cache:fetch-all step. The
+#: underlying ``cache.cache_fetch_all`` shells out to ``task
+#: scm:issue:view`` per issue with no per-call timeout, so a stuck
+#: ``gh``/``ghx`` process (auth re-prompt, network stall, server-side
+#: hang) will block the orchestrator indefinitely. The watchdog in
+#: :func:`step_populate_cache` enforces this cap so the orchestrator
+#: always exits in bounded time even when the underlying subprocess
+#: tree is wedged. Override via ``--fetch-timeout-s`` or the
+#: ``DEFT_BOOTSTRAP_FETCH_TIMEOUT_S`` env var. Set to ``0`` to disable
+#: (legacy unbounded behavior). Sized for a 1000-issue full-backlog run
+#: at the default 500ms inter-issue delay (#952).
+DEFAULT_FETCH_TIMEOUT_S: int = 3600
+
+#: subprocess.run timeout for ``git remote get-url origin``. Defensive:
+#: a stuck ``git`` proxy (corporate VPN re-auth) would otherwise hang
+#: bootstrap before any progress line is emitted.
+_GIT_INFER_TIMEOUT_S: int = 10
 
 
 @dataclass
 class StepOutcome:
-    """Per-step result captured by the dispatcher.
-
-    Attributes:
-        name: The canonical step name (matches the function name without the
-            ``step_`` prefix).
-        ok: True when the step completed without raising or detecting a hard
-            error. A no-op step (e.g. gitignore line already present) is OK.
-        message: Human-readable status line printed by the recap.
-        error: Optional captured exception message when ``ok`` is False.
-        details: Free-form structured info for tests (e.g. counts, paths).
-    """
+    """Per-step result captured by the dispatcher."""
 
     name: str
     ok: bool
     message: str
     error: str | None = None
     details: dict[str, Any] = field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
+# Progress emit (#952)
+# ---------------------------------------------------------------------------
+#
+# A real-world v0.26.0 backlog smoke (docs/smoke-2026-05-06-v0.26.0-scale.md)
+# saw the orchestrator silently hang for 71+ minutes after cache:fetch-all
+# *appeared* to complete -- the operator had no per-step visibility so could
+# not tell whether the script was wedged inside step_populate_cache (the
+# real culprit) or one of the post-fetch steps. The structured stderr lines
+# below match the cadence of ``scripts/cache.py`` / ``cache_scanner.py``
+# status output and let future operators (and the integration test) verify
+# that each step is entered and exited.
+
+#: Total number of steps executed by :func:`run_bootstrap`. Update if a
+#: step is added or removed so the ``step <i>/<TOTAL>`` numerator stays
+#: accurate.
+_TOTAL_STEPS: int = 4
+
+
+def _emit_progress(
+    out: object | None,
+    step_index: int,
+    name: str,
+    phase: str,
+    detail: str = "",
+) -> None:
+    """Write a single ``triage:bootstrap step <i>/<N> <name> -- <phase>`` line.
+
+    ``out`` is any file-like object with a ``write()`` method (or ``None``
+    to silence emission, e.g. inside test fixtures that don't capture
+    stderr). The phase string is one of ``starting`` / ``done`` /
+    ``error`` / ``timeout``; callers are free to add a parenthetical
+    ``detail`` for cardinality (e.g. counts, repo, elapsed seconds).
+    """
+    if out is None:
+        return
+    line = f"triage:bootstrap step {step_index}/{_TOTAL_STEPS} {name} -- {phase}"
+    if detail:
+        line = f"{line} ({detail})"
+    try:
+        out.write(line + "\n")
+        flush = getattr(out, "flush", None)
+        if callable(flush):
+            flush()
+    except (OSError, ValueError):
+        # A closed-stream / broken-pipe write must never propagate from
+        # an observability path; the bootstrap result is canonical.
+        pass
+
+
+#: Sentinel separating "func() returned None" from "runner thread died
+#: before assigning result" (Greptile P1 cleanup for #955).
+_RUNNER_UNSET: Any = object()
+
+
+def _run_with_timeout(
+    func: Callable[[], Any],
+    timeout_s: float,
+) -> tuple[bool, Any, Exception | None]:
+    """Run ``func()`` in a daemon thread; return ``(completed, result, exc)``.
+
+    ``completed`` is False when ``timeout_s`` elapsed; the daemon thread
+    is left running (load-bearing property for #952). Non-positive
+    ``timeout_s`` disables the watchdog (legacy unbounded behavior).
+
+    Only :class:`Exception` is captured into ``box["exc"]``. A
+    :class:`BaseException` raised inside the daemon thread (``SystemExit`` /
+    ``MemoryError`` / ...) terminates the runner silently -- Python
+    threading does not propagate ``BaseException`` to the joining thread.
+    To stop that masquerading as ``ok=True`` with ``succeeded=None``,
+    ``box["result"]`` starts as a sentinel; a thread that joins without
+    setting either slot synthesizes a :class:`RuntimeError` so
+    :func:`step_populate_cache` reports ``ok=False`` (Greptile P1
+    cleanup for #955). Operator-issued Ctrl+C is unaffected.
+    """
+    box: dict[str, Any] = {"result": _RUNNER_UNSET, "exc": None}
+
+    def _runner() -> None:
+        try:
+            box["result"] = func()
+        except Exception as exc:  # noqa: BLE001 -- forward verbatim
+            box["exc"] = exc
+
+    thread = threading.Thread(
+        target=_runner, name="triage_bootstrap.populate_cache", daemon=True
+    )
+    thread.start()
+    thread.join(timeout_s if timeout_s and timeout_s > 0 else None)
+    if thread.is_alive():
+        return False, None, None
+    if box["result"] is _RUNNER_UNSET and box["exc"] is None:
+        # Thread joined without result OR exc -- unhandled BaseException.
+        return True, None, RuntimeError(
+            "worker thread terminated without completing "
+            "(unhandled BaseException not propagated by Python threading)"
+        )
+    result = None if box["result"] is _RUNNER_UNSET else box["result"]
+    return True, result, box["exc"]
 
 
 @dataclass
@@ -139,7 +235,8 @@ class BootstrapResult:
     exit_code: int = 0
 
     def summary(self) -> str:
-        """Render a recap table the operator sees at the end of bootstrap."""
+        """Render a recap the operator sees at the end of bootstrap."""
+
         lines = ["", "Triage v1 bootstrap recap:"]
         for step in self.steps:
             mark = "✓" if step.ok else "✗"
@@ -149,143 +246,277 @@ class BootstrapResult:
         if self.exit_code == 0:
             lines.append("")
             lines.append("Next steps:")
-            # IMPORTANT: every command printed here MUST exist on master at the
-            # time the bootstrap recap fires (Greptile P1 PR #877 review). Story
-            # 6 wires only the top-level `task triage:bootstrap` alias; every
-            # other surface ships under the include namespace key for its
-            # owning fragment (`triage-cache:`, `triage-actions:`,
-            # `triage-bulk:`). The shorthand `task triage:cache` /
-            # `task triage:accept <N>` forms are intentionally NOT wired in
-            # Story 6 (go-task v3 cannot share an `includes:` namespace key
-            # across multiple files); a follow-up cleanup PR will consolidate
-            # `task triage:*` aliases once the four-fragment cascade has fully
-            # landed and inner task names are stable. Until then, the recap
-            # uses the namespaced forms so a user who copy-pastes a line gets
-            # a working invocation.
-            lines.append("  task triage-cache:cache             # refresh the cache (Story 1)")
-            lines.append("  task triage-cache:show <N>          # inspect issue N (Story 1)")
-            lines.append("  task triage-actions:accept <N>      # accept issue N (Story 3)")
-            lines.append("  task triage-actions:reject <N> -- --reason 'why' (Story 3)")
-            lines.append("  task triage-bulk:bulk-accept -- --label adoption-blocker (Story 4)")
             lines.append(
-                "  task triage-bulk:refresh-active     # pre-swarm freshness (Story 4)"
-            )
-            lines.append("")
-            lines.append(
-                "Note: shorthand `task triage:<verb>` aliases are deferred to a follow-up"
+                "  task cache:fetch-all -- --source=github-issue "
+                "--repo OWNER/NAME   # refresh the cache (#883 Story 2)"
             )
             lines.append(
-                "cleanup PR after the cascade fully lands. See UPGRADING.md "
-                "`Migration to triage v1` for details."
+                "  task cache:get -- github-issue OWNER/NAME/<N>            "
+                "# inspect cached issue N"
+            )
+            lines.append(
+                "  task triage:accept -- --issue <N> --repo OWNER/NAME      "
+                "# accept issue N (#845 Story 3)"
+            )
+            lines.append(
+                "  task triage:reject -- --issue <N> --repo OWNER/NAME --reason 'why' "
+                "# reject issue N"
+            )
+            lines.append(
+                "  task triage:bulk-accept -- --repo OWNER/NAME --label adoption-blocker "
+                "# bulk accept"
+            )
+            lines.append(
+                "  task triage:refresh-active                              "
+                "# pre-swarm freshness gate"
             )
         return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------
-# Step 1 -- populate cache
+# Repo resolution
+# ---------------------------------------------------------------------------
+
+#: Regex mapping a ``git remote get-url origin`` value to ``(owner, repo)``.
+_GIT_ORIGIN_RE = re.compile(
+    r"^(?:https?://(?:[^@/]+@)?github\.com/|git@github\.com:|ssh://git@github\.com[:/])"
+    r"(?P<owner>[A-Za-z0-9][A-Za-z0-9._-]*)/"
+    r"(?P<repo>[A-Za-z0-9][A-Za-z0-9._-]*?)(?:\.git)?/?\s*$"
+)
+_REPO_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*/[A-Za-z0-9][A-Za-z0-9._-]*$")
+
+
+def _infer_repo_from_git(cwd: Path | None = None) -> str | None:
+    """Infer ``owner/repo`` from ``git remote get-url origin``.
+
+    A bounded ``timeout`` is applied to the subprocess call so a stuck
+    ``git`` proxy (corporate VPN re-auth, hung credential helper)
+    cannot wedge the orchestrator before any progress line lands
+    (#952 defensive). On timeout / OSError the function returns
+    ``None`` and the caller falls back to its existing skip-with-OK
+    branch.
+    """
+
+    if shutil.which("git") is None:
+        return None
+    try:
+        proc = subprocess.run(  # noqa: S603
+            ["git", "remote", "get-url", "origin"],
+            capture_output=True,
+            text=True,
+            check=False,
+            cwd=str(cwd) if cwd is not None else None,
+            timeout=_GIT_INFER_TIMEOUT_S,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode != 0:
+        return None
+    url = (proc.stdout or "").strip()
+    if not url:
+        return None
+    m = _GIT_ORIGIN_RE.search(url)
+    if not m:
+        return None
+    return f"{m.group('owner')}/{m.group('repo')}"
+
+
+# ---------------------------------------------------------------------------
+# Step 1 -- populate cache via cache:fetch-all
 # ---------------------------------------------------------------------------
 
 
-def step_populate_cache(project_root: Path, repo: str | None) -> StepOutcome:
-    """Populate the local issue cache for all open upstream issues.
+def _load_cache_module() -> Any | None:
+    """Return the unified cache module, or ``None`` if not importable."""
 
-    Delegates to Story 1's ``scripts.triage_cache.populate(repo, force=False)``
-    when the module is importable. When Story 1 has not yet merged onto the
-    consumer's branch, the step degrades to a deferred-action warning -- the
-    bootstrap as a whole still succeeds because (a) the script is designed to
-    be re-runnable, and (b) the gitignore + backfill steps are independent of
-    cache content.
+    for candidate in ("cache", "scripts.cache"):
+        try:
+            return importlib.import_module(candidate)
+        except ModuleNotFoundError:
+            continue
+    return None
+
+
+def step_populate_cache(
+    project_root: Path,
+    repo: str | None,
+    *,
+    cache_module: Any | None = None,
+    batch_size: int | None = None,
+    delay_ms: int | None = None,
+    state: str | None = None,
+    limit: int | None = None,
+    fetch_timeout_s: float | None = None,
+) -> StepOutcome:
+    """Mirror upstream issues for ``repo`` via :func:`cache_fetch_all`.
+
+    Resolution precedence for ``repo``:
+
+    1. Explicit argument (kwargs / ``--repo`` flag / ``DEFT_TRIAGE_REPO`` env).
+    2. Inference from ``git remote get-url origin`` inside ``project_root``.
+
+    When neither resolves, the step returns ``ok=True`` with a friendly
+    skip message -- the gitignore + audit-log steps are still useful
+    without a repo. When the cache module is missing on the branch the
+    step degrades to a deferred-action message so the bootstrap exit
+    code stays 0 (per the re-runnable contract).
+
+    ``fetch_timeout_s`` is the wall-clock cap on the wrapped
+    ``cache.cache_fetch_all`` call; ``None`` selects
+    :data:`DEFAULT_FETCH_TIMEOUT_S`. ``0`` disables the watchdog and
+    restores the legacy unbounded behavior. The watchdog is the load-
+    bearing fix for #952: a stuck ``task scm:issue:view`` subprocess
+    (auth re-prompt, network stall, server hang) can no longer wedge
+    the orchestrator past this cap, even though Python cannot
+    reliably interrupt the underlying process tree.
     """
-    if repo is None:
+
+    effective_repo = repo
+    if effective_repo is None:
+        effective_repo = _infer_repo_from_git(cwd=project_root)
+    if effective_repo is None:
         return StepOutcome(
             name="populate_cache",
             ok=True,
             message=(
-                "skipped (no --repo provided; pass --repo OWNER/NAME to populate)"
+                "skipped (no --repo provided and could not infer from "
+                "`git remote get-url origin`; pass --repo OWNER/NAME)"
             ),
             details={"skipped": "no-repo"},
         )
-
-    try:
-        import triage_cache  # type: ignore[import-not-found]
-    except ImportError:
-        return StepOutcome(
-            name="populate_cache",
-            ok=True,
-            message=(
-                "deferred (Story 1 surface scripts/triage_cache.py not present "
-                "on this branch; re-run after rebase to populate)"
-            ),
-            details={"deferred": "story-1-missing"},
-        )
-
-    populate = getattr(triage_cache, "populate", None)
-    if populate is None or not callable(populate):
+    if not _REPO_RE.match(effective_repo):
         return StepOutcome(
             name="populate_cache",
             ok=False,
-            message="triage_cache.populate is not callable",
-            error="Story 1 surface drift: populate() not exposed",
+            message=f"invalid --repo {effective_repo!r}",
+            error="repo must be 'owner/name' (alphanumerics, '.', '_', '-' only)",
         )
 
-    try:
-        count = populate(repo=repo, force=False)
-    except Exception as exc:  # noqa: BLE001 -- forward exception text verbatim
-        # Graceful degradation: cache populate is best-effort. If Story 1's
-        # populate fails (e.g. ``gh`` CLI not on PATH, network down, repo
-        # access denied) the bootstrap should still succeed -- the gitignore
-        # + audit-log + gitcrawl steps are independent of cache content,
-        # and the operator can re-run ``task triage-cache:cache`` after
-        # fixing the underlying environment. Returning ok=True with a
-        # deferred-action message preserves bootstrap exit code 0 (per
-        # the module docstring's ``re-runnable`` contract) while still
-        # surfacing the failure cause in the recap.
+    cache_mod = cache_module if cache_module is not None else _load_cache_module()
+    if cache_mod is None:
         return StepOutcome(
             name="populate_cache",
             ok=True,
             message=(
-                f"deferred -- populate raised {type(exc).__name__} "
-                "(re-run after the underlying issue is resolved; "
-                "see error for detail)"
+                "deferred (scripts/cache.py not present on this branch; "
+                "re-run after rebase to populate via task cache:fetch-all)"
             ),
-            error=str(exc),
-            details={"deferred": "populate-error"},
+            details={"deferred": "cache-module-missing", "repo": effective_repo},
+        )
+    fetch_all = getattr(cache_mod, "cache_fetch_all", None)
+    if not callable(fetch_all):
+        return StepOutcome(
+            name="populate_cache",
+            ok=False,
+            message="cache_fetch_all is not callable",
+            error="#883 Story 2 contract violated: cache_fetch_all() not exposed",
         )
 
+    kwargs: dict[str, Any] = {
+        "source": _CACHE_SOURCE,
+        "repo": effective_repo,
+        "cache_root": project_root / CACHE_DIR_NAME,
+    }
+    if batch_size is not None:
+        kwargs["batch_size"] = batch_size
+    if delay_ms is not None:
+        kwargs["delay_ms"] = delay_ms
+    if state is not None:
+        kwargs["state"] = state
+    if limit is not None:
+        kwargs["limit"] = limit
+
+    effective_timeout = (
+        fetch_timeout_s if fetch_timeout_s is not None else DEFAULT_FETCH_TIMEOUT_S
+    )
+
+    started = time.monotonic()
+    completed, report, exc = _run_with_timeout(
+        lambda: fetch_all(**kwargs), effective_timeout
+    )
+    elapsed = time.monotonic() - started
+
+    if not completed:
+        return StepOutcome(
+            name="populate_cache",
+            ok=False,
+            message=(
+                f"cache:fetch-all wall-clock timeout after "
+                f"{effective_timeout:g}s for repo={effective_repo} "
+                "(an underlying `task scm:issue:view` subprocess is likely "
+                "stuck; re-run with --fetch-timeout-s=0 to disable the "
+                "watchdog or with a higher value, or shrink the run via "
+                "--limit / --state=open)"
+            ),
+            error=(
+                f"step_populate_cache exceeded fetch_timeout_s={effective_timeout:g}; "
+                "see #952 for the watchdog rationale"
+            ),
+            details={
+                "repo": effective_repo,
+                "source": _CACHE_SOURCE,
+                "fetch_timeout_s": effective_timeout,
+                "elapsed_s": round(elapsed, 3),
+                "timed_out": True,
+            },
+        )
+
+    if exc is not None:
+        # cache_fetch_all raised; report the failure honestly so callers
+        # (and the orchestrator's recap) see a non-OK populate step. The
+        # bootstrap is partial -- ``run_bootstrap`` continues to the
+        # remaining (cache-independent) steps and surfaces ``exit_code=1``
+        # via the aggregate ``any(not step.ok)`` rule (P1 cleanup for
+        # #955; SLizard finding ``step_populate_cache misreports ok=True
+        # on exception``). Re-run after the underlying issue is resolved.
+        return StepOutcome(
+            name="populate_cache",
+            ok=False,
+            message=(
+                f"cache:fetch-all raised {type(exc).__name__} for repo="
+                f"{effective_repo} (re-run after the underlying issue is "
+                "resolved; see error for detail)"
+            ),
+            error=str(exc),
+            details={
+                "failed": "fetch-all-error",
+                "exc_type": type(exc).__name__,
+                "repo": effective_repo,
+                "elapsed_s": round(elapsed, 3),
+                "fetch_timeout_s": effective_timeout,
+            },
+        )
+
+    succeeded = getattr(report, "succeeded", None)
+    failed = getattr(report, "failed", None)
+    skipped = getattr(report, "skipped", None)
     return StepOutcome(
         name="populate_cache",
         ok=True,
-        message=f"cached {count} issues into {CACHE_DIR_NAME}/issues/",
-        details={"count": count, "repo": repo},
+        message=(
+            f"cache:fetch-all source={_CACHE_SOURCE} repo={effective_repo} "
+            f"succeeded={succeeded} failed={failed} skipped={skipped}"
+        ),
+        details={
+            "repo": effective_repo,
+            "source": _CACHE_SOURCE,
+            "succeeded": succeeded,
+            "failed": failed,
+            "skipped": skipped,
+            "elapsed_s": round(elapsed, 3),
+            "fetch_timeout_s": effective_timeout,
+        },
     )
 
 
 # ---------------------------------------------------------------------------
-# Step 2 -- backfill audit log with `accepted` entries
+# Step 2 -- backfill audit log with `accept` entries
 # ---------------------------------------------------------------------------
 
 
 def _now_iso() -> str:
-    """Return current time as ISO-8601 UTC with the literal ``Z`` suffix.
+    """Return current time as ISO-8601 UTC with the literal ``Z`` suffix."""
 
-    The Story 2 audit-log schema (``vbrief/schemas/candidates.schema.json``)
-    pins the ``timestamp`` field to the ``Z``-suffix UTC form -- the
-    pattern is ``^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$``.
-    Python's ``datetime.isoformat()`` emits ``+00:00`` for ``tz=UTC``,
-    which matches the schema's ``format: date-time`` annotation but FAILS
-    the Z-anchored ``pattern``. Story 2's ``candidates_log.append()``
-    enforces the pattern (Greptile #876 P1 fix-batch) so a non-Z form is
-    rejected with ``CandidatesLogError``.
-
-    Uses ``datetime.timezone.utc`` rather than the ``datetime.UTC`` alias
-    (Python 3.11+) for maximum portability and ecosystem compatibility:
-    even though the project's ``requires-python`` is ``>=3.11`` (see
-    ``pyproject.toml``), the ``timezone.utc`` form is unambiguous, works
-    on every Python 3.x release, and removes a foot-gun for downstream
-    consumers that vendor or copy this module. The trailing
-    ``# noqa: UP017`` keeps ruff's ``Use datetime.UTC alias`` rule from
-    re-flipping the form on auto-fix.
-    """
     return (
         _dt.datetime.now(tz=_dt.timezone.utc)  # noqa: UP017
         .replace(microsecond=0)
@@ -294,13 +525,8 @@ def _now_iso() -> str:
 
 
 def _extract_issue_number(vbrief_data: dict[str, Any]) -> int | None:
-    """Pull the issue number from a scope vBRIEF's references[] block.
+    """Pull the issue number from a scope vBRIEF's references[] block."""
 
-    vBRIEFs ingested via ``task issue:ingest`` carry an
-    ``x-vbrief/github-issue`` reference whose URI ends with the issue number.
-    Returns None for vBRIEFs without such a reference (e.g. user-authored
-    plans that don't trace to an upstream issue).
-    """
     plan = vbrief_data.get("plan")
     if not isinstance(plan, dict):
         return None
@@ -315,7 +541,6 @@ def _extract_issue_number(vbrief_data: dict[str, Any]) -> int | None:
         uri = ref.get("uri", "")
         if not isinstance(uri, str):
             continue
-        # URIs look like "https://github.com/owner/repo/issues/845"
         tail = uri.rstrip("/").rsplit("/", 1)[-1]
         if tail.isdigit():
             return int(tail)
@@ -323,12 +548,8 @@ def _extract_issue_number(vbrief_data: dict[str, Any]) -> int | None:
 
 
 def _scan_lifecycle_folder(folder: Path) -> list[tuple[int, Path]]:
-    """Walk a lifecycle folder, returning (issue_number, vbrief_path) tuples.
+    """Walk a lifecycle folder, returning (issue_number, vbrief_path) tuples."""
 
-    vBRIEFs without a parseable issue-number reference are skipped silently
-    -- the bootstrap only backfills items that have an upstream origin to
-    record against.
-    """
     results: list[tuple[int, Path]] = []
     if not folder.exists() or not folder.is_dir():
         return results
@@ -336,8 +557,6 @@ def _scan_lifecycle_folder(folder: Path) -> list[tuple[int, Path]]:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError, UnicodeDecodeError):
-            # Defensive: a malformed vBRIEF should not block bootstrap. The
-            # standard `task vbrief:validate` gate will surface it elsewhere.
             continue
         if not isinstance(data, dict):
             continue
@@ -349,23 +568,19 @@ def _scan_lifecycle_folder(folder: Path) -> list[tuple[int, Path]]:
 
 
 def _existing_audit_issue_numbers(audit_path: Path) -> set[int]:
-    """Read the audit log and return the set of issue numbers already logged.
+    """Read the audit log and return the set of issue numbers already logged."""
 
-    Used to make the backfill idempotent: a re-run does NOT append a duplicate
-    entry for an issue that already has any decision recorded.
-    """
     if not audit_path.exists():
         return set()
     seen: set[int] = set()
     try:
         for line in audit_path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if not line:
+            stripped = line.strip()
+            if not stripped:
                 continue
             try:
-                entry = json.loads(line)
+                entry = json.loads(stripped)
             except json.JSONDecodeError:
-                # Malformed lines are skipped (Story 2's reader does the same).
                 continue
             if not isinstance(entry, dict):
                 continue
@@ -373,14 +588,13 @@ def _existing_audit_issue_numbers(audit_path: Path) -> set[int]:
             if isinstance(n, int):
                 seen.add(n)
     except (OSError, UnicodeDecodeError):
-        # If we can't read the file, assume nothing logged. The append step
-        # will surface any write-side IO error.
         return set()
     return seen
 
 
 def _build_audit_entry(repo: str, issue_number: int, source_folder: str) -> dict[str, Any]:
-    """Compose a single ``accepted`` audit entry per Story 2's schema."""
+    """Compose a single ``accept`` audit entry per Story 2's schema."""
+
     return {
         "decision_id": str(uuid.uuid4()),
         "timestamp": _now_iso(),
@@ -389,20 +603,15 @@ def _build_audit_entry(repo: str, issue_number: int, source_folder: str) -> dict
         "decision": "accept",
         "actor": BOOTSTRAP_ACTOR,
         "reason": (
-            f"bootstrap backfill: vBRIEF already in vbrief/{source_folder}/ at "
-            f"opt-in time"
+            f"bootstrap backfill: vBRIEF already in vbrief/{source_folder}/ "
+            "at opt-in time"
         ),
     }
 
 
 def _append_audit_entry(audit_path: Path, entry: dict[str, Any]) -> None:
-    """Self-contained JSONL append used when Story 2 hasn't merged yet.
+    """Self-contained JSONL append used when Story 2 hasn't merged yet."""
 
-    Mirrors the schema Story 2 prescribes (UUID + ISO-8601 + repo +
-    issue_number + decision + actor + reason). Story 2's ``append`` provides
-    advisory locking; the bootstrap path does not because this step is run
-    once at opt-in and does not race with other writers.
-    """
     audit_path.parent.mkdir(parents=True, exist_ok=True)
     serialized = json.dumps(entry, ensure_ascii=False, sort_keys=True)
     with audit_path.open("a", encoding="utf-8") as fh:
@@ -411,15 +620,8 @@ def _append_audit_entry(audit_path: Path, entry: dict[str, Any]) -> None:
 
 
 def step_backfill_audit_log(project_root: Path, repo: str | None) -> StepOutcome:
-    """Backfill ``accepted`` audit entries for items already in lifecycle folders.
+    """Backfill ``accept`` audit entries for items already in lifecycle folders."""
 
-    Idempotent: items whose issue number already appears in the audit log are
-    skipped, regardless of which decision was recorded. The first-write-wins
-    semantic preserves any pre-existing audit history (e.g. an issue that was
-    accepted, then rejected, then re-accepted before bootstrap was first run).
-
-    Skips ``vbrief/cancelled/`` so rejected items are not reanimated.
-    """
     if repo is None:
         return StepOutcome(
             name="backfill_audit_log",
@@ -442,25 +644,18 @@ def step_backfill_audit_log(project_root: Path, repo: str | None) -> StepOutcome
     audit_path = project_root / AUDIT_LOG_RELPATH
     already_logged = _existing_audit_issue_numbers(audit_path)
 
-    # Detect Story 2's append() if available -- prefer it so the advisory
-    # lock is honored on contended writes (defence-in-depth even though the
-    # bootstrap is single-writer).
     try:
-        import candidates_log  # type: ignore[import-not-found]
-
+        candidates_log = importlib.import_module("candidates_log")
         story2_append = getattr(candidates_log, "append", None)
         if not callable(story2_append):
             story2_append = None
-    except ImportError:
+    except ModuleNotFoundError:
         story2_append = None
 
     appended = 0
     skipped_existing = 0
     skipped_cancelled = 0
 
-    # Count cancelled items only for diagnostic transparency. We do NOT log
-    # them; the count tells the operator how many would be reanimated if the
-    # bootstrap incorrectly included cancelled/.
     cancelled_dir = vbrief_root / "cancelled"
     if cancelled_dir.exists():
         skipped_cancelled = len(_scan_lifecycle_folder(cancelled_dir))
@@ -474,13 +669,6 @@ def step_backfill_audit_log(project_root: Path, repo: str | None) -> StepOutcome
             entry = _build_audit_entry(repo, issue_number, folder_name)
             try:
                 if story2_append is not None:
-                    # Pass path=audit_path explicitly so Story 2 writes to
-                    # the consumer's project-root audit log rather than
-                    # ``DEFAULT_LOG_PATH`` (which is anchored to the repo
-                    # housing ``scripts/candidates_log.py``). Without this,
-                    # bootstrap invocations from a different ``--project-root``
-                    # (and pytest tmp_path fixtures) silently leak entries
-                    # into the deft-directive repo's own audit log.
                     story2_append(entry, path=audit_path)
                 else:
                     _append_audit_entry(audit_path, entry)
@@ -520,281 +708,125 @@ def step_backfill_audit_log(project_root: Path, repo: str | None) -> StepOutcome
 
 
 # ---------------------------------------------------------------------------
-# Step 3 -- ensure .deft-cache/ is gitignored
+# Step 3 + 4 -- ensure .deft-cache/ and vbrief/.eval/ are gitignored
 # ---------------------------------------------------------------------------
+#
+# Implementation lives in scripts/_triage_bootstrap_gitignore.py to keep
+# this module under the 1000-line MUST limit (coding/coding.md). The
+# step functions are re-exported from that submodule so the public
+# import surface (``triage_bootstrap.step_ensure_gitignore_entry`` /
+# ``...eval_dir``) stays exactly as Story 3 shipped.
 
-
-def _gitignore_already_covers(gitignore_text: str, line: str) -> bool:
-    """Return True when ``gitignore_text`` already includes ``line``.
-
-    Match is line-exact (after stripping trailing whitespace) so commented-out
-    forms like ``# .deft-cache/`` do NOT count as coverage. This is consistent
-    with NFR-2 in ``docs/privacy-nfr.md``: the consumer's commented-out form
-    is the explicit opt-in to commit the cache, and the bootstrap MUST NOT
-    re-add the active rule without operator intent.
-    """
-    target = line.strip()
-    return any(raw.strip() == target for raw in gitignore_text.splitlines())
-
-
-def _is_commented_gitignore_line(raw: str, gitignore_line: str) -> bool:
-    """Return True when ``raw`` is exactly the commented-out form of ``gitignore_line``.
-
-    Recognized shapes (NFR-2 opt-in markers):
-
-    - ``# .deft-cache/``
-    - ``#.deft-cache/``           (no space)
-    - ``  # .deft-cache/  ``      (surrounding whitespace)
-    - ``## .deft-cache/``         (double-hash for visual emphasis)
-
-    Rejected:
-
-    - ``.deft-cache/`` (active rule -- handled by ``_gitignore_already_covers``)
-    - ``# Do not track files under .deft-cache/ here`` (mere mention)
-    - ``# anything-else.deft-cache/`` (substring would match; literal-form
-      anchoring rejects it)
-
-    The check strips leading/trailing whitespace, requires the line to
-    start with ``#``, then peels successive ``#`` characters and at most one
-    space before comparing the remainder to ``gitignore_line`` exactly. This
-    is tighter than a substring scan (Greptile P2 on PR #877) while still
-    accepting reasonable hand-written variants of the documented opt-in
-    pattern.
-    """
-    stripped = raw.strip()
-    if not stripped.startswith("#"):
-        return False
-    # Peel off all leading '#' characters (allows ``##`` etc.) plus at most
-    # one optional space, then compare the remainder to the active-rule form.
-    body = stripped.lstrip("#")
-    if body.startswith(" "):
-        body = body[1:]
-    return body == gitignore_line
-
-
-def step_ensure_gitignore_entry(project_root: Path) -> StepOutcome:
-    """Append ``.deft-cache/`` to ``.gitignore`` when absent.
-
-    Idempotent: a re-run is a no-op when the line is present (or when the
-    consumer has commented it out as the explicit opt-in to commit the
-    cache, per NFR-2 in ``docs/privacy-nfr.md``).
-    """
-    gitignore_path = project_root / ".gitignore"
-    if not gitignore_path.exists():
-        # Greenfield project. Create a minimal .gitignore with just the
-        # cache line so the bootstrap is still self-contained.
-        try:
-            gitignore_path.write_text(GITIGNORE_LINE + "\n", encoding="utf-8")
-        except OSError as exc:
-            return StepOutcome(
-                name="ensure_gitignore_entry",
-                ok=False,
-                message="could not create .gitignore",
-                error=str(exc),
-            )
-        return StepOutcome(
-            name="ensure_gitignore_entry",
-            ok=True,
-            message=f"created .gitignore with {GITIGNORE_LINE} line",
-            details={"created": True, "appended": False},
-        )
-
-    try:
-        existing = gitignore_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError) as exc:
-        return StepOutcome(
-            name="ensure_gitignore_entry",
-            ok=False,
-            message="could not read .gitignore",
-            error=str(exc),
-        )
-
-    # Check for either the active line OR a commented-out form (NFR-2 opt-in).
-    # If commented out, we treat that as "consumer has opted in to commit the
-    # cache" and respect that decision.
-    #
-    # The match is tightened to the exact `# .deft-cache/` form (with optional
-    # leading/trailing whitespace and an optional second `#` for double-hash
-    # comments) so a comment that merely *mentions* the cache directory --
-    # e.g. `# Do not track files under .deft-cache/ here` -- does NOT trigger
-    # the opt-in detection. Only a literal commented-out form counts as the
-    # NFR-2 opt-in (Greptile P2 review on PR #877).
-    has_commented_form = any(
-        _is_commented_gitignore_line(raw, GITIGNORE_LINE) for raw in existing.splitlines()
-    )
-
-    if _gitignore_already_covers(existing, GITIGNORE_LINE):
-        return StepOutcome(
-            name="ensure_gitignore_entry",
-            ok=True,
-            message=f"{GITIGNORE_LINE} already in .gitignore (no-op)",
-            details={"created": False, "appended": False, "already_present": True},
-        )
-
-    if has_commented_form:
-        return StepOutcome(
-            name="ensure_gitignore_entry",
-            ok=True,
-            message=(
-                f"{GITIGNORE_LINE} is commented out (operator has opted in to "
-                "commit the cache per docs/privacy-nfr.md NFR-2; not re-adding)"
-            ),
-            details={
-                "created": False,
-                "appended": False,
-                "opt_in_commit_cache": True,
-            },
-        )
-
-    # Append the line. Ensure we land on a fresh line even if the existing
-    # file lacks a trailing newline.
-    suffix = "" if existing.endswith("\n") or existing == "" else "\n"
-    new_content = (
-        existing
-        + suffix
-        + "\n# Triage v1 local issue cache (#845).\n"
-        + "# See docs/privacy-nfr.md for the gitignore-default + opt-in-commit-cache\n"
-        + "# contract. Comment this line out to opt in to committing the cache.\n"
-        + GITIGNORE_LINE
-        + "\n"
-    )
-    try:
-        gitignore_path.write_text(new_content, encoding="utf-8")
-    except OSError as exc:
-        return StepOutcome(
-            name="ensure_gitignore_entry",
-            ok=False,
-            message="could not write .gitignore",
-            error=str(exc),
-        )
-    return StepOutcome(
-        name="ensure_gitignore_entry",
-        ok=True,
-        message=f"appended {GITIGNORE_LINE} to .gitignore",
-        details={"created": False, "appended": True},
-    )
-
-
-# ---------------------------------------------------------------------------
-# Step 4 -- ensure gitcrawl is installed (best-effort)
-# ---------------------------------------------------------------------------
-
-
-def step_ensure_gitcrawl(skip: bool = False) -> StepOutcome:
-    """Install ``gitcrawl`` when missing.
-
-    ``gitcrawl`` is the GitHub-aware crawler Story 1 prefers when populating
-    the cache (with a fallback to ``gh issue list`` when absent). The bootstrap
-    tries ``pipx install gitcrawl`` and falls back to a print-only diagnostic
-    when neither pipx nor gitcrawl can be detected. Installation is best-effort:
-    the bootstrap does NOT fail if gitcrawl can't be installed because Story 1
-    has a documented fallback.
-
-    The ``skip`` flag is a test-only escape hatch; CLI consumers should not
-    pass it.
-    """
-    if skip:
-        return StepOutcome(
-            name="ensure_gitcrawl",
-            ok=True,
-            message="skipped (--skip-gitcrawl flag set)",
-            details={"skipped": "flag"},
-        )
-
-    if shutil.which("gitcrawl") is not None:
-        return StepOutcome(
-            name="ensure_gitcrawl",
-            ok=True,
-            message="already on PATH (no-op)",
-            details={"installed": True, "action": "noop"},
-        )
-
-    pipx = shutil.which("pipx")
-    if pipx is None:
-        return StepOutcome(
-            name="ensure_gitcrawl",
-            ok=True,
-            message=(
-                "deferred -- pipx not on PATH; install gitcrawl manually if "
-                "you want gh-API-free cache populates "
-                "(Story 1 falls back to 'gh issue list')"
-            ),
-            details={"installed": False, "action": "deferred-no-pipx"},
-        )
-
-    try:
-        proc = subprocess.run(  # noqa: S603 -- explicit args, no shell
-            [pipx, "install", "gitcrawl"],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=120,
-        )
-    except (subprocess.SubprocessError, OSError) as exc:
-        return StepOutcome(
-            name="ensure_gitcrawl",
-            ok=True,
-            message=(
-                f"deferred -- pipx install raised {type(exc).__name__} "
-                "(Story 1 has a 'gh issue list' fallback)"
-            ),
-            error=str(exc),
-            details={"installed": False, "action": "deferred-error"},
-        )
-
-    if proc.returncode == 0:
-        return StepOutcome(
-            name="ensure_gitcrawl",
-            ok=True,
-            message="installed via pipx",
-            details={"installed": True, "action": "pipx-install"},
-        )
-
-    return StepOutcome(
-        name="ensure_gitcrawl",
-        ok=True,
-        message=(
-            f"deferred -- pipx install exited {proc.returncode} "
-            "(Story 1 has a 'gh issue list' fallback)"
-        ),
-        error=(proc.stderr or proc.stdout or "").strip()[:512],
-        details={"installed": False, "action": "deferred-pipx-fail"},
-    )
-
+# Re-export the gitignore step functions and the canonical line
+# constants. ``GITIGNORE_LINE`` and ``GITIGNORE_EVAL_LINE`` are part of
+# the module's public surface (consumers / tests reference
+# ``triage_bootstrap.GITIGNORE_LINE``); the ``__all__``-style guard
+# below keeps ruff F401 silent without losing the re-export.
+from _triage_bootstrap_gitignore import (  # noqa: E402, F401 -- re-exported public surface
+    GITIGNORE_EVAL_LINE,
+    GITIGNORE_LINE,
+    step_ensure_gitignore_entry,
+    step_ensure_gitignore_eval_dir,
+)
 
 # ---------------------------------------------------------------------------
 # Dispatcher + CLI
 # ---------------------------------------------------------------------------
 
 
+#: Sentinel signalling that the caller did not pass a ``progress``
+#: argument and the dispatcher should default to ``sys.stderr``. We
+#: distinguish ``None`` (silent) from "not provided" (default to stderr)
+#: so test callers can reliably suppress emission with ``progress=None``.
+_PROGRESS_DEFAULT: object = object()
+
+
 def run_bootstrap(
     project_root: Path,
     repo: str | None,
     *,
-    skip_gitcrawl: bool = False,
+    cache_module: Any | None = None,
+    batch_size: int | None = None,
+    delay_ms: int | None = None,
+    state: str | None = None,
+    limit: int | None = None,
+    fetch_timeout_s: float | None = None,
+    progress: Any = _PROGRESS_DEFAULT,
 ) -> BootstrapResult:
     """Run the bootstrap pipeline, returning the aggregate result.
 
-    Dispatches the four mutating steps documented in the module docstring
-    (populate_cache, backfill_audit_log, ensure_gitignore_entry,
-    ensure_gitcrawl) and appends one ``StepOutcome`` per step. The fifth
-    documented step (``recap``) is rendered by
-    :meth:`BootstrapResult.summary` and printed in :func:`main` rather
-    than dispatched as a separate ``StepOutcome``; the recap therefore
-    produces no entry in ``result.steps``. ``len(result.steps) == 4`` is
-    the expected post-condition.
+    Dispatches the four mutating steps documented in the module
+    docstring (populate_cache, backfill_audit_log,
+    ensure_gitignore_entry, ensure_gitignore_eval_dir) and appends one
+    :class:`StepOutcome` per step. ``len(result.steps) == 4`` is the
+    expected post-condition.
 
-    Separated from :func:`main` so tests drive the function directly
-    without argparse plumbing.
+    ``fetch_timeout_s`` is forwarded to :func:`step_populate_cache` and
+    bounds the cache:fetch-all step so the orchestrator always exits
+    even when an underlying subprocess hangs (#952).
+
+    ``progress`` is a file-like sink for per-step status lines; it
+    defaults to ``sys.stderr`` and may be set to ``None`` to silence
+    emission. The lines mirror ``scripts/cache.py`` cadence so a future
+    operator can see exactly which step is in flight if the run wedges.
     """
+
+    progress_sink: Any = sys.stderr if progress is _PROGRESS_DEFAULT else progress
+
     result = BootstrapResult(project_root=project_root, repo=repo)
 
-    result.steps.append(step_populate_cache(project_root, repo))
-    result.steps.append(step_backfill_audit_log(project_root, repo))
-    result.steps.append(step_ensure_gitignore_entry(project_root))
-    result.steps.append(step_ensure_gitcrawl(skip=skip_gitcrawl))
+    repo_detail = f"repo={repo}" if repo else "repo=<infer-from-git>"
+    effective_timeout = (
+        fetch_timeout_s if fetch_timeout_s is not None else DEFAULT_FETCH_TIMEOUT_S
+    )
+    timeout_detail = f"fetch_timeout_s={effective_timeout:g}"
 
-    # Aggregate exit code: any step with ok=False sets exit 1.
+    _emit_progress(
+        progress_sink, 1, "populate_cache", "starting",
+        f"{repo_detail}; {timeout_detail}",
+    )
+    populate = step_populate_cache(
+        project_root,
+        repo,
+        cache_module=cache_module,
+        batch_size=batch_size,
+        delay_ms=delay_ms,
+        state=state,
+        limit=limit,
+        fetch_timeout_s=fetch_timeout_s,
+    )
+    result.steps.append(populate)
+    populate_phase = "done" if populate.ok else (
+        "timeout" if populate.details.get("timed_out") else "error"
+    )
+    _emit_progress(
+        progress_sink, 1, "populate_cache", populate_phase, populate.message,
+    )
+
+    _emit_progress(progress_sink, 2, "backfill_audit_log", "starting", repo_detail)
+    backfill = step_backfill_audit_log(project_root, repo)
+    result.steps.append(backfill)
+    _emit_progress(
+        progress_sink, 2, "backfill_audit_log",
+        "done" if backfill.ok else "error", backfill.message,
+    )
+
+    _emit_progress(progress_sink, 3, "ensure_gitignore_entry", "starting")
+    gi_cache = step_ensure_gitignore_entry(project_root)
+    result.steps.append(gi_cache)
+    _emit_progress(
+        progress_sink, 3, "ensure_gitignore_entry",
+        "done" if gi_cache.ok else "error", gi_cache.message,
+    )
+
+    _emit_progress(progress_sink, 4, "ensure_gitignore_eval_dir", "starting")
+    gi_eval = step_ensure_gitignore_eval_dir(project_root)
+    result.steps.append(gi_eval)
+    _emit_progress(
+        progress_sink, 4, "ensure_gitignore_eval_dir",
+        "done" if gi_eval.ok else "error", gi_eval.message,
+    )
+
     if any(not step.ok for step in result.steps):
         result.exit_code = 1
     return result
@@ -804,9 +836,10 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="triage_bootstrap.py",
         description=(
-            "Idempotent 5-step triage v1 installer (#845 Story 6). Re-runnable "
-            "by design; reversible via `rm -rf .deft-cache/ vbrief/.eval/` and "
-            "removing the .deft-cache/ line from .gitignore."
+            "Idempotent triage v1 installer (#883 Story 3 rebind). "
+            "Re-runnable by design; reversible via "
+            "`rm -rf .deft-cache/ vbrief/.eval/` and removing the "
+            ".deft-cache/ + vbrief/.eval/ lines from .gitignore."
         ),
     )
     parser.add_argument(
@@ -821,17 +854,63 @@ def _build_parser() -> argparse.ArgumentParser:
         "--repo",
         default=os.environ.get("DEFT_TRIAGE_REPO"),
         help=(
-            "Upstream repo slug 'owner/name'. Required for cache populate + "
-            "audit-log backfill steps. Bootstrap is partial when omitted "
-            "(gitignore + gitcrawl steps still run)."
+            "Upstream repo slug 'owner/name'. Resolution precedence: "
+            "(1) this explicit flag; (2) the DEFT_TRIAGE_REPO env var; "
+            "(3) inferred from `git remote get-url origin` inside the populate "
+            "step. Bootstrap remains partial only when all three surfaces "
+            "fail to resolve a slug."
         ),
     )
     parser.add_argument(
-        "--skip-gitcrawl",
-        action="store_true",
+        "--limit",
+        type=int,
+        default=None,
         help=(
-            "Skip step 4 (gitcrawl install). Mainly for test fixtures that "
-            "shouldn't shell out to pipx."
+            "Cap on the number of issues fetched (forwarded to "
+            "cache:fetch-all --limit)."
+        ),
+    )
+    parser.add_argument(
+        "--state",
+        default=None,
+        choices=["open", "closed", "all"],
+        help="Issue state filter forwarded to cache:fetch-all --state.",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=None,
+        dest="batch_size",
+        help="Forwarded to cache:fetch-all --batch-size.",
+    )
+    parser.add_argument(
+        "--delay-ms",
+        type=int,
+        default=None,
+        dest="delay_ms",
+        help="Forwarded to cache:fetch-all --delay-ms.",
+    )
+    parser.add_argument(
+        "--fetch-timeout-s",
+        type=float,
+        default=_default_fetch_timeout_from_env(),
+        dest="fetch_timeout_s",
+        help=(
+            "Wall-clock cap (seconds) on the cache:fetch-all step. The "
+            "watchdog protects the orchestrator from a stuck `task "
+            "scm:issue:view` subprocess so bootstrap always exits in "
+            "bounded time (#952). 0 disables the cap (legacy unbounded "
+            "behavior). Default: $DEFT_BOOTSTRAP_FETCH_TIMEOUT_S or "
+            f"{DEFAULT_FETCH_TIMEOUT_S}s."
+        ),
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        dest="quiet",
+        help=(
+            "Suppress per-step `triage:bootstrap step <i>/<N> ...` progress "
+            "lines on stderr. The recap and --json output are unaffected."
         ),
     )
     parser.add_argument(
@@ -846,8 +925,26 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _default_fetch_timeout_from_env() -> float:
+    """Resolve the default ``--fetch-timeout-s`` from the environment.
+
+    Reads ``DEFT_BOOTSTRAP_FETCH_TIMEOUT_S`` and falls back to
+    :data:`DEFAULT_FETCH_TIMEOUT_S` on absence or unparseable value. A
+    bad value is silently ignored (the CLI default is the canonical
+    constant) so a misconfigured env never blocks an opt-in run.
+    """
+    raw = os.environ.get("DEFT_BOOTSTRAP_FETCH_TIMEOUT_S")
+    if not raw:
+        return float(DEFAULT_FETCH_TIMEOUT_S)
+    try:
+        return max(0.0, float(raw))
+    except ValueError:
+        return float(DEFAULT_FETCH_TIMEOUT_S)
+
+
 def _emit_json(result: BootstrapResult) -> str:
-    """Render the structured ``--json`` payload (pinned by tests)."""
+    """Render the structured ``--json`` payload."""
+
     payload = {
         "project_root": str(result.project_root),
         "repo": result.repo,
@@ -882,7 +979,12 @@ def main(argv: list[str] | None = None) -> int:
     result = run_bootstrap(
         project_root=project_root,
         repo=args.repo,
-        skip_gitcrawl=args.skip_gitcrawl,
+        batch_size=args.batch_size,
+        delay_ms=args.delay_ms,
+        state=args.state,
+        limit=args.limit,
+        fetch_timeout_s=args.fetch_timeout_s,
+        progress=None if args.quiet else sys.stderr,
     )
 
     if args.emit_json:

@@ -379,4 +379,32 @@ Larger feature work -- only after issues are resolved and content is stable.
 - **#845** -- feat(scripts,tasks): triage cache infra + #583 quarantine on cache path -- `[completed]`
 - **#845** -- feat(scripts,vbrief/schemas): triage candidates.jsonl audit log + JSON schema -- `[completed]`
 - **#845** -- feat(skills): extend deft-directive-refinement with Phase 0 (cache + triage) -- `[completed]`
+- **#899** -- Installer fails on a clean Windows machine: reinstalls git, then exits without completing -- `[completed]`
+- **#900** -- task triage:bootstrap and task triage:cache populate cannot scope or filter the issue cache -- `[completed]`
+- **#901** -- task triage:bootstrap step ensure_gitcrawl defers silently on Windows; users get no signal about the gh-only fallback -- `[completed]`
+- **#902** -- Fresh Windows maintainer setup has no scripted toolchain bootstrap or PATH-refresh helper -- `[completed]`
+- **#883** -- feat(cache,quarantine): unified content cache + quarantine layer (v1 / triage migration) -- `[completed]`
+- **#883** -- feat(scm): minimal stub (4 commands) for #883 v1 cache layer -- `[completed]`
+- **#883** -- feat(cache,quarantine): unified cache + scanner v2 baseline (#883 Story 2) -- `[completed]`
+- **#883** -- refactor(triage): rebind v1 surface onto cache:* (#883 Story 3) -- `[completed]`
+- **#883** -- feat(release): v0.26.0 migration docs + cache layer release dispatch (#883 Story 4) -- `[completed]`
+- **#913** -- task: triage v1 fragment-include task names don't match documented triage:* surface -- `[completed]`
+- **#914** -- task: triage:bootstrap doesn't pass --limit / --state / --label through to populate (#900) -- `[completed]`
+- **#915** -- P0: triage_bulk.py bypasses Tier-1 cache and Tier-2 audit log -- iterates live gh issue list (#845 Story 4) -- `[completed]`
+- **#915** -- fix(triage): disable bulk-* tasks pending v0.25.2 (#915 hot-fix) -- `[completed]`
+- **#952** -- fix(triage): bootstrap orchestrator hang post-cache:fetch-all (#952) + scrub --skip-gitcrawl (#951) -- `[completed]`
+- **#883** -- v0.26.0 cache-layer scale smoke re-run after #952 bootstrap-hang fix (#883) -- `[completed]`
+- **#947** -- feat(cache): size cap + LRU eviction + disk quota (#947) -- `[completed]`
+- **#949** -- fix(scanner): tune injection-heading detector to reduce false-positives on legitimate template markdown (#949) -- `[completed]`
+- **#954** -- feat(meta): canonical orchestrator preamble + REST-default / no-Draft-retoggle / rate-limit-throttle / dispatcher-lifecycle-hygiene rules (#954) -- `[completed]`
+- **#961** -- feat(scripts): gh_rest.py REST-fallback helpers for gh mutations and reads (#961) -- `[completed]`
+- **#910** -- templates/swarm-greptile-poller-prompt.md detector misses Greptile findings rendered as markdown bullets or inline prose -- `[completed]`
+- **#911** -- swarm cascade: CHANGELOG.md [Unreleased] conflict resolution should union-merge, not HEAD-take -- `[completed]`
+- **#975** -- perf(tests): triage_bootstrap watchdog tests dominate triage suite (top 5 = 68% of triage time) -- `[completed]`
+- **#976** -- fix(scm,tests): eliminate remaining GraphQL-backed scm.py / live SCM smoke bucket drain after #961 -- `[completed]`
+- **#979** -- docs: surface refinement/triage workflow to end users (Phase 0 / cache / ingest) -- `[completed]`
+- **#983** -- feat(swarm,security): swarm workers should authenticate as a distinct GitHub identity, not share the maintainer's PAT -- `[completed]`
+- **#984** -- docs(readme): call out https://webinstaller.fly.dev/ as an alternative installer in README -- `[completed]`
+- **#985** -- bug(triage,refinement): `task triage:accept` skips `issue:ingest` delegation -- Phase 0 accepted candidates never reach `vbrief/proposed/` -- `[completed]`
+- **#988** -- bug(refinement,ingest): `task issue:ingest` produces stub vBRIEFs without `plan.narratives.Overview` or `plan.items` -- ingested items are not swarm-ready -- `[completed]`
 

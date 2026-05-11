@@ -9,20 +9,63 @@ binaries / notes / asset list, the operator runs::
 
     task release:publish -- <version>
 
-which dispatches this script to flip ``--draft=false``.
+which dispatches this script to flip the release out of draft state.
 
 Pipeline
 --------
-1. Pre-flight: verify ``gh release view v<version>`` resolves and is in
-   draft state. State machine:
+1. Pre-flight: verify the release exists and is in draft state via the
+   GitHub REST API. The lookup uses a paginated list+filter against
+   ``GET /repos/{owner}/{repo}/releases?per_page=100`` (with
+   ``gh api --paginate`` following ``Link: rel="next"`` headers) and
+   matches the first entry whose ``tag_name`` equals ``v<version>``.
+   State machine:
 
-   - **not-found** → exit 1 (cannot publish a release that does not exist)
-   - **already-published** → exit 0 no-op (publish is idempotent; running
+   - **not-found** -> exit 1 (cannot publish a release that does not exist)
+   - **already-published** -> exit 0 no-op (publish is idempotent; running
      it twice is safe)
-   - **draft** → proceed
-2. ``gh release edit v<version> --draft=false --repo <owner/repo>``
-3. Re-read the release and verify ``isDraft == false`` flipped
-4. Print summary line; return exit 0
+   - **draft** -> proceed
+2. Flip the draft state via REST PATCH:
+   ``PATCH /repos/{owner}/{repo}/releases/{id}`` with ``draft=false``.
+3. Re-read the release and verify the draft state actually flipped.
+4. Print summary line; return exit 0.
+
+REST internals (#961, #1016)
+----------------------------
+The v0.26.1 publish failed (2026-05-07) at the GraphQL bucket
+exhaustion mid-cascade: the legacy ``gh release view --json ...`` and
+``gh release edit ... --draft=false`` subcommands both routed through
+GraphQL and failed hard when the bucket hit zero. Per ``meta/lessons.md``
+``## gh CLI GraphQL Bucket Exhaustion + REST Fallback + UTF-8 Payload
+Pattern (2026-05)`` and the canonical preamble in
+``templates/agent-prompt-preamble.md`` S5 (REST-by-default rule), this
+script uses ``gh api`` directly against REST endpoints, which bill
+the ``core`` bucket (independent of ``graphql``).
+
+#1016 follow-up: the v0.27.0 publish (2026-05-10) failed against a
+DRAFT release because the original #961 implementation called
+``GET /repos/{owner}/{repo}/releases/tags/{tag}``, which the GitHub
+REST docs explicitly limit to PUBLISHED releases ("This returns the
+latest published release for the specified tag"). DRAFT releases were
+filtered out at the API layer, so ``release_publish.py`` 404'd on the
+canonical case it was supposed to handle. The fix (option 2 from #1016)
+replaces the single ``/releases/tags/{tag}`` call with a paginated
+list+filter against ``GET /repos/{owner}/{repo}/releases?per_page=100``
+(via ``gh api --paginate``), then matches the first entry whose
+``tag_name`` equals the target. This stays within the REST core bucket
+and surfaces drafts.
+
+Release helpers are intentionally NOT routed through
+``scripts/gh_rest.py`` (#961) because the issue body explicitly carves
+releases out as ``task release`` (#74) territory; this module owns its
+two inline REST calls without extending the cross-cutting helper
+surface. See module docstring of ``scripts/gh_rest.py`` for the
+rationale.
+
+The internal ``payload`` shape returned by :func:`view_release` is
+normalised to the legacy field names (``isDraft``, ``tagName``,
+``url``, ``name``) regardless of which REST keys the upstream API
+uses, so :func:`run_publish` and existing tests do not care that the
+underlying transport changed.
 
 Exit codes
 ----------
@@ -32,7 +75,9 @@ Exit codes
     2 -- config / argument error (malformed version, repo unresolvable, ...)
 
 Refs #716 (canonical spec; safety hardening Item 2 of 7),
-#74 (foundation), #233, #642, #635, #709, #710.
+#74 (foundation), #233, #642, #635, #709, #710,
+#961 (REST internals; v0.26.1 publish failure motivating incident),
+#798 (PS 5.1 non-ASCII discipline applied to JSON-payload pattern).
 """
 
 from __future__ import annotations
@@ -123,14 +168,122 @@ def _build_parser() -> argparse.ArgumentParser:
 # ---- gh helpers -------------------------------------------------------------
 
 
+def _normalise_release_payload(rest_payload: dict) -> dict:
+    """Map the REST release object to the legacy-shape internal payload.
+
+    The REST endpoint returns ``draft`` / ``tag_name`` / ``html_url``
+    while the legacy ``gh release view --json ...`` form returned
+    ``isDraft`` / ``tagName`` / ``url``. :func:`run_publish` and the
+    existing test fixtures consume the legacy field names; we normalise
+    once here so the transport change is an internal-implementation
+    detail. The REST ``id`` field is added (it had no pre-#961 analogue)
+    because :func:`edit_release_publish` needs it for the PATCH URL.
+    """
+    return {
+        "isDraft": bool(rest_payload.get("draft", False)),
+        "name": rest_payload.get("name"),
+        "tagName": rest_payload.get("tag_name"),
+        "url": rest_payload.get("html_url"),
+        "id": rest_payload.get("id"),
+    }
+
+
+# Endpoint used by the paginated list+filter lookup (#1016). Exposed as a
+# module-level constant so tests can pin the argv shape without
+# duplicating the literal.
+_RELEASES_LIST_ENDPOINT_TEMPLATE = "repos/{repo}/releases?per_page=100"
+
+
+def _gh_api_find_release_by_tag(
+    gh_path: str, repo: str, tag: str
+) -> tuple[str, dict | None, str]:
+    """Find a release by ``tag_name`` via paginated REST list (#1016).
+
+    The original #961 implementation called
+    ``GET /repos/<owner>/<repo>/releases/tags/<tag>``, which the GitHub
+    REST docs explicitly limit to PUBLISHED releases ("This returns the
+    latest published release for the specified tag"). DRAFT releases
+    were filtered out at the API layer, so the publish flow 404'd on
+    its canonical input. The fix (option 2 from #1016) lists ALL
+    releases via ``GET /repos/<owner>/<repo>/releases?per_page=100``
+    (paginated; ``gh api --paginate`` follows ``Link: rel="next"``
+    headers automatically and concatenates page arrays into one) and
+    filters client-side for ``tag_name == tag``. The first match wins;
+    if no entry matches, the helper returns ``not-found``.
+
+    Returns ``(state, payload, reason)`` matching
+    :func:`view_release`'s contract:
+
+    - ``"draft"`` -- matching release with ``draft=true`` (proceed)
+    - ``"published"`` -- matching release with ``draft=false`` (no-op)
+    - ``"not-found"`` -- no entry with ``tag_name == tag`` in the list
+    - ``"gh-error"`` -- gh failure (CLI missing, auth, network); the
+      ``reason`` carries the diagnostic
+
+    ``payload`` is normalised via :func:`_normalise_release_payload` so
+    callers see the legacy ``isDraft`` / ``tagName`` / ``url`` / ``id``
+    keys regardless of REST transport.
+    """
+    endpoint = _RELEASES_LIST_ENDPOINT_TEMPLATE.format(repo=repo)
+    # ``--paginate`` instructs gh to follow Link: rel="next" headers and
+    # emit a single concatenated JSON array for array endpoints. Bumped
+    # timeout vs the single-tag form because multi-page traversal can
+    # legitimately take longer on repos with hundreds of releases.
+    cmd = [gh_path, "api", "--paginate", endpoint]
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+            env=os.environ.copy(),
+        )
+    except FileNotFoundError:
+        return "gh-error", None, "gh CLI not found on PATH"
+    if result.returncode != 0:
+        stderr = (result.stderr or "").strip()
+        return "gh-error", None, f"gh api {endpoint} failed: {stderr}"
+    try:
+        rest_payload = json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        return "gh-error", None, f"gh api {endpoint} returned non-JSON: {exc}"
+    if not isinstance(rest_payload, list):
+        return "gh-error", None, (
+            f"gh api {endpoint} returned non-list "
+            f"({type(rest_payload).__name__})"
+        )
+    # First match wins. Drafts have no canonical SHA so equality on
+    # tag_name is the practical key per the #1016 issue body.
+    for entry in rest_payload:
+        if not isinstance(entry, dict):
+            continue
+        if entry.get("tag_name") != tag:
+            continue
+        payload = _normalise_release_payload(entry)
+        if payload.get("isDraft", False):
+            return "draft", payload, ""
+        return "published", payload, ""
+    return "not-found", None, f"release {tag} not found on {repo}"
+
+
 def view_release(version: str, repo: str) -> tuple[str, dict | None, str]:
     """Probe the current state of the GitHub release for ``v<version>``.
+
+    REST-routed since #961, paginated list+filter since #1016 -- uses
+    ``gh api --paginate repos/<owner>/<repo>/releases?per_page=100``
+    against the ``core`` bucket so a depleted ``graphql`` bucket cannot
+    stall the publish, and so DRAFT releases (which the
+    ``/releases/tags/{tag}`` endpoint hides) are surfaced. The internal
+    ``payload`` shape is normalised to the legacy field names
+    (``isDraft`` / ``tagName`` / ``url`` / ``name`` plus ``id`` for the
+    downstream PATCH).
 
     Returns ``(state, payload, reason)`` where ``state`` is one of:
 
     - ``"draft"`` -- release exists with isDraft=true (proceed to publish)
     - ``"published"`` -- release exists with isDraft=false (already done)
-    - ``"not-found"`` -- gh reports the release is missing (cannot publish)
+    - ``"not-found"`` -- no list entry matches the requested tag
     - ``"gh-error"`` -- gh failed for an unexpected reason (CLI missing,
       auth, network); ``reason`` carries the diagnostic
     """
@@ -138,10 +291,62 @@ def view_release(version: str, repo: str) -> tuple[str, dict | None, str]:
     if gh_path is None:
         return "gh-error", None, "gh CLI not found on PATH"
     tag = f"v{version}"
+    return _gh_api_find_release_by_tag(gh_path, repo, tag)
+
+
+def edit_release_publish(
+    version: str, repo: str, release_id: int | None = None
+) -> tuple[bool, str]:
+    """Flip the release out of draft via REST PATCH (#961, #1016).
+
+    Replaces the legacy ``gh release edit ... --draft=false`` form
+    (which routed through GraphQL and failed under bucket exhaustion).
+    Up to two REST calls under the ``core`` bucket: (1) paginated GET
+    ``releases?per_page=100`` to resolve the release id (skipped when
+    ``release_id`` is supplied by the caller; the list+filter form
+    surfaces DRAFT releases that ``/releases/tags/<tag>`` would hide,
+    per #1016), then (2) PATCH ``releases/<id>`` with ``draft=false``.
+    The ``-F draft=false`` flag on ``gh api`` parses the literal
+    ``false`` as a boolean (not a string) per the gh CLI documentation,
+    so no JSON-payload tempfile is required for this single-field
+    mutation.
+
+    Args:
+        version: Release version (no leading ``v``); the tag is derived
+            as ``v<version>``.
+        repo: ``"owner/repo"`` slug.
+        release_id: Optional pre-resolved REST release id. When the
+            caller already has the id from a prior :func:`view_release`
+            call (the common case under :func:`run_publish`), supplying
+            it here elides the redundant GET. When ``None`` (default),
+            the helper performs the GET as before. Greptile P2-2 (#961).
+    """
+    gh_path = release._resolve_gh()
+    if gh_path is None:
+        return False, "gh CLI not found on PATH"
+    tag = f"v{version}"
+    # Step 1: resolve the release id via REST (only when caller did not
+    # supply one). Backward-compatible: existing callers passing only
+    # (version, repo) still get the lookup behaviour. Uses the same
+    # paginated list+filter form as :func:`view_release` so DRAFT
+    # releases are surfaced (#1016).
+    if release_id is None:
+        state, payload, reason = _gh_api_find_release_by_tag(
+            gh_path, repo, tag
+        )
+        if state == "not-found":
+            return False, f"release {tag} not found on {repo}"
+        if state == "gh-error":
+            return False, f"could not resolve release id: {reason}"
+        if not payload or payload.get("id") is None:
+            return False, f"release {tag} payload missing 'id' field"
+        release_id = payload["id"]
+    # Step 2: PATCH the release to flip draft=false.
+    endpoint = f"repos/{repo}/releases/{release_id}"
     cmd = [
-        gh_path, "release", "view", tag,
-        "--repo", repo,
-        "--json", "isDraft,name,tagName,url",
+        gh_path, "api", endpoint,
+        "--method", "PATCH",
+        "-F", "draft=false",
     ]
     try:
         result = subprocess.run(
@@ -153,46 +358,9 @@ def view_release(version: str, repo: str) -> tuple[str, dict | None, str]:
             env=os.environ.copy(),
         )
     except FileNotFoundError:
-        return "gh-error", None, "gh CLI not found on PATH"
-    if result.returncode != 0:
-        stderr = (result.stderr or "").strip()
-        # gh exits non-zero for both "release not found" and other failures;
-        # the not-found error message contains "release not found" / "Not Found"
-        # / "release not found in this repository". Treat the missing-release
-        # case distinctly so callers can no-op vs. report a real failure.
-        lowered = stderr.lower()
-        if "not found" in lowered or "release not found" in lowered:
-            return "not-found", None, stderr
-        return "gh-error", None, f"gh release view failed: {stderr}"
-    try:
-        payload = json.loads(result.stdout)
-    except json.JSONDecodeError as exc:
-        return "gh-error", None, f"gh release view returned non-JSON: {exc}"
-    if payload.get("isDraft", False):
-        return "draft", payload, ""
-    return "published", payload, ""
-
-
-def edit_release_publish(version: str, repo: str) -> tuple[bool, str]:
-    """Invoke ``gh release edit`` to flip ``--draft=false``."""
-    gh_path = release._resolve_gh()
-    if gh_path is None:
-        return False, "gh CLI not found on PATH"
-    tag = f"v{version}"
-    cmd = [gh_path, "release", "edit", tag, "--repo", repo, "--draft=false"]
-    try:
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-            env=os.environ.copy(),
-        )
-    except FileNotFoundError:
         return False, "gh CLI not found on PATH"
     if result.returncode != 0:
-        return False, f"gh release edit failed: {result.stderr.strip()}"
+        return False, f"gh api {endpoint} (PATCH) failed: {result.stderr.strip()}"
     return True, f"flipped {tag} to published"
 
 
@@ -214,10 +382,28 @@ def run_publish(config: PublishConfig) -> int:
     # Step 1: view current state.
     label = f"View {tag} on {repo}"
     if config.dry_run:
-        _emit(label, f"DRYRUN (would run `gh release view {tag} --repo {repo}`)")
+        # Dry-run text mirrors the post-#1016 REST surface: a paginated
+        # GET against `releases?per_page=100` (core bucket) filtered
+        # client-side for tag_name == <tag>, followed by a PATCH against
+        # `releases/<id>` carrying `-F draft=false`. The single-tag form
+        # `releases/tags/<tag>` was removed in #1016 because it 404s on
+        # DRAFT releases (the canonical publish input). The legacy
+        # GraphQL `gh release view` / `gh release edit` forms were
+        # removed in #961.
+        _emit(
+            label,
+            (
+                f"DRYRUN (would run "
+                f"`gh api --paginate repos/{repo}/releases?per_page=100` "
+                f"and filter for tag_name == {tag})"
+            ),
+        )
         _emit(
             f"Edit {tag}",
-            f"DRYRUN (would run `gh release edit {tag} --repo {repo} --draft=false`)",
+            (
+                f"DRYRUN (would run "
+                f"`gh api -X PATCH repos/{repo}/releases/<id> -F draft=false`)"
+            ),
         )
         return EXIT_OK
 
@@ -235,9 +421,12 @@ def run_publish(config: PublishConfig) -> int:
     assert payload is not None
     _emit(label, f"OK (draft found at {payload.get('url', '<no url>')})")
 
-    # Step 2: edit to flip draft=false.
+    # Step 2: edit to flip draft=false. Pass the already-resolved release
+    # id from step 1 so edit_release_publish does not re-GET (P2-2).
     label = f"Edit {tag} (--draft=false)"
-    ok, reason = edit_release_publish(version, repo)
+    ok, reason = edit_release_publish(
+        version, repo, release_id=payload.get("id")
+    )
     if not ok:
         _emit(label, f"FAIL ({reason})")
         return EXIT_VIOLATION

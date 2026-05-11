@@ -111,27 +111,40 @@ includes:
   framework:
     taskfile: ./tasks/framework.yml
     optional: true
-  # Triage v1 fragment includes (#845 epic, Story 6 wiring).
+  # #883 Story 1 stub include. The fragment exposes its inner tasks
+  # (`issue:list` / `issue:view` / `issue:close` / `issue:edit`) under the
+  # `scm` namespace key, producing the canonical `scm:issue:*` surface in
+  # `task -l` with no doubled prefix. Forward-compat marker block lives at
+  # the top of `tasks/scm.yml`; the full scm:* namespace lives at #881 and
+  # replaces this stub wholesale when it lands.
+  scm:
+    taskfile: ./tasks/scm.yml
+    optional: true
+  # #883 Story 2 cache + quarantine layer. Five-command surface
+  # (cache:put / cache:get / cache:invalidate / cache:fetch-all /
+  # cache:prune) under the canonical `cache:` namespace via the include
+  # key. Forward-compat: future v2 cache surfaces (cache:check /
+  # cache:refresh / cache:doctor / cache:stats / quarantine:scan) are
+  # deferred per the epic deferred_to_v2 list and land here when v2
+  # ships.
+  cache:
+    taskfile: ./tasks/cache.yml
+    optional: true
+  # Triage v1 fragment includes (#845 epic, #883 Story 3 rebind onto cache:*).
   #
-  # Four standalone fragments authored by stories A1, A3, A4, and A6
-  # respectively. Each is `optional: true` so the parent Taskfile parses
-  # cleanly during the rolling cascade -- earlier consumers of any single
-  # `task <namespace>:*` target still work even if a sibling fragment
-  # has not landed yet.
+  # Three standalone fragments authored by stories A3, A4, and A6
+  # respectively (the legacy A1 `triage-cache` fragment was deleted in
+  # #883 Story 3 -- the unified `cache:*` surface above is the
+  # single content-mirroring layer). Each fragment is `optional: true`
+  # so the parent Taskfile parses cleanly even when a sibling fragment
+  # has not yet landed.
   #
   # Namespacing: go-task v3 prefixes inner task names with the include
-  # key (e.g. `triage-cache:cache` for inner task `cache` under key
-  # `triage-cache`). Two includes cannot share a single namespace key,
-  # so the four fragments use unique keys derived from the file basename.
-  # The user-facing `task triage:cache` / `task triage:bootstrap` /
-  # etc. forms are exposed via top-level alias tasks below.
-  #
-  # Cascade order (#845): A1 cache infra + #583 quarantine -> A2 audit
-  # log -> A3 actions -> A4 bulk + freshness -> A5 refinement Phase 0
-  # -> A6 bootstrap + this includes wiring + UPGRADING.md + docs (LAST).
-  triage-cache:
-    taskfile: ./tasks/triage-cache.yml
-    optional: true
+  # key. Two includes cannot share a single namespace key, so the
+  # fragments use unique keys derived from the file basename. The
+  # user-facing `task triage:bootstrap` / `task triage:accept` /
+  # `task triage:bulk-*` etc. forms are exposed via top-level alias
+  # tasks below.
   triage-actions:
     taskfile: ./tasks/triage-actions.yml
     optional: true
@@ -140,6 +153,32 @@ includes:
     optional: true
   triage-bootstrap:
     taskfile: ./tasks/triage-bootstrap.yml
+    optional: true
+  # Windows maintainer onboarding fragment (#902). Exposes the inner task
+  # `toolchain` as `task setup:toolchain`. Note: the root-level `setup` task
+  # below (git-hooks bootstrap) coexists with `setup:toolchain` because
+  # go-task treats them as distinct task names.
+  setup:
+    taskfile: ./tasks/setup.yml
+    optional: true
+  # CHANGELOG.md union-merge helper (#911). Exposes
+  # `task changelog:resolve-unreleased` -- the canonical swarm-cascade Phase 6
+  # Step 1 surface that replaces the older HEAD-take-and-discard pattern that
+  # silently dropped rebasing-branch CHANGELOG entries on every cascade rebase.
+  # See skills/deft-directive-swarm/SKILL.md Phase 6 Step 1 for the manual-
+  # fallback contract; the include is `optional: true` so the parent Taskfile
+  # parses cleanly when the fragment is absent (rolling-merge tolerance).
+  changelog:
+    taskfile: ./tasks/changelog.yml
+    optional: true
+  # Wipe-and-reinstall relocator (#992 PR2). Exposes `task relocate` --
+  # forwards user-facing flags (`--confirm` / `--dry-run` / `--force` /
+  # `--rollback` / `--no-snapshot` / `--json` / `--quiet`) via
+  # {{.CLI_ARGS}}; per `conventions/task-caching.md` no `sources:` /
+  # `generates:` so the recovery flags reach the script (#574). The
+  # include is `optional: true` for rolling-merge tolerance.
+  relocate:
+    taskfile: ./tasks/relocate.yml
     optional: true
 
 tasks:
@@ -151,7 +190,7 @@ tasks:
 
   # Backward-compatible aliases -- project convention is `task check`, `task test`, etc.
   check:
-    desc: Run all pre-commit checks
+    desc: "Run all pre-commit checks (skips @pytest.mark.slow tests via pyproject addopts -- run `task check:slow` for the slow lane, #975)"
     deps:
       - core:validate
       - core:lint
@@ -165,6 +204,19 @@ tasks:
       - vbrief:validate
     cmds:
       - echo "All checks passed"
+
+  # `task check:slow` runs the @pytest.mark.slow lane that the default
+  # `task check` skips (#975). The slow lane is dominated by the
+  # triage_bootstrap watchdog regression suite (5 of the 6 marked tests),
+  # which burns ~5.85s on real time.sleep / thread joins -- the proper
+  # monkeypatch refactor is tracked as a follow-up to #975. The `-o
+  # addopts=` reset overrides the pyproject default of `-m 'not slow'`
+  # so the `-m slow` selector here actually picks up the marked tests.
+  check:slow:
+    desc: "Run the @pytest.mark.slow test lane (watchdog regression suite excluded from `task check` by default, #975)"
+    cmds:
+      - uv run pytest tests/ -o addopts= -m slow
+
   test:
     desc: Run test suite (alias for core:test)
     cmds:
@@ -207,8 +259,10 @@ tasks:
       - task: core:stats
 
   setup:
-    desc: "Idempotent local-dev setup: configure git hooks (#747). Sets core.hooksPath=.githooks so .githooks/pre-commit + .githooks/pre-push run."
+    desc: "Idempotent local-dev setup: configure git hooks (#747); detect-and-prompt ghx (#884). Sets core.hooksPath=.githooks so .githooks/pre-commit + .githooks/pre-push run."
     dir: '{{.USER_WORKING_DIR}}'
+    env:
+      PYTHONUTF8: "1"
     cmds:
       # Inline POSIX-sh under go-task's mvdan/sh interpreter -- cross-platform.
       # `git config core.hooksPath .githooks` is itself idempotent, but we
@@ -259,6 +313,26 @@ tasks:
               ;;
           esac
         fi
+      # #884: ghx adoption -- consent-gated install of the brunoborges/ghx
+      # GitHub CLI cache proxy. Default invocation here passes --check so
+      # `task setup` never prompts on a clean re-run; operators wanting to
+      # opt in run `task setup:ghx` (defined below) which is the
+      # interactive entry point. The script is pure-stdlib so it works
+      # before `uv sync` has run on a fresh worktree; `uv run` is still
+      # the canonical dispatcher to keep the python interpreter consistent
+      # with every other Taskfile-dispatched script.
+      - uv run python "{{.TASKFILE_DIR}}/scripts/setup_ghx.py" --check
+
+  setup:ghx:
+    desc: "Consent-gated ghx (brunoborges/ghx) installer (#884) -- task setup:ghx [-- --yes]"
+    dir: '{{.USER_WORKING_DIR}}'
+    env:
+      PYTHONUTF8: "1"
+    # Per `conventions/task-caching.md` (#574): no `sources:` / `generates:`
+    # because the script forwards user-facing flags via {{.CLI_ARGS}}
+    # (notably --yes for non-interactive CI / scripted approval).
+    cmds:
+      - uv run python "{{.TASKFILE_DIR}}/scripts/setup_ghx.py" {{.CLI_ARGS}}
 
   # Release pipeline tasks (#74 + #716 safety hardening, namespace flatten #718).
   #
@@ -324,21 +398,129 @@ tasks:
       - uv run python "{{.TASKFILE_DIR}}/scripts/release_e2e.py" {{.CLI_ARGS}}
 
   # ------------------------------------------------------------------
-  # Triage v1 user-facing alias tasks (#845).
+  # Triage v1 user-facing alias tasks (#845, #913).
   #
   # The four triage fragments are namespaced under their unique include
   # keys (`triage-cache`, `triage-actions`, `triage-bulk`,
-  # `triage-bootstrap`). The aliases below provide the documented
-  # `task triage:<verb>` user-facing surface that vBRIEFs and UPGRADING.md
-  # describe. Each alias delegates to the underlying namespaced task and
-  # forwards `{{.CLI_ARGS}}` so flags (`--repo`, `--reason`, etc.) reach
-  # the script. Aliases are inline at the root Taskfile rather than in a
-  # separate fragment because they cross include namespaces and must
-  # exist regardless of which fragments are present (the underlying
-  # `task: <name>` reference is itself a no-op when the include is
-  # `optional: true` and absent, but tests pin the aliases so consumers
-  # see consistent help text).
+  # `triage-bootstrap`) -- a single shared `triage:` include namespace
+  # is not supported by go-task v3 (two includes cannot share a key).
+  # The aliases below provide the documented `task triage:<verb>`
+  # user-facing surface that vBRIEFs / UPGRADING.md / scripts/triage_*.py
+  # describe. Each alias delegates to the underlying namespaced task
+  # and forwards `{{.CLI_ARGS}}` so flags (`--repo`, `--reason`, etc.)
+  # reach the script. The inner tasks in each fragment are
+  # `internal: true` so the fragment-namespace forms
+  # (`triage-cache:cache`, `triage-actions:accept`, `triage-bulk:bulk-defer`,
+  # `triage-bootstrap:bootstrap`) drop out of `task -l`; only the
+  # documented `triage:*` aliases below appear in the listing. The
+  # internal tasks remain CALLABLE for legacy invocations (e.g. recap
+  # text in `scripts/triage_bootstrap.py` still prints the namespaced
+  # forms, which continue to dispatch correctly via the fragment
+  # include).
+  #
+  # Aliases are inline at the root Taskfile rather than in a separate
+  # fragment because they cross include namespaces and must exist
+  # regardless of which fragments are present.
+  #
+  # Mirrors the established #718 release-pipeline flatten precedent
+  # (release: tasks defined inline at the root Taskfile so go-task
+  # does not double-prefix them).
   # ------------------------------------------------------------------
+  # task triage:cache and task triage:show were removed in #883 Story 3.
+  # The unified cache:* surface (cache:fetch-all, cache:get) is the
+  # canonical replacement; see UPGRADING.md for migration text.
+
+  triage:accept:
+    desc: "Accept an issue for triage. Records an audit entry. (#845 Story 3)"
+    cmds:
+      - task: triage-actions:accept
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:reject:
+    desc: "Reject an issue. Closes upstream via gh + applies triage-rejected label; rolls audit back on gh failure. (#845 Story 3)"
+    cmds:
+      - task: triage-actions:reject
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:defer:
+    desc: "Defer an issue. Records an audit entry. (#845 Story 3)"
+    cmds:
+      - task: triage-actions:defer
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:needs-ac:
+    desc: "Mark an issue as needing acceptance criteria + post AC-request comment upstream. (#845 Story 3)"
+    cmds:
+      - task: triage-actions:needs-ac
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:mark-duplicate:
+    desc: "Link an issue as a duplicate of another (validated against Story 1 cache). (#845 Story 3)"
+    cmds:
+      - task: triage-actions:mark-duplicate
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:status:
+    desc: "Print the latest triage decision for an issue. Read-only. (#845 Story 3)"
+    cmds:
+      - task: triage-actions:status
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:reset:
+    desc: "Reset an issue's triage state. Appends a reset audit entry referencing prior; does NOT delete history. (#845 Story 3)"
+    cmds:
+      - task: triage-actions:reset
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:history:
+    desc: "Print the full triage timeline for an issue, ordered by timestamp. Read-only. (#845 Story 3)"
+    cmds:
+      - task: triage-actions:history
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:bulk-accept:
+    desc: "Bulk accept cached candidates -- task triage:bulk-accept -- --repo OWNER/NAME [--label L] [--author A] [--age-days N] [--cluster C] [--re-action] (#845 Story 4 / #915)"
+    cmds:
+      - task: triage-bulk:bulk-accept
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:bulk-reject:
+    desc: "Bulk reject cached candidates -- task triage:bulk-reject -- --repo OWNER/NAME --reason 'why' [--label L] [--author A] [--age-days N] [--cluster C] [--re-action] (#845 Story 4 / #915)"
+    cmds:
+      - task: triage-bulk:bulk-reject
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:bulk-defer:
+    desc: "Bulk defer cached candidates -- task triage:bulk-defer -- --repo OWNER/NAME [--label L] [--author A] [--age-days N] [--cluster C] [--re-action] (#845 Story 4 / #915)"
+    cmds:
+      - task: triage-bulk:bulk-defer
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:bulk-needs-ac:
+    desc: "Bulk needs-ac cached candidates -- task triage:bulk-needs-ac -- --repo OWNER/NAME [--label L] [--author A] [--age-days N] [--cluster C] [--re-action] (#845 Story 4 / #915)"
+    cmds:
+      - task: triage-bulk:bulk-needs-ac
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
+  triage:refresh-active:
+    desc: "Pre-swarm freshness gate (#845 Story 4) -- detects drift between cached and live `gh issue view` for every issue referenced in vbrief/active/*.vbrief.json"
+    cmds:
+      - task: triage-bulk:refresh-active
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
+
   triage:bootstrap:
     desc: "Run the triage v1 idempotent installer (#845 Story 6)."
     cmds:
